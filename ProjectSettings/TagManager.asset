@@ -41,3 +41,24 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: BG_Table
+    uniqueID: 551800369
+    locked: 0
+  - name: Board_Slots
+    uniqueID: 1081352139
+    locked: 0
+  - name: Cards_Back
+    uniqueID: 3671779881
+    locked: 0
+  - name: Cards_Front
+    uniqueID: 3663730195
+    locked: 0
+  - name: Cards_Drag
+    uniqueID: 1814702033
+    locked: 0
+  - name: World_FX
+    uniqueID: 2450774243
+    locked: 0
+  - name: World_Tooltip
+    uniqueID: 3833310163
+    locked: 0
