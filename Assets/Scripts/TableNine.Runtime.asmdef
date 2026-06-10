@@ -5,7 +5,8 @@
     "QFramework.CoreKit",
     "ResKit",
     "UIKit",
-    "Unity.ugui"
+    "Unity.ugui",
+    "Unity.TextMeshPro"
   ],
   "optionalUnityReferences": [],
   "includePlatforms": [],

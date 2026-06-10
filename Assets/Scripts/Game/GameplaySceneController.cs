@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using QFramework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,10 +14,32 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
     private Transform mBoardRoot;
     private Transform mItemRoot;
     private GameObject mCardTemplate;
-    private Text mPlayerInfoText;
-    private Text mDeckInfoText;
-    private Text mSkillInfoText;
-    private Text mMessageText;
+
+    // --- Existing HUD panel references (scene pre-built, TextMeshProUGUI) ---
+    private Transform mPlayerInfoPanel;
+    private Transform mDeckInfoPanel;
+    private Transform mSkillPanel;
+    private Transform mInfoPanel;
+    private Transform mRelicPanel;
+
+    // PlayerInfoPanel children
+    private TMP_Text mCharacterNameText;
+    private TMP_Text mLifeNumberText;
+    private TMP_Text mCoinNumberText;
+
+    // DeckInfoPanel — minimal runtime text (panel has no text children)
+    private Text mDeckCountText;
+
+    // SkillPanel / RelicPanel
+    private TMP_Text mSkillLabelText;
+    private Transform mSkillGridsRoot;
+    private TMP_Text mRelicLabelText;
+    private Transform mRelicGridsRoot;
+
+    // InfoPanel
+    private TMP_Text mInfoText;
+
+    // --- Overlays (still created at runtime) ---
     private GameObject mClearBanner;
     private Text mClearBannerText;
     private GameObject mAttributeOverlay;
@@ -66,7 +89,9 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
 
         RefreshBoardCardViews();
         RefreshItemCardViews();
-        RefreshHudTexts();
+        RefreshPlayerPanel();
+        RefreshSidePanels();
+        RefreshInfoText();
         RefreshOverlayState();
     }
 
@@ -85,11 +110,17 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         mUiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         mBoardRoot = GameObject.Find("NineGrid CardSlots")?.transform;
         mItemRoot = GameObject.Find("Item CardSlots")?.transform;
+
+        // CardExample may be nested under the grid or at the scene root.
         mCardTemplate = GameObject.Find("NineGrid CardSlots/CardExample");
+        if (mCardTemplate == null)
+        {
+            mCardTemplate = GameObject.Find("CardExample");
+        }
 
         if (mBoardRoot == null || mItemRoot == null || mCardTemplate == null)
         {
-            Debug.LogError("GameplaySceneController could not find required scene objects.");
+            Debug.LogError($"GameplaySceneController could not find required scene objects. BoardRoot={mBoardRoot != null} ItemRoot={mItemRoot != null} CardTemplate={mCardTemplate != null}");
             enabled = false;
             return;
         }
@@ -169,6 +200,12 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         }
     }
 
+    /// <summary>
+    /// Binds to the existing UI hierarchy under HUDCanvas instead of creating
+    /// runtime Text blocks.  Only the overlay elements (ClearBanner,
+    /// AttributeChoiceOverlay) are still instantiated at runtime because they
+    /// don't exist in the scene yet.
+    /// </summary>
     private void BuildHud()
     {
         var hudCanvas = GameObject.Find("HUDCanvas")?.transform;
@@ -180,49 +217,70 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
             return;
         }
 
-        mPlayerInfoText = CreateTextBlock(
-            FindOrCreateRectTransform(hudCanvas, "PlayerInfoPanel"),
-            "RuntimePlayerInfo",
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(12f, 12f),
-            new Vector2(-12f, -12f),
-            TextAnchor.UpperLeft,
-            20);
+        // ---- Bind existing HUD panel children (TextMeshProUGUI) ----
 
-        mDeckInfoText = CreateTextBlock(
-            FindOrCreateRectTransform(hudCanvas, "DeckInfoPanel"),
-            "RuntimeDeckInfo",
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(12f, 12f),
-            new Vector2(-12f, -12f),
-            TextAnchor.UpperLeft,
-            18);
+        mPlayerInfoPanel = hudCanvas.Find("PlayerInfoPanel");
+        if (mPlayerInfoPanel != null)
+        {
+            mCharacterNameText = GetTmpText(mPlayerInfoPanel, "CharacterName");
+            mLifeNumberText = GetTmpText(mPlayerInfoPanel, "LifeNumber");
+            mCoinNumberText = GetTmpText(mPlayerInfoPanel, "CoinNumber");
+        }
 
-        mSkillInfoText = CreateTextBlock(
-            FindOrCreateRectTransform(hudCanvas, "SkillPanel"),
-            "RuntimeSkillInfo",
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(12f, 12f),
-            new Vector2(-12f, -12f),
-            TextAnchor.UpperLeft,
-            18);
+        mDeckInfoPanel = hudCanvas.Find("DeckInfoPanel");
+        if (mDeckInfoPanel != null)
+        {
+            // DeckInfoPanel has no text children in the scene — add one minimal
+            // Text for the battle-draw-pile count & next-card preview.
+            var deckTextGo = new GameObject("DeckCountText", typeof(RectTransform), typeof(Text));
+            deckTextGo.transform.SetParent(mDeckInfoPanel, false);
+            var deckRect = deckTextGo.GetComponent<RectTransform>();
+            deckRect.anchorMin = new Vector2(0f, 0f);
+            deckRect.anchorMax = new Vector2(1f, 0.35f);
+            deckRect.offsetMin = new Vector2(4f, 4f);
+            deckRect.offsetMax = new Vector2(-4f, -4f);
+            mDeckCountText = deckTextGo.GetComponent<Text>();
+            mDeckCountText.font = mUiFont;
+            mDeckCountText.fontSize = 14;
+            mDeckCountText.alignment = TextAnchor.LowerLeft;
+            mDeckCountText.color = new Color(0.2f, 0.2f, 0.2f, 0.85f);
+            mDeckCountText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            mDeckCountText.verticalOverflow = VerticalWrapMode.Overflow;
+            mDeckCountText.raycastTarget = false;
+        }
 
-        mMessageText = CreateTextBlock(
-            FindOrCreateRectTransform(hudCanvas, "InfoPanel"),
-            "RuntimeMessageInfo",
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(12f, 12f),
-            new Vector2(-12f, -12f),
-            TextAnchor.UpperLeft,
-            18);
+        mSkillPanel = hudCanvas.Find("SkillPanel");
+        if (mSkillPanel != null)
+        {
+            mSkillLabelText = GetTmpText(mSkillPanel, "SkillText");
+            mSkillGridsRoot = mSkillPanel.Find("Grids");
+        }
+
+        mRelicPanel = hudCanvas.Find("RelicPanel");
+        if (mRelicPanel != null)
+        {
+            mRelicLabelText = GetTmpText(mRelicPanel, "RelicText");
+            mRelicGridsRoot = mRelicPanel.Find("Grids");
+        }
+
+        mInfoPanel = hudCanvas.Find("InfoPanel");
+        if (mInfoPanel != null)
+        {
+            mInfoText = GetTmpText(mInfoPanel, "InfoText");
+        }
+
+        // ---- Runtime-only overlays (not pre-built in scene) ----
 
         mClearBanner = CreateOverlayBanner(overlayCanvas, "ClearBanner", "节点已清空，可以继续处理帮助卡。");
         mClearBannerText = mClearBanner.GetComponentInChildren<Text>();
         mAttributeOverlay = CreateAttributeOverlay(overlayCanvas);
+
+        // ---- Cleanup runtime UI left over from previous versions ----
+
+        DestroyIfExists(mPlayerInfoPanel, "RuntimePlayerInfo");
+        DestroyIfExists(mDeckInfoPanel, "RuntimeDeckInfo");
+        DestroyIfExists(mSkillPanel, "RuntimeSkillInfo");
+        DestroyIfExists(mInfoPanel, "RuntimeMessageInfo");
     }
 
     private void RegisterGameplayEvents()
@@ -234,6 +292,10 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         }));
         mEventRegisters.Add(this.RegisterEvent<MonsterKilledEvent>(_ => { mLastMessage = "怪物被击杀，获得 5 金币。"; }));
     }
+
+    // ================================================================
+    //  UI Refresh — each method targets one logical panel
+    // ================================================================
 
     private void RefreshBoardCardViews()
     {
@@ -313,37 +375,93 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         }
     }
 
-    private void RefreshHudTexts()
+    /// <summary>
+    /// PlayerInfoPanel: CharacterName / LifeNumber (x format) / CoinNumber (x format).
+    /// </summary>
+    private void RefreshPlayerPanel()
     {
         var runModel = this.GetModel<IRunModel>();
         if (!runModel.IsRunActive.Value)
         {
-            mPlayerInfoText.text = "玩家\n等待开局";
-            mDeckInfoText.text = "节点\n等待开局";
-            mSkillInfoText.text = "技能\n等待开局";
-            mMessageText.text = "正在准备首个可玩节点。";
+            if (mLifeNumberText != null) mLifeNumberText.text = "x--";
+            if (mCoinNumberText != null) mCoinNumberText.text = "x0";
             return;
         }
 
         var playerModel = this.GetModel<IPlayerModel>();
-        var deckModel = this.GetModel<IDeckModel>();
-        var flowModel = this.GetModel<IFlowModel>();
+        var configModel = this.GetModel<IConfigModel>();
         var playerStats = this.SendQuery(new GetEffectivePlayerStatsQuery());
 
-        mPlayerInfoText.text =
-            $"玩家\n生命 {playerStats.CurrentHp}/{playerStats.MaxHp}\n攻击 {playerStats.Attack}\n防御 {playerStats.Defense}\n金币 {playerModel.Gold.Value}";
+        // CharacterName — read from config, fallback to "玩家"
+        if (mCharacterNameText != null)
+        {
+            var characterDef = configModel.GetCharacterDefinition(runModel.CharacterId);
+            mCharacterNameText.text = characterDef != null ? characterDef.DisplayName : "玩家";
+        }
 
-        var previewText = deckModel.NextBattleCardPreview.Value.IsEmpty
-            ? "无"
-            : deckModel.NextBattleCardPreview.Value.DisplayName;
+        // LifeNumber — "x{currentHp}" format, matching the scene's icon+counter layout
+        if (mLifeNumberText != null)
+        {
+            mLifeNumberText.text = $"x{playerStats.CurrentHp}";
+        }
 
-        mDeckInfoText.text =
-            $"节点 L{runModel.Layer.Value}-N{runModel.NodeInLayer.Value}\nSeed {runModel.Seed.Value}\n阶段 {flowModel.Phase.Value}\n战斗牌堆 {deckModel.BattleDrawPile.Count}\n下一张 {previewText}";
+        // CoinNumber — "x{gold}" format
+        if (mCoinNumberText != null)
+        {
+            mCoinNumberText.text = $"x{playerModel.Gold.Value}";
+        }
+    }
 
-        mSkillInfoText.text =
-            $"技能\n{string.Join("\n", playerModel.SkillIds)}";
+    /// <summary>
+    /// DeckInfoPanel: minimal deck-count text.
+    /// SkillPanel / RelicPanel: labels kept intact (icon grid population deferred).
+    /// </summary>
+    private void RefreshSidePanels()
+    {
+        var runModel = this.GetModel<IRunModel>();
+        if (!runModel.IsRunActive.Value)
+        {
+            if (mDeckCountText != null) mDeckCountText.text = "";
+            return;
+        }
 
-        mMessageText.text = BuildStatusMessage(flowModel, deckModel);
+        var deckModel = this.GetModel<IDeckModel>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        // DeckInfoPanel — show draw-pile count & next card preview
+        if (mDeckCountText != null)
+        {
+            var preview = deckModel.NextBattleCardPreview.Value.IsEmpty
+                ? "无"
+                : deckModel.NextBattleCardPreview.Value.DisplayName;
+            mDeckCountText.text = $"牌堆 {deckModel.BattleDrawPile.Count}\n下一张 {preview}";
+        }
+
+        // SkillPanel / RelicPanel — labels are already set in the scene;
+        // icon grid population is deferred to a future pass.
+    }
+
+    /// <summary>
+    /// InfoPanel / InfoText: contextual status message (replaces the old
+    /// "everything dumped in the top-left" approach).
+    /// </summary>
+    private void RefreshInfoText()
+    {
+        if (mInfoText == null)
+        {
+            return;
+        }
+
+        var runModel = this.GetModel<IRunModel>();
+        if (!runModel.IsRunActive.Value)
+        {
+            mInfoText.text = "正在准备首个可玩节点。";
+            return;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        var flowModel = this.GetModel<IFlowModel>();
+        mInfoText.text = BuildStatusMessage(flowModel, deckModel);
     }
 
     private void RefreshOverlayState()
@@ -360,6 +478,10 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
 
         mAttributeOverlay.SetActive(deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.AttributeChoice);
     }
+
+    // ================================================================
+    //  Helpers — scene object lookup
+    // ================================================================
 
     private GameplayCardVisual CreateCardVisual(string objectName, Vector3 worldPosition, Transform parent, float scaleMultiplier)
     {
@@ -386,57 +508,53 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         return view;
     }
 
-    private RectTransform FindOrCreateRectTransform(Transform parent, string childName)
+    private static Transform FindChild(Transform root, string childName)
     {
-        var child = parent.Find(childName) as RectTransform;
+        if (root == null)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < root.childCount; i++)
+        {
+            var child = root.GetChild(i);
+            if (child.name == childName)
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a <see cref="TextMeshProUGUI"/> component from a named child of
+    /// <paramref name="parent"/>.  Returns null when the child or component
+    /// does not exist.
+    /// </summary>
+    private static TMP_Text GetTmpText(Transform parent, string childName)
+    {
+        var child = parent.Find(childName);
+        return child != null ? child.GetComponent<TextMeshProUGUI>() : null;
+    }
+
+    private static void DestroyIfExists(Transform parent, string childName)
+    {
+        if (parent == null)
+        {
+            return;
+        }
+
+        var child = parent.Find(childName);
         if (child != null)
         {
-            return child;
+            Object.Destroy(child.gameObject);
         }
-
-        var go = new GameObject(childName, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-        child = go.GetComponent<RectTransform>();
-        child.anchorMin = Vector2.zero;
-        child.anchorMax = Vector2.one;
-        child.offsetMin = Vector2.zero;
-        child.offsetMax = Vector2.zero;
-        return child;
     }
 
-    private Text CreateTextBlock(
-        RectTransform parent,
-        string objectName,
-        Vector2 anchorMin,
-        Vector2 anchorMax,
-        Vector2 offsetMin,
-        Vector2 offsetMax,
-        TextAnchor alignment,
-        int fontSize)
-    {
-        var textTransform = parent.Find(objectName) as RectTransform;
-        if (textTransform == null)
-        {
-            var go = new GameObject(objectName, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            textTransform = go.GetComponent<RectTransform>();
-        }
-
-        textTransform.anchorMin = anchorMin;
-        textTransform.anchorMax = anchorMax;
-        textTransform.offsetMin = offsetMin;
-        textTransform.offsetMax = offsetMax;
-
-        var text = textTransform.GetComponent<Text>();
-        text.font = mUiFont;
-        text.fontSize = fontSize;
-        text.alignment = alignment;
-        text.color = new Color(0.15f, 0.15f, 0.15f);
-        text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-        text.raycastTarget = false;
-        return text;
-    }
+    // ================================================================
+    //  Helpers — overlay construction (runtime only)
+    // ================================================================
 
     private GameObject CreateOverlayBanner(Transform overlayCanvas, string objectName, string text)
     {
@@ -524,6 +642,48 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
         text.text = label;
     }
 
+    /// <summary>
+    /// Creates a legacy <see cref="Text"/> block — used only for runtime
+    /// overlays that are not pre-built in the scene.
+    /// </summary>
+    private Text CreateTextBlock(
+        RectTransform parent,
+        string objectName,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 offsetMin,
+        Vector2 offsetMax,
+        TextAnchor alignment,
+        int fontSize)
+    {
+        var textTransform = parent.Find(objectName) as RectTransform;
+        if (textTransform == null)
+        {
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+            textTransform = go.GetComponent<RectTransform>();
+        }
+
+        textTransform.anchorMin = anchorMin;
+        textTransform.anchorMax = anchorMax;
+        textTransform.offsetMin = offsetMin;
+        textTransform.offsetMax = offsetMax;
+
+        var text = textTransform.GetComponent<Text>();
+        text.font = mUiFont;
+        text.fontSize = fontSize;
+        text.alignment = alignment;
+        text.color = new Color(0.15f, 0.15f, 0.15f);
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+        text.raycastTarget = false;
+        return text;
+    }
+
+    // ================================================================
+    //  Data formatting helpers
+    // ================================================================
+
     private string BuildPlayerCardText(EffectiveStats stats)
     {
         return $"玩家\nHP {stats.CurrentHp}/{stats.MaxHp}\nATK {stats.Attack} DEF {stats.Defense}";
@@ -563,7 +723,12 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
             return "节点已清空。你仍可拾取或使用帮助卡。";
         }
 
-        return mLastMessage;
+        // Default: show phase context + last event message
+        var preview = deckModel.NextBattleCardPreview.Value.IsEmpty
+            ? "无"
+            : deckModel.NextBattleCardPreview.Value.DisplayName;
+
+        return $"[{flowModel.Phase.Value}] 牌堆 {deckModel.BattleDrawPile.Count} | 下一张 {preview}\n{mLastMessage}";
     }
 
     private Color ResolveHelpColor(CardQuality quality)
@@ -581,25 +746,6 @@ public sealed class GameplaySceneController : MonoBehaviour, IController
             default:
                 return new Color(0.9f, 0.9f, 0.9f);
         }
-    }
-
-    private static Transform FindChild(Transform root, string childName)
-    {
-        if (root == null)
-        {
-            return null;
-        }
-
-        for (var i = 0; i < root.childCount; i++)
-        {
-            var child = root.GetChild(i);
-            if (child.name == childName)
-            {
-                return child;
-            }
-        }
-
-        return null;
     }
 
     private void HideAllCardViews()
