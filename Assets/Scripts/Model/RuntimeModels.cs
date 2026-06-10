@@ -1,78 +1,456 @@
+using System.Collections.Generic;
 using QFramework;
+using UnityEngine;
 
 public interface IRunModel : IModel
 {
+    BindableProperty<int> Layer { get; }
+    BindableProperty<int> NodeInLayer { get; }
+    BindableProperty<int> Seed { get; }
+    BindableProperty<bool> IsRunActive { get; }
+    string CharacterId { get; }
+    void StartRun(string characterId, int seed);
+    void SetNode(int layer, int nodeInLayer);
 }
 
 public sealed class RunModel : AbstractModel, IRunModel
 {
+    private readonly BindableProperty<int> mLayer = new BindableProperty<int>();
+    private readonly BindableProperty<int> mNodeInLayer = new BindableProperty<int>();
+    private readonly BindableProperty<int> mSeed = new BindableProperty<int>();
+    private readonly BindableProperty<bool> mIsRunActive = new BindableProperty<bool>();
+
+    public BindableProperty<int> Layer => mLayer;
+    public BindableProperty<int> NodeInLayer => mNodeInLayer;
+    public BindableProperty<int> Seed => mSeed;
+    public BindableProperty<bool> IsRunActive => mIsRunActive;
+    public string CharacterId { get; private set; }
+
     protected override void OnInit()
     {
+        CharacterId = string.Empty;
+    }
+
+    public void StartRun(string characterId, int seed)
+    {
+        CharacterId = characterId;
+        mSeed.Value = seed;
+        mLayer.Value = 1;
+        mNodeInLayer.Value = 1;
+        mIsRunActive.Value = true;
+    }
+
+    public void SetNode(int layer, int nodeInLayer)
+    {
+        mLayer.Value = layer;
+        mNodeInLayer.Value = nodeInLayer;
     }
 }
 
 public interface IPlayerModel : IModel
 {
+    CardUid PlayerCardUid { get; set; }
+    BindableProperty<int> Gold { get; }
+    int BaseHp { get; }
+    int BaseAttack { get; }
+    int BaseDefense { get; }
+    IReadOnlyList<string> SkillIds { get; }
+    void ResetFromCharacter(CharacterDefinition characterDefinition, CardUid playerCardUid);
 }
 
 public sealed class PlayerModel : AbstractModel, IPlayerModel
 {
+    private readonly BindableProperty<int> mGold = new BindableProperty<int>();
+    private readonly List<string> mSkillIds = new List<string>();
+
+    public CardUid PlayerCardUid { get; set; }
+    public BindableProperty<int> Gold => mGold;
+    public int BaseHp { get; private set; }
+    public int BaseAttack { get; private set; }
+    public int BaseDefense { get; private set; }
+    public IReadOnlyList<string> SkillIds => mSkillIds;
+
     protected override void OnInit()
     {
+    }
+
+    public void ResetFromCharacter(CharacterDefinition characterDefinition, CardUid playerCardUid)
+    {
+        PlayerCardUid = playerCardUid;
+        BaseHp = characterDefinition.BaseHp;
+        BaseAttack = characterDefinition.BaseAttack;
+        BaseDefense = characterDefinition.BaseDefense;
+        mGold.Value = 0;
+        mSkillIds.Clear();
+        mSkillIds.AddRange(characterDefinition.InitialSkillIds);
     }
 }
 
 public interface IBoardModel : IModel
 {
+    BoardSlotNo PlayerSlot { get; set; }
+    CardUid? GetCardAt(BoardSlotNo slot);
+    void SetCardAt(BoardSlotNo slot, CardUid? uid);
+    void Clear();
+    List<BoardSlotNo> GetEmptySlots();
 }
 
 public sealed class BoardModel : AbstractModel, IBoardModel
 {
+    private readonly CardUid?[] mSlots = new CardUid?[10];
+
+    public BoardSlotNo PlayerSlot { get; set; }
+
     protected override void OnInit()
     {
+        PlayerSlot = new BoardSlotNo(5);
+        Clear();
+    }
+
+    public CardUid? GetCardAt(BoardSlotNo slot)
+    {
+        return mSlots[slot.Value];
+    }
+
+    public void SetCardAt(BoardSlotNo slot, CardUid? uid)
+    {
+        mSlots[slot.Value] = uid;
+    }
+
+    public void Clear()
+    {
+        for (var i = 1; i <= 9; i++)
+        {
+            mSlots[i] = null;
+        }
+    }
+
+    public List<BoardSlotNo> GetEmptySlots()
+    {
+        var slots = new List<BoardSlotNo>();
+        for (var i = 1; i <= 9; i++)
+        {
+            if (!mSlots[i].HasValue)
+            {
+                slots.Add(new BoardSlotNo(i));
+            }
+        }
+
+        return slots;
     }
 }
 
 public interface IDeckModel : IModel
 {
+    List<CardUid> OwnedHelpCards { get; }
+    Dictionary<int, HelpCardState> HelpCardStates { get; }
+    Queue<CardUid> DemonDeckQueue { get; }
+    Queue<CardUid> BattleDrawPile { get; }
+    CardUid?[] ItemSlots { get; }
+    HelpDeckSnapshot NodeStartSnapshot { get; set; }
+    BindableProperty<CardPreview> NextBattleCardPreview { get; }
+    bool RefillRunning { get; set; }
+    bool RefillPending { get; set; }
+    void ResetForNewRun();
+    void ClearNodeState();
+    int FindFirstEmptyItemSlot();
 }
 
 public sealed class DeckModel : AbstractModel, IDeckModel
 {
+    private readonly List<CardUid> mOwnedHelpCards = new List<CardUid>();
+    private readonly Dictionary<int, HelpCardState> mHelpCardStates = new Dictionary<int, HelpCardState>();
+    private readonly Queue<CardUid> mDemonDeckQueue = new Queue<CardUid>();
+    private readonly Queue<CardUid> mBattleDrawPile = new Queue<CardUid>();
+    private readonly CardUid?[] mItemSlots = new CardUid?[5];
+    private readonly BindableProperty<CardPreview> mNextBattleCardPreview = new BindableProperty<CardPreview>();
+
+    public List<CardUid> OwnedHelpCards => mOwnedHelpCards;
+    public Dictionary<int, HelpCardState> HelpCardStates => mHelpCardStates;
+    public Queue<CardUid> DemonDeckQueue => mDemonDeckQueue;
+    public Queue<CardUid> BattleDrawPile => mBattleDrawPile;
+    public CardUid?[] ItemSlots => mItemSlots;
+    public HelpDeckSnapshot NodeStartSnapshot { get; set; } = new HelpDeckSnapshot();
+    public BindableProperty<CardPreview> NextBattleCardPreview => mNextBattleCardPreview;
+    public bool RefillRunning { get; set; }
+    public bool RefillPending { get; set; }
+
     protected override void OnInit()
     {
+        ResetForNewRun();
+    }
+
+    public void ResetForNewRun()
+    {
+        mOwnedHelpCards.Clear();
+        mHelpCardStates.Clear();
+        ClearNodeState();
+        NodeStartSnapshot = new HelpDeckSnapshot();
+    }
+
+    public void ClearNodeState()
+    {
+        mDemonDeckQueue.Clear();
+        mBattleDrawPile.Clear();
+        for (var i = 0; i < mItemSlots.Length; i++)
+        {
+            mItemSlots[i] = null;
+        }
+
+        foreach (var state in mHelpCardStates.Values)
+        {
+            state.IsOnBoard = false;
+            state.IsInItemSlot = false;
+            state.IsTemporarilyRemoved = false;
+        }
+
+        NextBattleCardPreview.Value = CardPreview.Empty;
+        RefillRunning = false;
+        RefillPending = false;
+    }
+
+    public int FindFirstEmptyItemSlot()
+    {
+        for (var i = 0; i < mItemSlots.Length; i++)
+        {
+            if (!mItemSlots[i].HasValue)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }
 
 public interface ICollectionModel : IModel
 {
+    IReadOnlyDictionary<int, CardRuntime> Cards { get; }
+    CardRuntime CreatePlayerCard(CharacterDefinition definition);
+    CardRuntime CreateCard(CardDefinition definition);
+    CardRuntime GetCard(CardUid uid);
+    bool TryGetCard(CardUid uid, out CardRuntime cardRuntime);
+    bool RemoveCard(CardUid uid);
+    void Clear();
 }
 
 public sealed class CollectionModel : AbstractModel, ICollectionModel
 {
+    private readonly Dictionary<int, CardRuntime> mCards = new Dictionary<int, CardRuntime>();
+    private int mNextUid = 1;
+
+    public IReadOnlyDictionary<int, CardRuntime> Cards => mCards;
+
     protected override void OnInit()
     {
+        Clear();
+    }
+
+    public CardRuntime CreatePlayerCard(CharacterDefinition definition)
+    {
+        var runtime = new CardRuntime
+        {
+            Uid = CreateUid(),
+            DefinitionId = definition.CharacterId,
+            DisplayName = definition.DisplayName,
+            CardType = CardType.Player,
+            CurrentHp = definition.BaseHp,
+            MaxHp = definition.BaseHp,
+            BaseAttack = definition.BaseAttack,
+            BaseDefense = definition.BaseDefense,
+            SkillIds = new List<string>(definition.InitialSkillIds)
+        };
+
+        mCards[runtime.Uid.Value] = runtime;
+        return runtime;
+    }
+
+    public CardRuntime CreateCard(CardDefinition definition)
+    {
+        var runtime = new CardRuntime
+        {
+            Uid = CreateUid(),
+            DefinitionId = definition.CardId,
+            DisplayName = definition.DisplayName,
+            CardType = definition.CardType,
+            MonsterLevel = definition.MonsterLevel,
+            Suit = definition.Suit,
+            CurrentHp = definition.BaseHp,
+            MaxHp = definition.BaseHp,
+            BaseAttack = definition.BaseAttack,
+            BaseDefense = definition.BaseDefense,
+            SkillIds = new List<string>(definition.SkillIds)
+        };
+
+        mCards[runtime.Uid.Value] = runtime;
+        return runtime;
+    }
+
+    public CardRuntime GetCard(CardUid uid)
+    {
+        return mCards[uid.Value];
+    }
+
+    public bool TryGetCard(CardUid uid, out CardRuntime cardRuntime)
+    {
+        return mCards.TryGetValue(uid.Value, out cardRuntime);
+    }
+
+    public bool RemoveCard(CardUid uid)
+    {
+        return mCards.Remove(uid.Value);
+    }
+
+    public void Clear()
+    {
+        mCards.Clear();
+        mNextUid = 1;
+    }
+
+    private CardUid CreateUid()
+    {
+        return new CardUid(mNextUid++);
     }
 }
 
 public interface IConfigModel : IModel
 {
+    bool IsLoaded { get; }
+    IReadOnlyList<string> ValidationErrors { get; }
+    CardDefinition GetCardDefinition(string cardId);
+    CharacterDefinition GetCharacterDefinition(string characterId);
+    SkillDefinition GetSkillDefinition(string skillId);
+    MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer);
 }
 
 public sealed class ConfigModel : AbstractModel, IConfigModel
 {
+    private readonly Dictionary<string, CardDefinition> mCardsById = new Dictionary<string, CardDefinition>();
+    private readonly Dictionary<string, CharacterDefinition> mCharactersById = new Dictionary<string, CharacterDefinition>();
+    private readonly Dictionary<string, SkillDefinition> mSkillsById = new Dictionary<string, SkillDefinition>();
+    private readonly Dictionary<string, MonsterDeckRuleDefinition> mMonsterRulesByKey = new Dictionary<string, MonsterDeckRuleDefinition>();
+    private readonly List<string> mValidationErrors = new List<string>();
+
+    public bool IsLoaded { get; private set; }
+    public IReadOnlyList<string> ValidationErrors => mValidationErrors;
+
     protected override void OnInit()
     {
+        var configUtility = this.GetUtility<IConfigUtility>();
+        var database = configUtility.LoadResource<GameConfigDatabase>("Configs/GameConfigDatabase");
+        var config = database != null ? database.ToConfigSet() : DefaultGameConfigFactory.Create();
+
+        mValidationErrors.Clear();
+        mValidationErrors.AddRange(ConfigValidator.Validate(config));
+        for (var i = 0; i < mValidationErrors.Count; i++)
+        {
+            Debug.LogWarning($"[ConfigValidator] {mValidationErrors[i]}");
+        }
+
+        mCardsById.Clear();
+        mCharactersById.Clear();
+        mSkillsById.Clear();
+        mMonsterRulesByKey.Clear();
+
+        for (var i = 0; i < config.Cards.Count; i++)
+        {
+            mCardsById[config.Cards[i].CardId] = config.Cards[i];
+        }
+
+        for (var i = 0; i < config.Characters.Count; i++)
+        {
+            mCharactersById[config.Characters[i].CharacterId] = config.Characters[i];
+        }
+
+        for (var i = 0; i < config.Skills.Count; i++)
+        {
+            mSkillsById[config.Skills[i].SkillId] = config.Skills[i];
+        }
+
+        for (var i = 0; i < config.MonsterDeckRules.Count; i++)
+        {
+            var rule = config.MonsterDeckRules[i];
+            mMonsterRulesByKey[BuildRuleKey(rule.Layer, rule.NodeInLayer)] = rule;
+        }
+
+        IsLoaded = true;
+    }
+
+    public CardDefinition GetCardDefinition(string cardId)
+    {
+        return mCardsById[cardId];
+    }
+
+    public CharacterDefinition GetCharacterDefinition(string characterId)
+    {
+        return mCharactersById[characterId];
+    }
+
+    public SkillDefinition GetSkillDefinition(string skillId)
+    {
+        return mSkillsById[skillId];
+    }
+
+    public MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer)
+    {
+        return mMonsterRulesByKey[BuildRuleKey(layer, nodeInLayer)];
+    }
+
+    private static string BuildRuleKey(int layer, int nodeInLayer)
+    {
+        return $"{layer}:{nodeInLayer}";
     }
 }
 
 public interface IFlowModel : IModel
 {
+    BindableProperty<FlowPhase> Phase { get; }
+    IReadOnlyCollection<InputLockReason> ActiveLocks { get; }
+    bool IsInputLocked { get; }
+    void SetPhase(FlowPhase phase);
+    void AddLock(InputLockReason reason);
+    void RemoveLock(InputLockReason reason);
+    bool HasLock(InputLockReason reason);
+    void Reset();
 }
 
 public sealed class FlowModel : AbstractModel, IFlowModel
 {
+    private readonly BindableProperty<FlowPhase> mPhase = new BindableProperty<FlowPhase>();
+    private readonly HashSet<InputLockReason> mActiveLocks = new HashSet<InputLockReason>();
+
+    public BindableProperty<FlowPhase> Phase => mPhase;
+    public IReadOnlyCollection<InputLockReason> ActiveLocks => mActiveLocks;
+    public bool IsInputLocked => mActiveLocks.Count > 0;
+
     protected override void OnInit()
     {
+        Reset();
+    }
+
+    public void SetPhase(FlowPhase phase)
+    {
+        mPhase.Value = phase;
+    }
+
+    public void AddLock(InputLockReason reason)
+    {
+        mActiveLocks.Add(reason);
+    }
+
+    public void RemoveLock(InputLockReason reason)
+    {
+        mActiveLocks.Remove(reason);
+    }
+
+    public bool HasLock(InputLockReason reason)
+    {
+        return mActiveLocks.Contains(reason);
+    }
+
+    public void Reset()
+    {
+        mPhase.Value = FlowPhase.None;
+        mActiveLocks.Clear();
     }
 }

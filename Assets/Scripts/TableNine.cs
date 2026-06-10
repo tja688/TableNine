@@ -40,6 +40,7 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterSystem<ICombatSystem>(new CombatSystem());
         RegisterSystem<IStatSystem>(new StatSystem());
         RegisterSystem<IEffectSystem>(new EffectSystem());
+        RegisterSystem<IInputLockSystem>(new InputLockSystem());
     }
 
     protected override void ExecuteCommand(ICommand command)

@@ -11,23 +11,35 @@ public interface IRandomUtility : IUtility
     int Range(int minInclusive, int maxExclusive);
     float Value();
     void SetSeed(int seed);
+    void Shuffle<T>(IList<T> list);
 }
 
 public sealed class UnityRandomUtility : IRandomUtility
 {
+    private System.Random mRandom = new System.Random();
+
     public int Range(int minInclusive, int maxExclusive)
     {
-        return UnityEngine.Random.Range(minInclusive, maxExclusive);
+        return mRandom.Next(minInclusive, maxExclusive);
     }
 
     public float Value()
     {
-        return UnityEngine.Random.value;
+        return (float)mRandom.NextDouble();
     }
 
     public void SetSeed(int seed)
     {
-        UnityEngine.Random.InitState(seed);
+        mRandom = new System.Random(seed);
+    }
+
+    public void Shuffle<T>(IList<T> list)
+    {
+        for (var i = list.Count - 1; i > 0; i--)
+        {
+            var swapIndex = Range(0, i + 1);
+            (list[i], list[swapIndex]) = (list[swapIndex], list[i]);
+        }
     }
 }
 

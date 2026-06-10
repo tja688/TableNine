@@ -12,6 +12,7 @@
 ## 技术框架
 
 项目框架采用 `QFramework`。项目本地代码入口在：Assets/Scripts，QFramework框架代码入口在：Assets/QFramework。
+开发qframework代码前请看：rules.md。
 
 ## 协作约定
 
@@ -22,3 +23,9 @@
 - 严禁在任何情况以任何理由改动.unity后缀文件，相关改动需求可以考虑用unity mcp帮助落地。
 - 项目已经初始化codegraph，在有代码查询需求，架构了解需求的情况下可以利用codegraph mcp进行了解。
 
+## 维护要求
+
+- 如果你在项目里发现新的高风险坑点、反复发生的错误或容易误导后续 agent 的事实，追加到本文件。
+
+1. AbstractCommand / AbstractSystem / IController 中禁止裸调架构能力方法：
+在 AbstractCommand.OnExecute()、AbstractSystem.OnInit()、IController 实现类等上下文中，访问 Model、System、Command、Event、Query 时，必须通过 this. 调用 QFramework 扩展方法。

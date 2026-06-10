@@ -42,6 +42,7 @@ public sealed class TableNineArchitectureEditModeTests
         Assert.That(TableNine.Interface.GetSystem<ICombatSystem>(), Is.Not.Null);
         Assert.That(TableNine.Interface.GetSystem<IStatSystem>(), Is.Not.Null);
         Assert.That(TableNine.Interface.GetSystem<IEffectSystem>(), Is.Not.Null);
+        Assert.That(TableNine.Interface.GetSystem<IInputLockSystem>(), Is.Not.Null);
     }
 
     [Test]
