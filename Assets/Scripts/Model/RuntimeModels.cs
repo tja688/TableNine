@@ -55,13 +55,20 @@ public interface IPlayerModel : IModel
     int BaseAttack { get; }
     int BaseDefense { get; }
     IReadOnlyList<string> SkillIds { get; }
+    IReadOnlyList<RelicRuntime> Relics { get; }
+    int MaxRelicCount { get; }
+    void AddRelic(RelicRuntime relic);
+    bool RemoveRelic(string relicId);
+    bool HasRelic(string relicId);
     void ResetFromCharacter(CharacterDefinition characterDefinition, CardUid playerCardUid);
+    void AddSkill(string skillId);
 }
 
 public sealed class PlayerModel : AbstractModel, IPlayerModel
 {
     private readonly BindableProperty<int> mGold = new BindableProperty<int>();
     private readonly List<string> mSkillIds = new List<string>();
+    private readonly List<RelicRuntime> mRelics = new List<RelicRuntime>();
 
     public CardUid PlayerCardUid { get; set; }
     public BindableProperty<int> Gold => mGold;
@@ -69,9 +76,45 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
     public int BaseAttack { get; private set; }
     public int BaseDefense { get; private set; }
     public IReadOnlyList<string> SkillIds => mSkillIds;
+    public IReadOnlyList<RelicRuntime> Relics => mRelics;
+    public int MaxRelicCount => 12;
 
     protected override void OnInit()
     {
+    }
+
+    public void AddRelic(RelicRuntime relic)
+    {
+        if (mRelics.Count >= MaxRelicCount) return;
+        if (HasRelic(relic.RelicId)) return;
+        mRelics.Add(relic);
+    }
+
+    public bool RemoveRelic(string relicId)
+    {
+        for (var i = 0; i < mRelics.Count; i++)
+        {
+            if (mRelics[i].RelicId == relicId)
+            {
+                mRelics.RemoveAt(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool HasRelic(string relicId)
+    {
+        for (var i = 0; i < mRelics.Count; i++)
+        {
+            if (mRelics[i].RelicId == relicId && !mRelics[i].IsConsumed)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void ResetFromCharacter(CharacterDefinition characterDefinition, CardUid playerCardUid)
@@ -83,6 +126,15 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
         mGold.Value = 0;
         mSkillIds.Clear();
         mSkillIds.AddRange(characterDefinition.InitialSkillIds);
+        mRelics.Clear();
+    }
+
+    public void AddSkill(string skillId)
+    {
+        if (!mSkillIds.Contains(skillId))
+        {
+            mSkillIds.Add(skillId);
+        }
     }
 }
 
@@ -155,6 +207,10 @@ public interface IDeckModel : IModel
     void ResetForNewRun();
     void ClearNodeState();
     int FindFirstEmptyItemSlot();
+    DeckCapacity GetCapacity(int layer);
+    int CountActiveHelpCards();
+    int CountHelpCardsById(string definitionId);
+    int GetHelpDeckCapacity(int layer);
 }
 
 public sealed class DeckModel : AbstractModel, IDeckModel
@@ -224,6 +280,45 @@ public sealed class DeckModel : AbstractModel, IDeckModel
         }
 
         return -1;
+    }
+
+    public DeckCapacity GetCapacity(int layer)
+    {
+        return DeckCapacity.ForLayer(layer);
+    }
+
+    public int CountActiveHelpCards()
+    {
+        var count = 0;
+        foreach (var pair in mHelpCardStates)
+        {
+            if (!pair.Value.IsPermanentlyRemoved)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public int CountHelpCardsById(string definitionId)
+    {
+        var count = 0;
+        foreach (var pair in mHelpCardStates)
+        {
+            if (!pair.Value.IsPermanentlyRemoved && pair.Value.DefinitionId == definitionId)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public int GetHelpDeckCapacity(int layer)
+    {
+        // Layer 1: 12, Layer 2: 18, Layer 3: 24
+        return 6 * (layer + 1);
     }
 }
 
@@ -325,6 +420,12 @@ public interface IConfigModel : IModel
     CharacterDefinition GetCharacterDefinition(string characterId);
     SkillDefinition GetSkillDefinition(string skillId);
     MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer);
+    IReadOnlyList<CardDefinition> GetAllHelpCardDefinitions();
+    IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality);
+    bool TryGetCardDefinition(string cardId, out CardDefinition definition);
+    RelicDefinition GetRelicDefinition(string relicId);
+    RoomDefinition GetRoomDefinition(string roomId);
+    IReadOnlyList<CardDefinition> GetCardsByType(CardType cardType);
 }
 
 public sealed class ConfigModel : AbstractModel, IConfigModel
@@ -333,6 +434,8 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     private readonly Dictionary<string, CharacterDefinition> mCharactersById = new Dictionary<string, CharacterDefinition>();
     private readonly Dictionary<string, SkillDefinition> mSkillsById = new Dictionary<string, SkillDefinition>();
     private readonly Dictionary<string, MonsterDeckRuleDefinition> mMonsterRulesByKey = new Dictionary<string, MonsterDeckRuleDefinition>();
+    private readonly Dictionary<string, RelicDefinition> mRelicsById = new Dictionary<string, RelicDefinition>();
+    private readonly Dictionary<string, RoomDefinition> mRoomsById = new Dictionary<string, RoomDefinition>();
     private readonly List<string> mValidationErrors = new List<string>();
 
     public bool IsLoaded { get; private set; }
@@ -355,6 +458,8 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         mCharactersById.Clear();
         mSkillsById.Clear();
         mMonsterRulesByKey.Clear();
+        mRelicsById.Clear();
+        mRoomsById.Clear();
 
         for (var i = 0; i < config.Cards.Count; i++)
         {
@@ -375,6 +480,16 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         {
             var rule = config.MonsterDeckRules[i];
             mMonsterRulesByKey[BuildRuleKey(rule.Layer, rule.NodeInLayer)] = rule;
+        }
+
+        for (var i = 0; i < config.Relics.Count; i++)
+        {
+            mRelicsById[config.Relics[i].RelicId] = config.Relics[i];
+        }
+
+        for (var i = 0; i < config.Rooms.Count; i++)
+        {
+            mRoomsById[config.Rooms[i].RoomId] = config.Rooms[i];
         }
 
         IsLoaded = true;
@@ -398,6 +513,63 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     public MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer)
     {
         return mMonsterRulesByKey[BuildRuleKey(layer, nodeInLayer)];
+    }
+
+    public IReadOnlyList<CardDefinition> GetAllHelpCardDefinitions()
+    {
+        var result = new List<CardDefinition>();
+        foreach (var card in mCardsById.Values)
+        {
+            if (card.CardType == CardType.Help)
+            {
+                result.Add(card);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality)
+    {
+        var result = new List<CardDefinition>();
+        foreach (var card in mCardsById.Values)
+        {
+            if (card.CardType == CardType.Help && card.Quality == quality)
+            {
+                result.Add(card);
+            }
+        }
+
+        return result;
+    }
+
+    public bool TryGetCardDefinition(string cardId, out CardDefinition definition)
+    {
+        return mCardsById.TryGetValue(cardId, out definition);
+    }
+
+    public RelicDefinition GetRelicDefinition(string relicId)
+    {
+        return mRelicsById[relicId];
+    }
+
+    public RoomDefinition GetRoomDefinition(string roomId)
+    {
+        return mRoomsById[roomId];
+    }
+
+    public IReadOnlyList<CardDefinition> GetCardsByType(CardType cardType)
+    {
+        var result = new List<CardDefinition>();
+        foreach (var card in mCardsById.Values)
+        {
+            if (card.CardType == cardType)
+            {
+                result.Add(card);
+            }
+        }
+
+        return result;
     }
 
     private static string BuildRuleKey(int layer, int nodeInLayer)
@@ -456,5 +628,47 @@ public sealed class FlowModel : AbstractModel, IFlowModel
     {
         mPhase.Value = FlowPhase.None;
         mActiveLocks.Clear();
+    }
+}
+
+public interface IRewardModel : IModel
+{
+    List<string> HelpRewardCardIds { get; }
+    List<string> ChestRewardRelicIds { get; }
+    List<string> TutorSkillIds { get; }
+    List<string> ShopCardIds { get; }
+    List<string> RoomCandidateIds { get; }
+    RewardSource CurrentRewardSource { get; set; }
+    void Clear();
+}
+
+public sealed class RewardModel : AbstractModel, IRewardModel
+{
+    private readonly List<string> mHelpRewardCardIds = new List<string>();
+    private readonly List<string> mChestRewardRelicIds = new List<string>();
+    private readonly List<string> mTutorSkillIds = new List<string>();
+    private readonly List<string> mShopCardIds = new List<string>();
+    private readonly List<string> mRoomCandidateIds = new List<string>();
+
+    public List<string> HelpRewardCardIds => mHelpRewardCardIds;
+    public List<string> ChestRewardRelicIds => mChestRewardRelicIds;
+    public List<string> TutorSkillIds => mTutorSkillIds;
+    public List<string> ShopCardIds => mShopCardIds;
+    public List<string> RoomCandidateIds => mRoomCandidateIds;
+    public RewardSource CurrentRewardSource { get; set; }
+
+    protected override void OnInit()
+    {
+        Clear();
+    }
+
+    public void Clear()
+    {
+        mHelpRewardCardIds.Clear();
+        mChestRewardRelicIds.Clear();
+        mTutorSkillIds.Clear();
+        mShopCardIds.Clear();
+        mRoomCandidateIds.Clear();
+        CurrentRewardSource = RewardSource.None;
     }
 }

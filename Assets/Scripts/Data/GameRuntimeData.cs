@@ -60,7 +60,13 @@ public enum FlowPhase
     CombatResolving,
     BoardRefilling,
     ClearReady,
-    GameOver
+    RoomChoosing,
+    HelpRewardChoosing,
+    ChestRewardChoosing,
+    TutorSkillChoosing,
+    Shop,
+    GameOver,
+    Victory
 }
 
 public enum InputLockReason
@@ -68,7 +74,9 @@ public enum InputLockReason
     BoardRefillRunning,
     CombatResolving,
     BoardMoving,
-    OverlayVisible
+    OverlayVisible,
+    RewardOverlay,
+    ShopOverlay
 }
 
 public enum InteractionKind
@@ -92,6 +100,22 @@ public enum PendingHelpCardActionKind
     None,
     ThrowingKnifeTarget,
     AttributeChoice
+}
+
+public enum RewardSource
+{
+    None,
+    NodeClear,
+    ChestCard,
+    EliteKill,
+    Room
+}
+
+public enum ChestTier
+{
+    Normal,
+    Blue,
+    Gold
 }
 
 public enum AttributeUpgradeChoice
@@ -269,6 +293,8 @@ public sealed class GameConfigDatabase : ScriptableObject
     public List<CardDefinition> Cards = new List<CardDefinition>();
     public List<SkillDefinition> Skills = new List<SkillDefinition>();
     public List<MonsterDeckRuleDefinition> MonsterDeckRules = new List<MonsterDeckRuleDefinition>();
+    public List<RelicDefinition> Relics = new List<RelicDefinition>();
+    public List<RoomDefinition> Rooms = new List<RoomDefinition>();
 
     public GameConfigSet ToConfigSet()
     {
@@ -277,6 +303,8 @@ public sealed class GameConfigDatabase : ScriptableObject
         config.Cards.AddRange(Cards);
         config.Skills.AddRange(Skills);
         config.MonsterDeckRules.AddRange(MonsterDeckRules);
+        config.Relics.AddRange(Relics);
+        config.Rooms.AddRange(Rooms);
         return config;
     }
 }
@@ -287,6 +315,8 @@ public sealed class GameConfigSet
     public List<CardDefinition> Cards { get; } = new List<CardDefinition>();
     public List<SkillDefinition> Skills { get; } = new List<SkillDefinition>();
     public List<MonsterDeckRuleDefinition> MonsterDeckRules { get; } = new List<MonsterDeckRuleDefinition>();
+    public List<RelicDefinition> Relics { get; } = new List<RelicDefinition>();
+    public List<RoomDefinition> Rooms { get; } = new List<RoomDefinition>();
 }
 
 public sealed class CardRuntime
@@ -405,4 +435,157 @@ public struct InteractionResult
     public InteractionKind Kind;
     public CardUid TargetUid;
     public string Reason;
+}
+
+public enum RewardContext
+{
+    NodeClear,
+    Chest,
+    Shop,
+    Tutor
+}
+
+public struct DeckCapacity
+{
+    public DeckCapacity(int maxTotal, int sameNameLimit)
+    {
+        MaxTotal = maxTotal;
+        SameNameLimit = sameNameLimit;
+    }
+
+    public int MaxTotal;
+    public int SameNameLimit;
+
+    public static DeckCapacity ForLayer(int layer)
+    {
+        switch (layer)
+        {
+            case 1: return new DeckCapacity(12, 3);
+            case 2: return new DeckCapacity(18, 3);
+            default: return new DeckCapacity(24, 3);
+        }
+    }
+}
+
+public sealed class HelpRewardCandidate
+{
+    public string CardId;
+    public string DisplayName;
+    public CardQuality Quality;
+    public int Price;
+}
+
+public sealed class ShopItem
+{
+    public string CardId;
+    public string DisplayName;
+    public CardQuality Quality;
+    public int Price;
+    public bool IsSold;
+}
+
+[Serializable]
+public sealed class RelicDefinition
+{
+    public string RelicId;
+    public string DisplayName;
+    public CardQuality Quality;
+    public int StatAttackBonus;
+    public int StatDefenseBonus;
+    public int StatMaxHpBonus;
+    public bool IsOneShot;
+    public bool ExcludeFromPool;
+    public string TriggerDescription;
+}
+
+[Serializable]
+public sealed class RoomDefinition
+{
+    public string RoomId;
+    public string DisplayName;
+    public RoomType RoomType;
+    public int RewardGold;
+    public string InjectCardId;
+}
+
+[Serializable]
+public sealed class RelicInstance
+{
+    public string RelicId;
+    public string DisplayName;
+    public CardQuality Quality;
+    public int StatAttackBonus;
+    public int StatDefenseBonus;
+    public int StatMaxHpBonus;
+    public bool IsOneShot;
+    public bool HasTriggered;
+
+    public static RelicInstance FromDefinition(RelicDefinition definition)
+    {
+        return new RelicInstance
+        {
+            RelicId = definition.RelicId,
+            DisplayName = definition.DisplayName,
+            Quality = definition.Quality,
+            StatAttackBonus = definition.StatAttackBonus,
+            StatDefenseBonus = definition.StatDefenseBonus,
+            StatMaxHpBonus = definition.StatMaxHpBonus,
+            IsOneShot = definition.IsOneShot,
+            HasTriggered = false
+        };
+    }
+}
+
+public enum RoomRewardCardId
+{
+    None,
+    GoldCard,
+    ChestCard,
+    AttributeCard
+}
+
+public static class RewardConstants
+{
+    public const int UnusedHelpCardGold = 10;
+    public const int SkipHelpRewardGold = 10;
+    public const int SkipChestRewardGold = 20;
+    public const int DeleteHelpCardGold = 10;
+    public const int DiscardRelicGold = 20;
+    public const int MonsterKillGold = 5;
+    public const int MaxRelicSlots = 12;
+    public const int ShopDisplayCount = 6;
+    public const int HelpRewardCandidateCount = 3;
+    public const int ChestRewardCandidateCount = 3;
+
+    public static readonly float[] HelpRewardQualityWeights = { 65f, 30f, 5f, 0f };
+    public static readonly float[] NormalChestQualityWeights = { 65f, 30f, 5f };
+    public static readonly float[] BlueChestQualityWeights = { 50f, 50f, 10f };
+    public static readonly float[] GoldChestQualityWeights = { 0f, 50f, 50f };
+}
+
+[Serializable]
+public sealed class WeightedItem<T>
+{
+    public T Value;
+    public float Weight;
+
+    public WeightedItem(T value, float weight)
+    {
+        Value = value;
+        Weight = weight;
+    }
+}
+
+public sealed class ChestRewardCandidate
+{
+    public string RelicId;
+    public string DisplayName;
+    public CardQuality Quality;
+}
+
+public sealed class RelicRuntime
+{
+    public string RelicId;
+    public string DisplayName;
+    public bool IsConsumed;
 }

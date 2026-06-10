@@ -32,6 +32,7 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterModel<ICollectionModel>(new CollectionModel());
         RegisterModel<IConfigModel>(new ConfigModel());
         RegisterModel<IFlowModel>(new FlowModel());
+        RegisterModel<IRewardModel>(new RewardModel());
 
         RegisterSystem<IRunSystem>(new RunSystem());
         RegisterSystem<ILevelFlowSystem>(new LevelFlowSystem());
@@ -41,6 +42,9 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterSystem<IStatSystem>(new StatSystem());
         RegisterSystem<IEffectSystem>(new EffectSystem());
         RegisterSystem<IInputLockSystem>(new InputLockSystem());
+        RegisterSystem<IRewardSystem>(new RewardSystem());
+        RegisterSystem<IRelicSystem>(new RelicSystem());
+        RegisterSystem<IShopSystem>(new ShopSystem());
     }
 
     protected override void ExecuteCommand(ICommand command)

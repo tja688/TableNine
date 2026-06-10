@@ -8,6 +8,8 @@ public static class ConfigValidator
         var cardIds = new HashSet<string>();
         var skillIds = new HashSet<string>();
         var characterIds = new HashSet<string>();
+        var relicIds = new HashSet<string>();
+        var roomIds = new HashSet<string>();
 
         for (var i = 0; i < config.Cards.Count; i++)
         {
@@ -64,6 +66,15 @@ public static class ConfigValidator
             }
         }
 
+        for (var i = 0; i < config.Relics.Count; i++)
+        {
+            var relic = config.Relics[i];
+            if (string.IsNullOrWhiteSpace(relic.RelicId) || !relicIds.Add(relic.RelicId))
+            {
+                errors.Add($"Duplicate or empty relicId: {relic.RelicId}");
+            }
+        }
+
         for (var i = 0; i < config.MonsterDeckRules.Count; i++)
         {
             var rule = config.MonsterDeckRules[i];
@@ -84,6 +95,25 @@ public static class ConfigValidator
                 {
                     errors.Add($"Monster deck rule {rule.Layer}-{rule.NodeInLayer} references missing cardId: {cardId}");
                 }
+            }
+        }
+
+        for (var i = 0; i < config.Rooms.Count; i++)
+        {
+            var room = config.Rooms[i];
+            if (string.IsNullOrWhiteSpace(room.RoomId) || !roomIds.Add(room.RoomId))
+            {
+                errors.Add($"Duplicate or empty roomId: {room.RoomId}");
+            }
+
+            if (room.RoomType == RoomType.None)
+            {
+                errors.Add($"Room {room.RoomId} has RoomType None.");
+            }
+
+            if (!string.IsNullOrEmpty(room.InjectCardId) && !cardIds.Contains(room.InjectCardId))
+            {
+                errors.Add($"Room {room.RoomId} references missing injectCardId: {room.InjectCardId}");
             }
         }
 

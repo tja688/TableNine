@@ -703,3 +703,364 @@ public sealed class ConsumeHelpCardCommand : AbstractCommand
         state.IsPermanentlyRemoved = PermanentlyRemove;
     }
 }
+
+// ============================================================
+// M3: Reward Loop Commands
+// ============================================================
+
+public sealed class ChooseRoomCommand : AbstractCommand
+{
+    public ChooseRoomCommand(string roomId)
+    {
+        RoomId = roomId;
+    }
+
+    public string RoomId { get; }
+
+    protected override void OnExecute()
+    {
+        var configModel = this.GetModel<IConfigModel>();
+        var flowModel = this.GetModel<IFlowModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+
+        // 1. Settle unused help cards (+10 gold each)
+        rewardSystem.SettleUnusedHelpCards();
+
+        // 2. Restore help deck snapshot (temp removed cards come back)
+        rewardSystem.RestoreHelpDeckSnapshot();
+
+        // 3. Clear item slots
+        for (var i = 0; i < deckModel.ItemSlots.Length; i++)
+        {
+            if (deckModel.ItemSlots[i].HasValue)
+            {
+                var uid = deckModel.ItemSlots[i].Value;
+                if (collectionModel.TryGetCard(uid, out var card))
+                {
+                    card.ItemSlotIndex = null;
+                }
+                deckModel.ItemSlots[i] = null;
+            }
+        }
+
+        // 4. Get room definition and apply effect
+        var roomDef = configModel.GetRoomDefinition(RoomId);
+        this.SendEvent(new RoomChosenEvent(RoomId, roomDef.RoomType));
+
+        switch (roomDef.RoomType)
+        {
+            case RoomType.Gold:
+                playerModel.Gold.Value += roomDef.RewardGold;
+                this.SendEvent(new GameplayMessageEvent($"金币房：获得 {roomDef.RewardGold} 金币。"));
+                // After gold room, go to help reward
+                flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+                rewardSystem.GenerateHelpRewardCandidates();
+                this.SendEvent(new HelpRewardGeneratedEvent(
+                    this.GetModel<IRewardModel>().HelpRewardCardIds));
+                break;
+
+            case RoomType.Chest:
+                flowModel.SetPhase(FlowPhase.ChestRewardChoosing);
+                this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
+                this.SendEvent(new ChestRewardGeneratedEvent(
+                    this.GetModel<IRewardModel>().ChestRewardRelicIds));
+                break;
+
+            case RoomType.Attribute:
+                if (!string.IsNullOrEmpty(roomDef.InjectCardId))
+                {
+                    var attrDef = configModel.GetCardDefinition(roomDef.InjectCardId);
+                    var attrRuntime = collectionModel.CreateCard(attrDef);
+                    deckModel.OwnedHelpCards.Add(attrRuntime.Uid);
+                    deckModel.HelpCardStates[attrRuntime.Uid.Value] = new HelpCardState
+                    {
+                        Uid = attrRuntime.Uid,
+                        DefinitionId = attrRuntime.DefinitionId
+                    };
+                    this.SendEvent(new GameplayMessageEvent($"属性房：获得 {attrDef.DisplayName}。"));
+                }
+                flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+                rewardSystem.GenerateHelpRewardCandidates();
+                this.SendEvent(new HelpRewardGeneratedEvent(
+                    this.GetModel<IRewardModel>().HelpRewardCardIds));
+                break;
+
+            case RoomType.Shop:
+                flowModel.SetPhase(FlowPhase.Shop);
+                this.GetSystem<IShopSystem>().GenerateShopCards();
+                this.SendEvent(new ShopOpenedEvent(
+                    this.GetModel<IRewardModel>().ShopCardIds));
+                break;
+        }
+    }
+}
+
+public sealed class GenerateHelpRewardCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var flowModel = this.GetModel<IFlowModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var rewardModel = this.GetModel<IRewardModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+
+        rewardModel.CurrentRewardSource = RewardSource.NodeClear;
+        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        inputLockSystem.Lock(InputLockReason.OverlayVisible);
+
+        rewardSystem.GenerateHelpRewardCandidates();
+        this.SendEvent(new HelpRewardGeneratedEvent(rewardModel.HelpRewardCardIds));
+    }
+}
+
+public sealed class PickHelpCardRewardCommand : AbstractCommand
+{
+    public PickHelpCardRewardCommand(string cardId)
+    {
+        CardId = cardId;
+    }
+
+    public string CardId { get; }
+
+    protected override void OnExecute()
+    {
+        var configModel = this.GetModel<IConfigModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        if (!rewardSystem.CanAddHelpCard(CardId))
+        {
+            this.SendEvent(new PopupRequestedEvent("帮助卡组已满或同名卡达到上限。"));
+            return;
+        }
+
+        var definition = configModel.GetCardDefinition(CardId);
+        var runtime = collectionModel.CreateCard(definition);
+        deckModel.OwnedHelpCards.Add(runtime.Uid);
+        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        {
+            Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId
+        };
+
+        this.SendEvent(new HelpRewardPickedEvent(CardId));
+        this.SendEvent(new GameplayMessageEvent($"获得帮助卡：{definition.DisplayName}。"));
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+        flowModel.SetPhase(FlowPhase.PlayerControl);
+    }
+}
+
+public sealed class SkipHelpRewardCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        playerModel.Gold.Value += 10;
+        this.SendEvent(new HelpRewardSkippedEvent(10));
+        this.SendEvent(new GameplayMessageEvent("跳过选卡，获得 10 金币。"));
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+        flowModel.SetPhase(FlowPhase.PlayerControl);
+    }
+}
+
+public sealed class PickRelicRewardCommand : AbstractCommand
+{
+    public PickRelicRewardCommand(string relicId)
+    {
+        RelicId = relicId;
+    }
+
+    public string RelicId { get; }
+
+    protected override void OnExecute()
+    {
+        var relicSystem = this.GetSystem<IRelicSystem>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        if (!relicSystem.AddRelic(RelicId))
+        {
+            return;
+        }
+
+        this.SendEvent(new RelicRewardPickedEvent(RelicId));
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+
+        // After chest, go to help reward
+        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
+        this.SendEvent(new HelpRewardGeneratedEvent(
+            this.GetModel<IRewardModel>().HelpRewardCardIds));
+    }
+}
+
+public sealed class SkipChestRewardCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        playerModel.Gold.Value += 20;
+        this.SendEvent(new ChestRewardSkippedEvent(20));
+        this.SendEvent(new GameplayMessageEvent("跳过宝箱，获得 20 金币。"));
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+
+        // After chest skip, go to help reward
+        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
+        this.SendEvent(new HelpRewardGeneratedEvent(
+            this.GetModel<IRewardModel>().HelpRewardCardIds));
+    }
+}
+
+public sealed class ProceedToNextNodeCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var runModel = this.GetModel<IRunModel>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        this.SendEvent(new NodeCompletedEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
+
+        var nextNode = runModel.NodeInLayer.Value + 1;
+        if (nextNode > 9)
+        {
+            flowModel.SetPhase(FlowPhase.Victory);
+            this.SendEvent(new GameplayMessageEvent("恭喜通关！"));
+            return;
+        }
+
+        this.SendEvent(new NodeAdvancedEvent(runModel.Layer.Value, runModel.NodeInLayer.Value, nextNode));
+        this.SendCommand(new StartNodeCommand(runModel.Layer.Value, nextNode));
+    }
+}
+
+public sealed class OpenShopCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var flowModel = this.GetModel<IFlowModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var shopSystem = this.GetSystem<IShopSystem>();
+        var rewardModel = this.GetModel<IRewardModel>();
+
+        flowModel.SetPhase(FlowPhase.Shop);
+        inputLockSystem.Lock(InputLockReason.OverlayVisible);
+
+        shopSystem.GenerateShopCards();
+        this.SendEvent(new ShopOpenedEvent(rewardModel.ShopCardIds));
+    }
+}
+
+public sealed class BuyHelpCardCommand : AbstractCommand
+{
+    public BuyHelpCardCommand(string cardId)
+    {
+        CardId = cardId;
+    }
+
+    public string CardId { get; }
+
+    protected override void OnExecute()
+    {
+        var shopSystem = this.GetSystem<IShopSystem>();
+        shopSystem.BuyHelpCard(CardId);
+    }
+}
+
+public sealed class DeleteHelpCardForGoldCommand : AbstractCommand
+{
+    public DeleteHelpCardForGoldCommand(CardUid helpCardUid)
+    {
+        HelpCardUid = helpCardUid;
+    }
+
+    public CardUid HelpCardUid { get; }
+
+    protected override void OnExecute()
+    {
+        var shopSystem = this.GetSystem<IShopSystem>();
+        shopSystem.DeleteHelpCardForGold(HelpCardUid);
+    }
+}
+
+public sealed class CloseShopCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var rewardModel = this.GetModel<IRewardModel>();
+
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+
+        // After shop, go to help reward
+        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        rewardSystem.GenerateHelpRewardCandidates();
+        this.SendEvent(new HelpRewardGeneratedEvent(rewardModel.HelpRewardCardIds));
+    }
+}
+
+public sealed class DiscardRelicCommand : AbstractCommand
+{
+    public DiscardRelicCommand(string relicId)
+    {
+        RelicId = relicId;
+    }
+
+    public string RelicId { get; }
+
+    protected override void OnExecute()
+    {
+        var relicSystem = this.GetSystem<IRelicSystem>();
+        relicSystem.DiscardRelic(RelicId);
+    }
+}
+
+public sealed class ChooseTutorSkillCommand : AbstractCommand
+{
+    public ChooseTutorSkillCommand(string skillId)
+    {
+        SkillId = skillId;
+    }
+
+    public string SkillId { get; }
+
+    protected override void OnExecute()
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        var configModel = this.GetModel<IConfigModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        // Player skills: same skill can't stack
+        for (var i = 0; i < playerModel.SkillIds.Count; i++)
+        {
+            if (playerModel.SkillIds[i] == SkillId)
+            {
+                this.SendEvent(new PopupRequestedEvent("已拥有该技能，无法叠加。"));
+                return;
+            }
+        }
+
+        var skillDef = configModel.GetSkillDefinition(SkillId);
+        playerModel.AddSkill(SkillId);
+
+        this.SendEvent(new TutorSkillChosenEvent(SkillId));
+        this.SendEvent(new GameplayMessageEvent($"获得导师技能：{skillDef.DisplayName}。"));
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+        flowModel.SetPhase(FlowPhase.PlayerControl);
+    }
+}
