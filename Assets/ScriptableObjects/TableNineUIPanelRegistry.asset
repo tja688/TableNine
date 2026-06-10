@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 536ce8f2d032d6a4bb459a4f527f9f85, type: 3}
+  m_Name: TableNineUIPanelRegistry
+  m_EditorClassIdentifier: 
+  mPanels:
+  - PanelName: UIGameplayPanel
+    Prefab: {fileID: 4317091551158353275, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
+  - PanelName: UIChoiceOverlayPanel
+    Prefab: {fileID: 668905997758617994, guid: 2b50261c453f15d46bd4d0480b85a456, type: 3}
+  - PanelName: UIPopupPanel
+    Prefab: {fileID: 625411929159349806, guid: 0fd30bb79a90e0044bea99a4bf9381dc, type: 3}

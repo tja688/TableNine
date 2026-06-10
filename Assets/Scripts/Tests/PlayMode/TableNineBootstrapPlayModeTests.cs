@@ -1,5 +1,6 @@
 using System.Collections;
 using NUnit.Framework;
+using QFramework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -38,5 +39,17 @@ public sealed class TableNineBootstrapPlayModeTests
 
         Assert.That(TableNine.IsInitialized, Is.True);
         Assert.That(TableNine.Current, Is.Not.Null);
+    }
+
+    [UnityTest]
+    public IEnumerator BootstrapScene_Opens_GameplayPanel_With_UIKit()
+    {
+        yield return SceneManager.LoadSceneAsync("TableNineBootstrap", LoadSceneMode.Single);
+        yield return null;
+
+        Assert.That(UIKit.GetPanel<UIGameplayPanel>(), Is.Not.Null);
+        Assert.That(GameObject.Find("DeckCountText"), Is.Null);
+        Assert.That(GameObject.Find("ClearBanner"), Is.Null);
+        Assert.That(GameObject.Find("AttributeChoiceOverlay"), Is.Null);
     }
 }

@@ -258,6 +258,7 @@ public sealed class PickHelpCardToItemSlotCommand : AbstractCommand
         var itemSlotIndex = deckModel.FindFirstEmptyItemSlot();
         if (itemSlotIndex < 0)
         {
+            this.SendEvent(new PopupRequestedEvent("道具牌格已满。"));
             return;
         }
 
@@ -276,6 +277,8 @@ public sealed class PickHelpCardToItemSlotCommand : AbstractCommand
             state.IsOnBoard = false;
             state.IsInItemSlot = true;
         }
+
+        this.SendEvent(new ItemSlotChangedEvent(itemSlotIndex, HelpCardUid));
     }
 }
 
@@ -540,6 +543,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.AttributeChoice;
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 this.SendEvent(new GameplayMessageEvent("属性提升卡：请选择要提升的属性。"));
+                this.SendEvent(new AttributeChoiceRequestedEvent(HelpCardUid));
                 break;
             case DefaultGameConfigFactory.HelpCommonChestId:
                 playerModel.Gold.Value += 20;
@@ -647,6 +651,7 @@ public sealed class ResolveAttributeChoiceCommand : AbstractCommand
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
 
         this.SendEvent(new GameplayMessageEvent(message));
+        this.SendEvent(new AttributeChoiceResolvedEvent(helpCardUid, Choice));
         this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
     }
 }
@@ -679,7 +684,9 @@ public sealed class ConsumeHelpCardCommand : AbstractCommand
 
         if (helpRuntime.ItemSlotIndex.HasValue)
         {
+            var itemSlotIndex = helpRuntime.ItemSlotIndex.Value;
             deckModel.ItemSlots[helpRuntime.ItemSlotIndex.Value] = null;
+            this.SendEvent(new ItemSlotChangedEvent(itemSlotIndex, null));
         }
 
         helpRuntime.BoardSlot = null;
