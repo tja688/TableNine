@@ -15,7 +15,10 @@
 
 ## 技术框架
 
-项目框架采用 `QFramework`。项目本地代码入口在：Assets/Scripts，QFramework框架代码入口在：Assets/QFramework。
+项目框架采用 `QFramework`。
+项目本地代码入口在：Assets/Scripts，QFramework框架代码入口在：Assets/QFramework。
+在QFramework范式开发过程中遇到问题可以简单参考：Assets/Notes/QframeworkNotes/QFramework_Docs_用户手册.md，注意手册体量较大，根据目录查找即可
+在Assets/Notes/QframeworkNotes/QFramework_Docs_API.md 有QFramework API文档。
 
 ## 协作约定
 
@@ -24,6 +27,7 @@
 - 保持代码、命名和目录结构的统一性，方便后续协作与维护。
 - 项目有unity mcp，在落地实现时注意了解功能并辅助使用，如果发现无法使用再回退你认为合适的开发形式。
 - 项目已经初始化codegraph，在有代码查询需求，架构了解需求的情况下可以利用codegraph mcp进行了解。
+- 项目预制体路径在Assets/Prefabs，.asset的ScriptableObject在Assets/ScriptableObjects，正常来说你调用素材进行开发或者沉淀素材到资产一般只会涉及这两个路径，如果有其他资产生成落地注意说明。
 
 ## 维护要求
 
