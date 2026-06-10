@@ -31,6 +31,16 @@ MonoBehaviour:
     serializationDepthLimit: 64
     assemblyNames:
     - Assembly-CSharp-firstpass
+    - AudioKit
+    - MCPForUnity.Runtime
+    - QFramework
+    - QFramework.CoreKit
+    - ResKit
+    - SupportOldQF
+    - TableNine.Runtime
+    - TableNine.Tests.PlayMode
+    - UIKit
+    - YarnSpinner.Unity
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0
   autoUpdateReferences: 1
