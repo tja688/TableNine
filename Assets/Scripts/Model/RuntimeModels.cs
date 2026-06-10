@@ -148,6 +148,7 @@ public interface IDeckModel : IModel
     Queue<CardUid> BattleDrawPile { get; }
     CardUid?[] ItemSlots { get; }
     HelpDeckSnapshot NodeStartSnapshot { get; set; }
+    PendingHelpCardAction PendingHelpCardAction { get; }
     BindableProperty<CardPreview> NextBattleCardPreview { get; }
     bool RefillRunning { get; set; }
     bool RefillPending { get; set; }
@@ -163,6 +164,7 @@ public sealed class DeckModel : AbstractModel, IDeckModel
     private readonly Queue<CardUid> mDemonDeckQueue = new Queue<CardUid>();
     private readonly Queue<CardUid> mBattleDrawPile = new Queue<CardUid>();
     private readonly CardUid?[] mItemSlots = new CardUid?[5];
+    private readonly PendingHelpCardAction mPendingHelpCardAction = new PendingHelpCardAction();
     private readonly BindableProperty<CardPreview> mNextBattleCardPreview = new BindableProperty<CardPreview>();
 
     public List<CardUid> OwnedHelpCards => mOwnedHelpCards;
@@ -171,6 +173,7 @@ public sealed class DeckModel : AbstractModel, IDeckModel
     public Queue<CardUid> BattleDrawPile => mBattleDrawPile;
     public CardUid?[] ItemSlots => mItemSlots;
     public HelpDeckSnapshot NodeStartSnapshot { get; set; } = new HelpDeckSnapshot();
+    public PendingHelpCardAction PendingHelpCardAction => mPendingHelpCardAction;
     public BindableProperty<CardPreview> NextBattleCardPreview => mNextBattleCardPreview;
     public bool RefillRunning { get; set; }
     public bool RefillPending { get; set; }
@@ -204,6 +207,7 @@ public sealed class DeckModel : AbstractModel, IDeckModel
             state.IsTemporarilyRemoved = false;
         }
 
+        mPendingHelpCardAction.Clear();
         NextBattleCardPreview.Value = CardPreview.Empty;
         RefillRunning = false;
         RefillPending = false;

@@ -87,6 +87,20 @@ public enum CardPlacementSource
     Refill
 }
 
+public enum PendingHelpCardActionKind
+{
+    None,
+    ThrowingKnifeTarget,
+    AttributeChoice
+}
+
+public enum AttributeUpgradeChoice
+{
+    Attack,
+    Defense,
+    MaxHp
+}
+
 [Serializable]
 public struct CardUid : IEquatable<CardUid>
 {
@@ -333,6 +347,20 @@ public sealed class HelpDeckSnapshot
         }
 
         return clone;
+    }
+}
+
+public sealed class PendingHelpCardAction
+{
+    public CardUid HelpCardUid;
+    public PendingHelpCardActionKind Kind;
+
+    public bool IsActive => Kind != PendingHelpCardActionKind.None;
+
+    public void Clear()
+    {
+        HelpCardUid = default;
+        Kind = PendingHelpCardActionKind.None;
     }
 }
 

@@ -173,6 +173,19 @@ public sealed class ClickBoardSlotCommand : AbstractCommand
 
     protected override void OnExecute()
     {
+        var deckModel = this.GetModel<IDeckModel>();
+        if (deckModel.PendingHelpCardAction.IsActive)
+        {
+            switch (deckModel.PendingHelpCardAction.Kind)
+            {
+                case PendingHelpCardActionKind.ThrowingKnifeTarget:
+                    this.SendCommand(new ResolveThrowingKnifeTargetCommand(Slot));
+                    break;
+            }
+
+            return;
+        }
+
         var interaction = this.SendQuery(new CanInteractBoardSlotQuery(Slot));
         if (!interaction.CanInteract)
         {
@@ -195,6 +208,36 @@ public sealed class ClickBoardSlotCommand : AbstractCommand
                 this.SendCommand(new StartCombatCommand(interaction.TargetUid));
                 break;
         }
+    }
+}
+
+public sealed class ClickItemSlotCommand : AbstractCommand
+{
+    public ClickItemSlotCommand(int itemSlotIndex)
+    {
+        ItemSlotIndex = itemSlotIndex;
+    }
+
+    public int ItemSlotIndex { get; }
+
+    protected override void OnExecute()
+    {
+        var flowModel = this.GetModel<IFlowModel>();
+        if (flowModel.IsInputLocked)
+        {
+            return;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        if (deckModel.PendingHelpCardAction.IsActive ||
+            ItemSlotIndex < 0 ||
+            ItemSlotIndex >= deckModel.ItemSlots.Length ||
+            !deckModel.ItemSlots[ItemSlotIndex].HasValue)
+        {
+            return;
+        }
+
+        this.SendCommand(new UseHelpCardCommand(deckModel.ItemSlots[ItemSlotIndex].Value));
     }
 }
 
@@ -444,5 +487,212 @@ public sealed class CheckClearConditionCommand : AbstractCommand
             flowModel.SetPhase(FlowPhase.ClearReady);
             this.SendEvent(new LevelClearReadyEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
         }
+    }
+}
+
+public sealed class UseHelpCardCommand : AbstractCommand
+{
+    public UseHelpCardCommand(CardUid helpCardUid)
+    {
+        HelpCardUid = helpCardUid;
+    }
+
+    public CardUid HelpCardUid { get; }
+
+    protected override void OnExecute()
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(HelpCardUid, out var helpRuntime) || helpRuntime.CardType != CardType.Help)
+        {
+            return;
+        }
+
+        var configModel = this.GetModel<IConfigModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var flowModel = this.GetModel<IFlowModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var helpDefinition = configModel.GetCardDefinition(helpRuntime.DefinitionId);
+
+        switch (helpDefinition.CardId)
+        {
+            case DefaultGameConfigFactory.HelpPotionId:
+            {
+                var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
+                playerRuntime.CurrentHp += 10;
+                if (playerRuntime.CurrentHp > playerRuntime.MaxHp)
+                {
+                    playerRuntime.CurrentHp = playerRuntime.MaxHp;
+                }
+
+                this.SendEvent(new GameplayMessageEvent("恢复药水生效：恢复 10 点生命。"));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
+                break;
+            }
+            case DefaultGameConfigFactory.HelpThrowingKnifeId:
+                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
+                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.ThrowingKnifeTarget;
+                flowModel.SetPhase(FlowPhase.PlayerControl);
+                this.SendEvent(new GameplayMessageEvent("飞刀待命：请选择任意一只怪物。"));
+                break;
+            case DefaultGameConfigFactory.HelpAttributeUpId:
+                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
+                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.AttributeChoice;
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
+                this.SendEvent(new GameplayMessageEvent("属性提升卡：请选择要提升的属性。"));
+                break;
+            case DefaultGameConfigFactory.HelpCommonChestId:
+                playerModel.Gold.Value += 20;
+                this.SendEvent(new GameplayMessageEvent("普通宝箱卡暂以 20 金币替代遗物选择。"));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
+                break;
+            default:
+                this.SendEvent(new GameplayMessageEvent($"{helpDefinition.DisplayName} 暂未接入效果。"));
+                break;
+        }
+    }
+}
+
+public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
+{
+    public ResolveThrowingKnifeTargetCommand(BoardSlotNo slot)
+    {
+        Slot = slot;
+    }
+
+    public BoardSlotNo Slot { get; }
+
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        if (deckModel.PendingHelpCardAction.Kind != PendingHelpCardActionKind.ThrowingKnifeTarget)
+        {
+            return;
+        }
+
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var targetUid = boardModel.GetCardAt(Slot);
+        if (!targetUid.HasValue || !collectionModel.TryGetCard(targetUid.Value, out var targetRuntime) || targetRuntime.CardType != CardType.Monster)
+        {
+            return;
+        }
+
+        var helpCardUid = deckModel.PendingHelpCardAction.HelpCardUid;
+        deckModel.PendingHelpCardAction.Clear();
+
+        this.SendCommand(new ApplyDamageCommand(targetUid.Value, 6));
+        var targetDied = collectionModel.TryGetCard(targetUid.Value, out targetRuntime) && targetRuntime.CurrentHp <= 0;
+        if (targetDied)
+        {
+            this.SendCommand(new KillMonsterCommand(targetUid.Value));
+        }
+
+        this.SendEvent(new GameplayMessageEvent($"飞刀命中：{targetRuntime.DisplayName} 受到 6 点伤害。"));
+        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
+
+        if (targetDied)
+        {
+            this.SendCommand(new RequestRefillBoardCommand());
+        }
+        else
+        {
+            this.SendCommand(new CheckClearConditionCommand());
+        }
+    }
+}
+
+public sealed class ResolveAttributeChoiceCommand : AbstractCommand
+{
+    public ResolveAttributeChoiceCommand(AttributeUpgradeChoice choice)
+    {
+        Choice = choice;
+    }
+
+    public AttributeUpgradeChoice Choice { get; }
+
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        if (deckModel.PendingHelpCardAction.Kind != PendingHelpCardActionKind.AttributeChoice)
+        {
+            return;
+        }
+
+        var playerModel = this.GetModel<IPlayerModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
+        var message = string.Empty;
+
+        switch (Choice)
+        {
+            case AttributeUpgradeChoice.Attack:
+                playerRuntime.BaseAttack += 1;
+                message = "属性提升：攻击 +1。";
+                break;
+            case AttributeUpgradeChoice.Defense:
+                playerRuntime.BaseDefense += 1;
+                message = "属性提升：防御 +1。";
+                break;
+            case AttributeUpgradeChoice.MaxHp:
+                playerRuntime.MaxHp += 2;
+                playerRuntime.CurrentHp += 2;
+                message = "属性提升：生命上限和当前生命 +2。";
+                break;
+        }
+
+        var helpCardUid = deckModel.PendingHelpCardAction.HelpCardUid;
+        deckModel.PendingHelpCardAction.Clear();
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+
+        this.SendEvent(new GameplayMessageEvent(message));
+        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
+    }
+}
+
+public sealed class ConsumeHelpCardCommand : AbstractCommand
+{
+    public ConsumeHelpCardCommand(CardUid helpCardUid, bool permanentlyRemove)
+    {
+        HelpCardUid = helpCardUid;
+        PermanentlyRemove = permanentlyRemove;
+    }
+
+    public CardUid HelpCardUid { get; }
+    public bool PermanentlyRemove { get; }
+
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var boardSystem = this.GetSystem<IBoardSystem>();
+        if (!collectionModel.TryGetCard(HelpCardUid, out var helpRuntime))
+        {
+            return;
+        }
+
+        if (helpRuntime.BoardSlot.HasValue)
+        {
+            boardSystem.RemoveCardAt(helpRuntime.BoardSlot.Value);
+        }
+
+        if (helpRuntime.ItemSlotIndex.HasValue)
+        {
+            deckModel.ItemSlots[helpRuntime.ItemSlotIndex.Value] = null;
+        }
+
+        helpRuntime.BoardSlot = null;
+        helpRuntime.ItemSlotIndex = null;
+
+        if (!deckModel.HelpCardStates.TryGetValue(HelpCardUid.Value, out var state))
+        {
+            return;
+        }
+
+        state.IsOnBoard = false;
+        state.IsInItemSlot = false;
+        state.IsTemporarilyRemoved = !PermanentlyRemove;
+        state.IsPermanentlyRemoved = PermanentlyRemove;
     }
 }

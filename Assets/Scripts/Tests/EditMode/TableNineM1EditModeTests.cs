@@ -231,6 +231,65 @@ public sealed class TableNineM1EditModeTests
         Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.ClearReady));
     }
 
+    [Test]
+    public void Potion_Heals_10_And_Permanently_Removes()
+    {
+        StartRun(12345);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var potionUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpPotionId);
+        var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
+        playerRuntime.CurrentHp = 3;
+
+        TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(potionUid).ItemSlotIndex.Value));
+
+        Assert.That(playerRuntime.CurrentHp, Is.EqualTo(playerRuntime.MaxHp));
+        Assert.That(deckModel.HelpCardStates[potionUid.Value].IsPermanentlyRemoved, Is.True);
+        Assert.That(collectionModel.GetCard(potionUid).ItemSlotIndex.HasValue, Is.False);
+    }
+
+    [Test]
+    public void ThrowingKnife_Deals_6_Damage_Without_Adjacency_And_Permanently_Removes()
+    {
+        StartRun(12345);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var knifeUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpThrowingKnifeId);
+        var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(1));
+        var targetRuntime = collectionModel.GetCard(targetUid);
+        targetRuntime.CurrentHp = 7;
+
+        TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(knifeUid).ItemSlotIndex.Value));
+        TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(1)));
+
+        Assert.That(collectionModel.GetCard(targetUid).CurrentHp, Is.EqualTo(1));
+        Assert.That(deckModel.HelpCardStates[knifeUid.Value].IsPermanentlyRemoved, Is.True);
+        Assert.That(deckModel.PendingHelpCardAction.IsActive, Is.False);
+    }
+
+    [Test]
+    public void AttributeCard_Attack_Option_Adds_1_Attack()
+    {
+        StartRun(12345);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var playerRuntime = collectionModel.GetCard(TableNine.Interface.GetModel<IPlayerModel>().PlayerCardUid);
+        var cardUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+
+        TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(cardUid).ItemSlotIndex.Value));
+
+        Assert.That(deckModel.PendingHelpCardAction.Kind, Is.EqualTo(PendingHelpCardActionKind.AttributeChoice));
+        Assert.That(flowModel.HasLock(InputLockReason.OverlayVisible), Is.True);
+
+        TableNine.Interface.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Attack));
+
+        Assert.That(playerRuntime.BaseAttack, Is.EqualTo(4));
+        Assert.That(deckModel.HelpCardStates[cardUid.Value].IsPermanentlyRemoved, Is.True);
+        Assert.That(flowModel.HasLock(InputLockReason.OverlayVisible), Is.False);
+    }
+
     private static void StartRun(int seed)
     {
         TableNine.InitArchitecture();
@@ -309,6 +368,67 @@ public sealed class TableNineM1EditModeTests
         }
 
         Assert.Fail("Could not find a non-first-strike monster to move next to the player.");
+        return default;
+    }
+
+    private static CardUid MoveHelpCardToItemSlot(string definitionId)
+    {
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
+        {
+            var uid = deckModel.OwnedHelpCards[i];
+            var runtime = collectionModel.GetCard(uid);
+            if (runtime.DefinitionId != definitionId)
+            {
+                continue;
+            }
+
+            TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(uid));
+            return uid;
+        }
+
+        Assert.Fail($"Could not find help card {definitionId}.");
+        return default;
+    }
+
+    private static CardUid MoveAnyMonsterToSlot(BoardSlotNo targetSlot)
+    {
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var currentTarget = boardModel.GetCardAt(targetSlot);
+        if (currentTarget.HasValue)
+        {
+            boardSystem.RemoveCardAt(targetSlot);
+        }
+
+        for (var i = 1; i <= 9; i++)
+        {
+            var slot = new BoardSlotNo(i);
+            if (slot.Equals(targetSlot))
+            {
+                continue;
+            }
+
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue)
+            {
+                continue;
+            }
+
+            var runtime = collectionModel.GetCard(uid.Value);
+            if (runtime.CardType != CardType.Monster)
+            {
+                continue;
+            }
+
+            boardSystem.RemoveCardAt(slot);
+            boardSystem.PlaceCard(uid.Value, targetSlot, CardPlacementSource.Refill);
+            return uid.Value;
+        }
+
+        Assert.Fail($"Could not find a monster to move to slot {targetSlot.Value}.");
         return default;
     }
 }

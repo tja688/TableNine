@@ -20,14 +20,6 @@ public sealed class GameplayBootstrap : MonoBehaviour
         mBootstrapped = true;
 
         ResKit.Init();
-        _ = UIKit.Root;
         TableNine.InitArchitecture();
-
-        Debug.Log("TableNine architecture initialized");
-
-        if (Application.isEditor || Debug.isDebugBuild)
-        {
-            TableNine.Interface.SendCommand(new DebugPingCommand());
-        }
     }
 }

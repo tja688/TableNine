@@ -191,7 +191,10 @@ public sealed class CommandTraceUtility : ICommandTraceUtility
 
         var record = new CommandTraceRecord(state.Sequence, GetCommandType(command), "before", 0L, string.Empty);
         mRecords.Add(record);
-        Debug.Log(FormatMessage(record));
+        if (!Application.isPlaying)
+        {
+            Debug.Log(FormatMessage(record));
+        }
     }
 
     private void AfterInternal(object command, string detail)
@@ -201,7 +204,10 @@ public sealed class CommandTraceUtility : ICommandTraceUtility
         var sequence = state?.Sequence ?? -1;
         var record = new CommandTraceRecord(sequence, GetCommandType(command), "after", elapsedMilliseconds, detail);
         mRecords.Add(record);
-        Debug.Log(FormatMessage(record));
+        if (!Application.isPlaying)
+        {
+            Debug.Log(FormatMessage(record));
+        }
     }
 
     private TraceState PopState(object command)

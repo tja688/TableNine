@@ -71,3 +71,13 @@ public readonly struct LevelClearReadyEvent
     public int Layer { get; }
     public int NodeInLayer { get; }
 }
+
+public readonly struct GameplayMessageEvent
+{
+    public GameplayMessageEvent(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
+}
