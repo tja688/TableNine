@@ -1,795 +1,1234 @@
 # Plan.md
 
-> 目标：把《ArchitectureDesign.md》拆成可执行的落地阶段。  
-> 原则：先跑通规则闭环，再补全内容；先保证 Command/Model/System 可测，再接 UI/Anim；所有阶段都要能编译、能回放、能定位问题。
+> 项目：TableNine / 当前分支：`dev`  
+> 版本：2026-06-11 现阶段改造落地计划。  
+> 目标：基于现有 M1-M5 原型代码做修补、改造、优化，而不是推倒重来；先让新版规则稳定，再接 UI、动画、音效、Odin 效果资产和叙事表现。
 
 ---
 
-## 总体里程碑
+## 0. 当前判断
 
-| 里程碑 | 结果 | 验收标准 |
-|---|---|---|
-| M0：框架落地 | QFramework 架构入口、目录、模块接口、调试日志可用 | 空场景启动无报错；`TableNine` 初始化；Command 拦截能打印日志。 |
-| M1：规则沙盒 | 无完整 UI，也能在测试里跑九宫格/卡组/战斗 | EditMode 测试覆盖开局发牌、点击战斗、旋转、补牌、通关判断。 |
-| M2：首个可玩节点 | 第一节点可视化打通 | 场上 8 卡 + 玩家；可击杀怪物；可用基础帮助卡；可通关。 |
-| M3：奖励闭环 | 通关、房间、选卡、商店、宝箱、导师接入 | 通关后可继续使用帮助卡；房间选择后奖励流程正确；帮助卡快照恢复正确。 |
-| M4：一层可玩 | 第一层 9 节点、精英、层主可玩 | 第 5 节点精英、第 9 节点层主；击败后奖励注入正确。 |
-| M5：全 playtest | 3 层 27 节点，全部核心卡/怪/技能/遗物上线 | 可完整通关或失败；存档/读档/重放/Debug 面板可用。 |
-| M6：打磨与稳定 | 动画、音效、Yarn、错误兜底、数据校验 | 高频 Bug 可通过 seed + Command log 复现；内容表校验无 error。 |
+旧 Plan 的 M1-M5 不能再继续作为开发主线。当前真实状态应回退为：
+
+```text
+已具备：QFramework 架构骨架 + 九宫格/发牌/补牌/奖励/配置原型 + 一批 EditMode 测试
+未达标：新版属性护甲、伤害公式、帮助卡语义、通关顺序、完整战斗管线、技能/遗物触发、EffectSystem、跨会话存档、可复现重放、表现层事件
+```
+
+因此本 Plan 采用新的阶段命名：`R0-R9`。其中 R 表示 Refactor / Repair / Runtime，对应“现有代码改造”而不是旧 M 阶段的“从零建设”。
+
+执行原则：
+
+1. 每个阶段必须能编译。
+2. 每个规则阶段必须补 EditMode 测试。
+3. 不把 UI、动画、音频当作规则正确性的证据。
+4. 不继续扩大 `UseHelpCardCommand` 的硬编码 `switch`。
+5. 不继续用“攻击 - 防御”作为战斗伤害。
+6. 不继续用旧帮助卡语义：默认临时移除、标注永久移除。
+7. 不再宣称 M5 完成，直到全 playtest 运行时、存档、重放、Debug 都达标。
 
 ---
 
-## 阶段 0：工程与 QFramework 接入
+## 1. 总体路线图
+
+| 阶段 | 名称 | 核心结果 | 允许并行 |
+|---|---|---|---|
+| R0 | 基线冻结与回归保护 | 确认现有代码真实能力，建立新版回归测试入口 | 无 |
+| R1 | 数据结构迁移 | `restoreAfterNode`、`CurrentArmor`、`DamageContext`、新 Phase/Reason 落地 | 少量文档同步 |
+| R2 | 新版基础规则热修 | 护甲、伤害公式、帮助卡默认永久移除、通关顺序修正 | 原型 UI 小修 |
+| R3 | 战斗管线重建 | `CombatContext` / `DamageContext` / 并行伤害组 / 死亡预防 | 遗物配置整理 |
+| R4 | EffectSystem MVP | 帮助卡从硬编码迁入效果系统，先覆盖已实现卡与关键未实现卡 | Odin 数据结构设计 |
+| R5 | SkillSystem + Relic Runtime | 技能/遗物触发队列，荆棘甲、凤凰羽毛、套装、刺皮等上线 | Debug 面板扩充 |
+| R6 | 奖励/房间/商店收束 | 通关后帮助奖励→房间按钮→节点结束，房间语义稳定 | UI 结构细化 |
+| R7 | 存档、重放、Debug | EasySave、状态 Hash、Command replay、Bug report 可用 | PlayMode 测试 |
+| R8 | 表现层接入 | CardView、DOTween、AudioKit、ResKit、Overlay、Yarn 接入边界稳定 | 美术/音频资源导入 |
+| R9 | 全 playtest 验收 | 3 层 27 节点，核心卡/怪/技能/遗物、失败/胜利闭环 | 平衡与打磨 |
+
+推荐顺序：**R0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9**。  
+不建议 R8 大规模提前，因为表现层会强依赖 R2-R5 的事件和状态语义。
+
+---
+
+## 2. R0：基线冻结与回归保护
 
 ### 目标
 
-建立 Unity 2022.3 LTS + Built-in + QFramework 的基础工程，形成不会返工的目录、命名、编译边界。
+让后续 AI 明确“现在能复用什么、不能相信什么”，避免继续沿着旧 M5 结论开发。
 
 ### 任务
 
-1. 导入 QFramework Toolkits 到 `Assets/QFramework`。
-2. 建立 `Assets/Scripts` 平铺目录：`Model/System/Command/Event/Query/UI/Game/Utility/Anim/Data/Config/Tests`。
-3. 创建 `TableNine.cs`，继承 `Architecture<TableNine>`。
-4. 创建 Assembly Definition：
-   - `TableNine.Runtime`
-   - `TableNine.Tests.EditMode`
-   - `TableNine.Tests.PlayMode`
-   - 可选：`TableNine.Editor`
-5. 创建基础接口空壳：
-   - Models：`IRunModel`、`IPlayerModel`、`IBoardModel`、`IDeckModel`、`ICollectionModel`、`IConfigModel`、`IFlowModel`。
-   - Systems：`IRunSystem`、`ILevelFlowSystem`、`IBoardSystem`、`IDeckSystem`、`ICombatSystem`、`IStatSystem`、`IEffectSystem`。
-   - Utilities：`IRandomUtility`、`ISaveUtility`、`IConfigUtility`、`ISequenceUtility`。
-6. 覆盖 `TableNine.ExecuteCommand`，接入 `CommandTraceUtility`。
-7. 创建 `GameplayBootstrap`，在场景启动时初始化 ResKit、UIKit、TableNine。
+1. 本地拉取 `dev` 分支，确认 Unity 版本为 2022.3 LTS。
+2. 运行当前 EditMode 测试，记录通过/失败数量。
+3. 若本地无法运行 Unity 测试，至少执行代码级静态核查：
+   - `TableNine.cs` 注册项。
+   - `RuntimeCommands.cs` 中战斗、帮助卡、房间流程。
+   - `RuntimeSystems.cs` 中 Combat/Stat/Effect/Reward/Relic。
+   - `RuntimeModels.cs` 中 CardRuntime、DeckModel、FlowModel。
+4. 新建或更新一份阶段状态说明，明确旧 M5 回退为“配置就绪 / 运行时未完成”。
+5. 给现有测试分类打标签：
+   - `LegacyRuleTests`：旧规则下暂时保留，但后续需要改期望。
+   - `NewRuleTests`：新版规则测试。
+   - `RegressionTests`：与规则语义无关的工程回归。
+6. 禁止在 R0 之后继续新增依赖旧语义的测试。
+
+### 重点核查项
+
+- `CombatSystem.CalculateDamage` 是否仍为 `attacker.Attack - defender.Defense`。
+- `ApplyDamageCommand` 是否仍只扣 HP。
+- `UseHelpCardCommand` 是否仍大段 `switch(cardId)`。
+- `ConsumeHelpCardCommand` 是否仍要求调用方传 `permanentlyRemove`。
+- `CheckClearConditionCommand` 是否直接弹房间。
+- `ChooseRoomCommand` 是否承担了旧的“房间后帮助奖励”。
+- `EffectSystem` 是否仍为空。
+- `ISkillSystem` 是否未注册。
+- `MemorySaveUtility` 是否仍是默认存档实现。
 
 ### 产出
 
-- `TableNine.cs`
-- 基础目录与 asmdef
-- 空模块接口与实现
-- `CommandTraceUtility`
-- 一个空启动场景
+- 当前测试结果记录。
+- 新旧规则冲突列表。
+- 需要修改/废弃的旧测试列表。
+- 后续阶段任务确认。
 
 ### 验收
 
-- Unity 编译通过。
-- 运行空场景，Console 输出 Architecture 初始化完成。
-- 发送一个 `DebugPingCommand`，Command 拦截日志能显示 before/after。
+- 团队/AI 明确：旧 M5 不可再作为完成状态。
+- 后续开发入口改为本 Plan。
+- 不再出现“按旧 ArchitectureDesign 继续补 M6 表现”的任务描述。
 
 ---
 
-## 阶段 1：数据定义与配置加载
+## 3. R1：数据结构迁移
 
 ### 目标
 
-先把策划内容变成稳定 ID 和可校验配置，避免后续逻辑里硬编码中文名。
+先把新版规则需要的数据字段补齐，让 R2/R3 可以改逻辑而不是边改逻辑边补结构。
 
-### 任务
+### 任务 1：帮助卡配置语义迁移
 
-1. 创建基础枚举和值对象：`CardType`、`CardQuality`、`MonsterLevel`、`Suit`、`RoomType`、`FlowPhase`、`CardUid`、`BoardSlotNo`。
-2. 创建配置 DTO/ScriptableObject：
-   - `CardDefinition`
-   - `SkillDefinition`
-   - `RelicDefinition`
-   - `EffectGraphDefinition`
-   - `MonsterDeckRuleDefinition`
-   - `CharacterDefinition`
-   - `RoomDefinition`
-3. 建立第一批配置：
-   - 职业：小鬼。
-   - 帮助卡：恢复药水、飞刀、普通宝箱卡、属性提升卡。
-   - 怪物：无色卡、黑桃2、红桃2、方块2、梅花2。
-   - 技能：轻车熟路、先攻、四个幼崽技能。
-   - 遗物：木盾、木剑、木甲、活着的肉、荆棘甲、凤凰羽毛。
-4. `ConfigModel` 加载并建立索引。
-5. `IConfigUtility` 先用 Resources/ScriptableObject 直读；后续切 ResKit。
-6. 写配置校验器第一版：ID 唯一、引用存在、概率总和、帮助卡上限、遗物重复。
+1. 在 `CardDefinition` 中新增：
+
+```csharp
+public bool RestoreAfterNode;
+```
+
+2. 保留旧字段兼容期，但所有新逻辑读取 `RestoreAfterNode`。
+3. 配置加载时做迁移：
+
+```text
+如果旧配置只有 IsPermanentRemoveOnUse：
+RestoreAfterNode = !IsPermanentRemoveOnUse
+```
+
+4. `ConfigValidator` 增加 warning：新配置不应再依赖旧字段。
+5. 所有帮助卡默认 `RestoreAfterNode = false`。
+6. 仅卡面标注“使用后复原”的卡设置为 `true`。
+
+### 任务 2：运行态护甲字段
+
+1. 在 `CardRuntime` 中新增：
+
+```csharp
+public int CurrentArmor;
+```
+
+2. 创建统一修改方法或 Command：
+
+```csharp
+SetArmorCommand / ChangeArmorCommand
+ApplyStatChangeCommand
+```
+
+3. UI/Debug 暂时可以显示 0，但字段必须存在。
+4. 存档 DTO 预留 `currentArmor`。
+
+### 任务 3：有效属性扩展
+
+扩展 `EffectiveStats`：
+
+```csharp
+public int CurrentArmor;
+public int DamageReduction;
+```
+
+要求：
+
+- `Defense` 保留，用于显示和护甲生成。
+- `DamageReduction` 独立计算，不能复用 Defense。
+- 旧测试如果只断言 Attack/Defense/HP，不应被破坏。
+
+### 任务 4：DamageContext 引入
+
+新增：
+
+```csharp
+public enum DamageType
+{
+    Combat,
+    HelpCard,
+    Reflect,
+    Relic,
+    Skill,
+    Room,
+    Debug
+}
+```
+
+新增 `DamageContext`：
+
+```csharp
+public sealed class DamageContext
+{
+    public CardUid? Source;
+    public CardUid Target;
+    public string CauseId;
+    public DamageType Type;
+    public int RawAttack;
+    public int DamageReduction;
+    public int DamageBeforeArmor;
+    public int ArmorAbsorbed;
+    public int HpDamage;
+    public bool IgnoreArmor;
+    public bool Preventable = true;
+    public bool WasPrevented;
+    public bool WasFatalBeforePrevention;
+    public List<string> Tags = new List<string>();
+}
+```
+
+兼容包装：
+
+```csharp
+ApplyDamageCommand(CardUid targetUid, int damage)
+```
+
+短期保留，但内部转为 `DamageContext`。
+
+### 任务 5：流程 Phase 补齐
+
+检查并补充：
+
+- `RoomChoosing`
+- `RoomResolving`
+- `NodeEnding`
+- `LayerComplete`
+
+如果已有部分枚举，则对齐命名和含义。
+
+### 任务 6：事件和原因枚举预埋
+
+新增或补齐：
+
+- `RemoveReason`
+- `BoardMoveReason`
+- `HelpCardConsumeReason`
+- `DamageAppliedEvent` 新结构字段。
+- `ArmorChangedEvent`
+- `StatsDirtyEvent`
+- `FlowPhaseChangedEvent`
+- `InputLockChangedEvent`
 
 ### 产出
 
-- `Data/Definition` 相关类。
-- `Config/` 第一批资产。
-- `ConfigModel` 与 `ScriptableConfigUtility`。
-- `ConfigValidator`。
+- 新字段编译通过。
+- 旧逻辑暂未完全改，但新结构可用。
+- 配置校验能识别帮助卡消耗语义。
 
 ### 验收
 
-- 运行时能按 ID 取到小鬼、恢复药水、飞刀、无色卡。
-- 校验器能发现不存在的 skillId/effectGraphId。
-- 所有配置不通过中文名进行逻辑引用。
+- 新建卡实例时 `CurrentArmor == 0`。
+- 旧存档/旧配置不会因新增字段崩溃。
+- 新测试可以构造 `DamageContext`。
+- `CardDefinition.RestoreAfterNode` 是新逻辑唯一语义入口。
 
 ---
 
-## 阶段 2：运行态 Model 与 UID 体系
+## 4. R2：新版基础规则热修
 
 ### 目标
 
-建立玩家、卡实例、帮助卡 uid、牌堆、棋盘、流程状态。
+先修最会误导后续开发的四个核心规则：护甲、伤害公式、帮助卡默认永久移除、通关顺序。
 
-### 任务
+---
 
-1. 实现 `CollectionModel`：创建/查询/移除 `CardRuntime`。
-2. 实现 `PlayerModel`：金币、技能、遗物、玩家卡 uid、基础属性。
-3. 实现 `DeckModel`：
-   - 帮助卡组 owned list。
-   - 每张帮助卡唯一 uid。
-   - 节点开始快照。
-   - 战斗牌堆 Queue。
-   - 道具牌格 5 格。
-4. 实现 `BoardModel`：
-   - EasyGrid 3×3。
-   - 格 1~9 映射。
-   - 玩家位置。
-5. 实现 `RunModel` 与 `FlowModel`。
-6. 创建 `StartNewRunCommand`：从小鬼配置创建玩家与初始帮助卡组。
-7. 创建 EditMode 测试：
-   - uid 自增且唯一。
-   - 小鬼初始卡组数量与内容正确。
-   - 玩家出生格为 5。
+### R2-1：节点开始填护甲
 
-### 产出
+#### 任务
 
-- 全部核心 Model 初版。
-- `CardRuntime`、`HelpCardState`、`DeckRuntime`。
-- `StartNewRunCommand`。
+1. 在 `StatSystem` 增加：
+
+```csharp
+void FillArmorFromDefenseAtNodeStart();
+```
+
+2. `StartNodeCommand` 在玩家可交互前调用。
+3. 最小版先处理玩家卡；如果怪物也要显示/使用护甲，则在怪物创建后统一填充怪物护甲。
+4. 发送：
+
+```csharp
+ArmorChangedEvent(uid, oldArmor, newArmor, "node_start_defense")
+StatsDirtyEvent(uid)
+```
+
+#### 测试
+
+- 玩家基础防御为 2，节点开始后护甲为 2。
+- 有木盾/木甲加成时，护甲等于有效防御。
+- 下一节点开始会重新按有效防御填护甲，而不是继承上节点剩余护甲。
+
+#### 验收
+
+- `StartNewRunCommand` 进入第一节点后，Debug 可看到玩家护甲。
+- 护甲不影响攻击和血量上限。
+
+---
+
+### R2-2：获得防御同步加护甲
+
+#### 任务
+
+1. 所有增加防御的入口改走：
+
+```csharp
+ApplyStatChangeCommand(targetUid, StatType.Defense, delta, causeId)
+```
+
+2. 当 `delta > 0` 且属性为 Defense：
+
+```text
+BaseDefense 或临时 Defense 增加 delta
+CurrentArmor 增加 delta
+```
+
+3. 当获得血量上限：
+
+```text
+MaxHp += delta
+CurrentHp += delta
+```
+
+4. 所有属性最低 0。
+
+#### 测试
+
+- 属性提升选择防御：防御 +1，护甲也 +1。
+- 血量上限 +2：MaxHp +2，CurrentHp +2。
+- 负数变化不会让属性低于 0。
+
+#### 验收
+
+- 属性提升卡不再直接写 `playerRuntime.BaseDefense += 1`。
+
+---
+
+### R2-3：伤害先扣护甲再扣血
+
+#### 任务
+
+1. 重写 `ApplyDamageCommand`：
+
+```text
+如果 preventable 且被庇佑等免疫：WasPrevented=true，伤害归零
+如果 IgnoreArmor：HpDamage = DamageBeforeArmor
+否则：ArmorAbsorbed = min(CurrentArmor, DamageBeforeArmor)，剩余扣 Hp
+```
+
+2. `CurrentArmor` 与 `CurrentHp` 最低为 0。
+3. 发送更完整事件：
+
+```csharp
+DamageAppliedEvent(context)
+ArmorChangedEvent(...)
+StatsDirtyEvent(targetUid)
+```
+
+4. 旧 `DamageAppliedEvent(targetUid, damage)` 如果被 UI 使用，保留兼容构造或适配。
+
+#### 测试
+
+- 10 护甲受 3 伤害：护甲 7，血不变。
+- 2 护甲受 5 伤害：护甲 0，血 -3。
+- ignoreArmor 伤害：护甲不变，血扣伤害。
+- 0 或负伤害不扣任何值。
+
+#### 验收
+
+- 所有伤害入口都能走 `DamageContext`。
+
+---
+
+### R2-4：战斗公式热修
+
+#### 任务
+
+1. 将 `CombatSystem.CalculateDamage` 从：
+
+```text
+max(0, attacker.Attack - defender.Defense)
+```
+
+改为：
+
+```text
+max(0, attacker.Attack - defender.DamageReduction)
+```
+
+2. 更推荐改名：
+
+```csharp
+DamageContext BuildCombatDamage(CardUid source, CardUid target, string causeId)
+```
+
+3. Defense 不再作为扣伤害项。
+
+#### 测试
+
+- 怪物 Defense 99、DamageReduction 0，玩家 Attack 5，实际伤害仍为 5，再由护甲吸收。
+- 怪物 DamageReduction 2，玩家 Attack 5，实际伤害 3。
+- 玩家防御只影响节点开始护甲，不影响怪物攻击公式。
+
+#### 验收
+
+- 全库不再有战斗公式依赖 defender.Defense。
+
+---
+
+### R2-5：帮助卡默认永久移除
+
+#### 任务
+
+1. 改造 `ConsumeHelpCardCommand`：
+
+```text
+读取 CardDefinition.RestoreAfterNode
+true  -> state.IsTemporarilyRemoved = true
+false -> state.IsPermanentlyRemoved = true
+```
+
+2. 移除调用方传入 `permanentlyRemove` 的语义责任。
+3. 当前硬编码帮助卡调用全部改为：
+
+```csharp
+SendCommand(new ConsumeHelpCardCommand(helpUid, HelpCardConsumeReason.Used));
+```
+
+4. `RewardSystem.RestoreHelpDeckSnapshot` 改名或改逻辑为：
+
+```csharp
+RestoreHelpDeckSnapshotByRestoreAfterNode
+```
+
+5. 永久移除卡：节点结束不恢复，并从 Owned/State/Collection 清理。
+6. 临时移除卡：节点结束恢复为 Active。
+7. 未使用且仍在场上/道具格的卡：节点结束 +10 金币。
+
+#### 测试
+
+- 默认帮助卡使用后永久移除，下一节点不再出现。
+- `RestoreAfterNode=true` 的帮助卡使用后节点内移除，下一节点恢复。
+- 未使用帮助卡在节点结束提供 +10。
+- 节点内新获得帮助卡在节点结束后保留。
+
+#### 验收
+
+- 不再出现 `helpDefinition.IsPermanentRemoveOnUse` 作为新逻辑入口。
+
+---
+
+### R2-6：通关流程顺序重排
+
+#### 任务
+
+1. 改 `CheckClearConditionCommand`：
+
+当前：
+
+```text
+无怪物 -> ClearReady -> 生成房间候选 -> RoomChoiceRequestedEvent
+```
+
+目标：
+
+```text
+无怪物 -> ClearReady -> GenerateHelpRewardCommand
+```
+
+2. `GenerateHelpRewardCommand`：
+
+```text
+RewardSource = NodeClear
+FlowPhase = HelpRewardChoosing
+OverlayVisible lock = true
+HelpRewardGeneratedEvent
+```
+
+3. `PickHelpCardRewardCommand` / `SkipHelpRewardCommand` 完成后：
+
+```text
+关闭帮助奖励 Overlay
+进入 RoomChoosing
+生成 2 个房间候选
+发送 RoomChoiceRequestedEvent
+```
+
+4. `RoomChoosing` 不应锁住棋盘帮助卡交互。
+5. `ChooseRoomCommand` 顺序改为：
+
+```text
+FlowPhase = NodeEnding or RoomResolving
+SettleNodeEndHelpCardsCommand
+ResolveRoomCommand
+房间事件完成后 ProceedToNextNodeCommand
+```
+
+6. 如果房间会打开商店/宝箱 Overlay，则房间流程暂停，直到选择/关闭后再进入下一节点。
+
+#### 测试
+
+- 清场后第一事件是帮助奖励，不是房间选择。
+- 帮助奖励选择后进入 RoomChoosing。
+- RoomChoosing 阶段仍可拾取场上帮助卡。
+- RoomChoosing 阶段可使用道具帮助卡。
+- 点击房间后才结算未用帮助卡金币。
+- 房间候选数量为 2。
+
+#### 验收
+
+- 原型 UI 即使暂时粗糙，也必须按新顺序显示。
+
+---
+
+## 5. R3：战斗管线重建
+
+### 目标
+
+把 `StartCombatCommand` 从“直接双方扣血 + 旋转补牌”的大块逻辑改成可插入技能、遗物、帮助卡状态的管线。
+
+### 任务 1：拆 CombatContext
+
+新增：
+
+```csharp
+public sealed class CombatContext
+{
+    public CardUid PlayerUid;
+    public CardUid MonsterUid;
+    public EffectiveStats PlayerStats;
+    public EffectiveStats MonsterStats;
+    public bool PlayerActsFirst;
+    public List<DamageContext> FirstHitGroup;
+    public List<DamageContext> CounterHitGroup;
+    public CombatResult Result;
+}
+```
+
+### 任务 2：改造 StartCombatCommand
+
+目标流程：
+
+```text
+检查怪物存在与邻接
+Lock CombatResolving
+Set Phase CombatResolving
+Send CombatStartedEvent
+Build CombatContext
+Send ResolveCombatCommand(context)
+Unlock CombatResolving
+如果玩家死亡 -> GameOverCommand
+否则 -> CommitPlayerActionCommand
+```
+
+### 任务 3：ResolveCombatCommand
+
+管线：
+
+1. 触发 `OnBeforeCombat`。
+2. 计算先攻。
+3. 构建先手伤害组。
+4. 加入并行额外伤害：荆棘甲等。
+5. 一次性提交先手伤害组。
+6. DeathCheck。
+7. 目标存活则构建反击伤害组。
+8. 加入同步反伤：刺皮等。
+9. 一次性提交反击伤害组。
+10. DeathCheck。
+11. 触发 `OnAfterCombat`。
+12. KillSettlement。
+
+### 任务 4：并行伤害组
+
+并行含义：先计算同一组所有伤害，再统一 Apply。避免“先扣死导致另一段不触发”的串行偏差。
+
+示例：
+
+```text
+玩家先手伤害 + 荆棘甲额外伤害 -> 同一 FirstHitGroup
+怪物反击伤害 + 刺皮反伤 -> 同一 CounterHitGroup
+```
+
+### 任务 5：死亡预防
+
+新增 `ApplyDeathPreventCommand`，处理：
+
+- 凤凰羽毛：致命伤后恢复 50% MaxHp，遗物标记 consumed。
+- 未来其他免死效果。
+
+### 任务 6：动作提交统一
+
+新增 `CommitPlayerActionCommand`：
+
+```text
+如果当前阶段允许棋盘移动
+  -> RotateBoardClockwiseCommand
+  -> RequestRefillBoardCommand
+否则
+  -> CheckClearConditionCommand
+```
+
+战斗、拾取帮助卡、点击空格都应走这个统一收尾，而不是每个 Command 自己散写旋转/补牌。
+
+### 测试
+
+- 双方无先攻，玩家先。
+- 双方有先攻，玩家先。
+- 只有怪物先攻，怪物先。
+- 玩家先手击杀怪物，怪物不反击。
+- 怪物存活时一定反击。
+- 荆棘甲与玩家伤害同组。
+- 刺皮与怪物反击同组。
+- 玩家被致命伤，凤凰羽毛触发后不 GameOver。
+- 玩家无凤凰羽毛且 HP 为 0，进入 GameOverCommand。
+- 战斗结束只触发一次 CommitPlayerAction。
 
 ### 验收
 
-- 测试中执行新局后，玩家 HP/攻击/防御正确。
-- 初始帮助卡组生成 8 张独立 uid。
-- 棋盘只有玩家卡在格 5。
+- `StartCombatCommand` 不再直接包含所有伤害细节。
+- `KillMonsterCommand` 只做死亡结算，不负责先攻/反击判断。
+- 战斗事件足够驱动 UI/Anim/Audio。
 
 ---
 
-## 阶段 3：九宫格与开局发牌
+## 6. R4：EffectSystem MVP
 
 ### 目标
 
-跑通节点开始、恶魔卡组生成、3+3+2 发牌、下一张预览。
+停止帮助卡硬编码扩散，用最小可用 EffectSystem 承接帮助卡、遗物、技能、房间效果。
 
-### 任务
+### 范围控制
 
-1. 实现 `MonsterDeckRuleDefinition` 第一层第 1~2 节点。
-2. 实现 `DeckSystem.GenerateDemonDeck`：总数精确等于 `9 + X`。
-3. 实现 `StartNodeCommand`：
-   - 清理上个节点状态。
-   - 生成恶魔卡组。
-   - 保存帮助卡组快照。
-   - 重置棋盘。
-4. 实现 `DealOpeningCardsCommand`：帮助 3、恶魔 3、混洗、再抽 2。
-5. 实现 `BattleDeckChangedEvent` 与下一张预览。
-6. 实现棋盘事件：`CardPlacedEvent`、`BoardSlotChangedEvent`。
-7. 测试：
-   - 开局场上 8 张卡 + 玩家。
-   - 没有牌发到格 5。
-   - 战斗牌堆数量正确。
-   - 相同 seed 发牌结果一致。
+R4 不要求完整 Odin 可视化编辑器。先做纯 C# 注册表或 ScriptableObject 简单配置，保证规则入口统一。
 
-### 产出
+### 任务 1：EffectGraph 数据结构
 
-- `DeckSystem` 初版。
-- `StartNodeCommand`、`DealOpeningCardsCommand`。
-- 发牌测试。
+新增：
+
+```csharp
+public sealed class EffectGraphDefinition
+{
+    public string EffectGraphId;
+    public List<EffectAtomDefinition> Atoms;
+}
+
+public sealed class EffectAtomDefinition
+{
+    public string AtomType;
+    public Dictionary<string, string> Parameters;
+}
+```
+
+### 任务 2：EffectContext
+
+```csharp
+public sealed class EffectContext
+{
+    public EffectSource Source;
+    public CardUid? Caster;
+    public List<CardUid> Targets;
+    public BoardSlotNo? SourceSlot;
+    public Dictionary<string, object> Blackboard;
+    public List<string> Tags;
+}
+```
+
+### 任务 3：第一批 Atom
+
+必须先落地：
+
+1. `DamageAtom`
+2. `HealAtom`
+3. `AddGoldAtom`
+4. `ModifyStatAtom`
+5. `ConsumeHelpCardAtom`
+6. `OpenChoiceOverlayAtom`
+7. `AddCardToHelpDeckAtom`
+8. `InjectCardToBattleDeckAtom`
+
+第二批：
+
+1. `MoveBoardAtom`
+2. `SwapCardsAtom`
+3. `RemoveCardAtom`
+4. `ApplyStatusAtom`
+
+### 任务 4：迁移已实现帮助卡
+
+从 `UseHelpCardCommand` 的 `switch` 中迁出：
+
+| 帮助卡 | 迁移目标 |
+|---|---|
+| `help_potion` | `HealAtom + ConsumeHelpCardAtom` |
+| `help_throwing_knife` | `OpenTargeting + DamageAtom + ConsumeHelpCardAtom` |
+| `help_attribute_up` | `OpenChoiceOverlayAtom + ModifyStatAtom + ConsumeHelpCardAtom` |
+| `help_common_chest/help_chest/help_blue_chest/help_gold_chest` | `OpenChoiceOverlayAtom + ConsumeHelpCardAtom` |
+| `help_gold_card` | `AddGoldAtom + ConsumeHelpCardAtom` |
+| `help_blessing` | `ApplyStatusAtom + ConsumeHelpCardAtom` |
+
+### 任务 5：补齐关键未实现帮助卡
+
+按对战斗/流程影响排序：
+
+1. `help_fireball`：DamageAtom。
+2. `help_bomb`：范围 DamageAtom。
+3. `help_swap`：SwapCardsAtom。
+4. `help_spin_wheel`：MoveBoardAtom。
+5. `help_food`：HealAtom。
+6. `help_healing_spring`：Heal/MaxHp。
+7. `help_boulder`：RemoveCard/Damage。
+8. `help_smasher`：ModifyStat 或 DamageReduction。
+9. `help_violence`：临时攻击翻倍状态。
+10. `help_watchtower` / `help_multiplier_tower`：塔类持续/位置效果，可放到 R5 技能化。
+
+### 任务 6：UseHelpCardCommand 收束
+
+最终只保留：
+
+```text
+校验 uid 和类型
+读取 CardDefinition.EffectGraphId
+构建 EffectContext
+ResolveEffectGraphCommand
+```
+
+没有 effectGraph 的卡发配置错误，不再静默 NotImplemented。
+
+### 测试
+
+- 已实现 7 类帮助卡迁移后行为不变，但消耗语义改为新版。
+- 未配置 effectGraph 的帮助卡会触发 validator error。
+- 飞刀目标选择仍可跨距离。
+- 属性提升防御时同步护甲。
+- 宝箱卡打开后流程能回到 PlayerControl 或 RoomResolving。
 
 ### 验收
 
-- 新局后自动进入第 1 节点并完成开局发牌。
-- 测试可复现固定 seed 棋盘布局。
+- `UseHelpCardCommand` 不再是内容逻辑堆积点。
+- 新增帮助卡不需要改 Command，只加配置/Atom。
 
 ---
 
-## 阶段 4：棋盘点击、移动、补牌、防抖
+## 7. R5：SkillSystem + Relic Runtime
 
 ### 目标
 
-实现九宫格基础交互：邻接判断、点击空格旋转、帮助卡拾取、空格补牌。
+让“配置有、运行时无”的技能和遗物开始真正改变规则，而不是只存在于候选和栏位中。
 
-### 任务
+---
 
-1. 实现 `CanInteractBoardSlotQuery`。
-2. 实现 `ClickBoardSlotCommand` 路由：
-   - 空格且正交相邻：行动 + 顺时针旋转。
-   - 帮助卡且正交相邻：进入道具牌格。
-   - 怪物且正交相邻：暂时只输出战斗入口事件，战斗阶段再接。
-3. 实现 `BoardSystem.RotateClockwise/CounterClockwise`。
-4. 实现 `PickHelpCardToItemSlotCommand`，道具牌格上限 5。
-5. 实现 `RequestRefillBoardCommand` 与 `RefillBoardCommand`。
-6. 接入 `ISequenceUtility`，测试模式立即执行，运行模式 ActionKit 延迟。
-7. 实现输入锁原因：`BoardRefillRunning`、`BoardMoving`。
-8. 测试：
-   - 正交相邻与对角相邻判定。
-   - 点击空格后环形移动正确。
-   - 多空格补牌不吞卡。
-   - refillRunning 时多次请求只执行一轮批量补牌。
+### R5-1：SkillSystem 最小骨架
 
-### 产出
+#### 任务
 
-- `BoardSystem`
-- `InputLockSystem` 初版
+1. 新增并注册：
+
+```csharp
+ISkillSystem
+SkillSystem
+EffectTriggerQueue
+```
+
+2. 最小接口：
+
+```csharp
+void Trigger(SkillTrigger trigger, TriggerContext context);
+IReadOnlyList<SkillTriggerLog> RecentLogs { get; }
+```
+
+3. 加防递归：
+
+```text
+每个根 Command 最多触发 N 层
+同一 uid + skillId + trigger 在同一阶段可限制次数
+```
+
+4. 触发后调用 EffectSystem。
+
+#### 首批 Trigger
+
+- `OnNodeStart`
+- `OnBeforeCombat`
+- `OnModifyDamage`
+- `OnAfterDamage`
+- `OnCardMoved`
+- `OnMonsterKilled`
+- `OnNodeClear`
+- `OnNodeEnd`
+
+### R5-2：怪物技能上线优先级
+
+优先做影响战斗管线的技能：
+
+1. `刺皮`：怪物反击时同步对玩家造成反伤。
+2. `硬皮/减伤类`：提供 `DamageReduction`。
+3. `先攻`：已部分存在，迁入统一系统或保持 StatSystem 查询但加测试。
+4. 四幼崽位置技能：短期可继续在 StatSystem，但要补 StatsDirty 和显示刷新。
+5. `复仇`：怪物攻击累计变化。
+6. `红桃之母`：损血累计洗入红桃。
+
+### R5-3：遗物触发上线
+
+优先做：
+
+| 遗物 | 运行时目标 |
+|---|---|
+| 木剑 | 常驻攻击加成 |
+| 木盾 | 常驻防御加成，并影响节点开始护甲 |
+| 木甲 | 常驻防御/护甲或套装逻辑 |
+| 木剑/木盾/木甲套装 | `StatSystem` 统一判断 |
+| 荆棘甲 | 战斗先手伤害组并行额外伤害 |
+| 凤凰羽毛 | 致命伤死亡预防，消费遗物 |
+| 活着的肉 | 节点/战斗后治疗类触发 |
+
+### R5-4：导师技能上线
+
+`ChooseTutorSkillCommand` 当前只 `AddSkill`。需要：
+
+- 技能配置有 trigger。
+- 获得后能在 `SkillSystem` 中被收集。
+- 已有技能不可重复或按 stackPolicy 处理。
+- UI 显示技能生效描述。
+
+### 测试
+
+- 荆棘甲拿到后，战斗对怪物造成额外伤害。
+- 凤凰羽毛触发后遗物被消费，玩家恢复 50% MaxHp。
+- 木盾增加防御后，下一节点护甲增加。
+- 刺皮怪物反击时玩家同时受到反伤。
+- SkillSystem 触发日志记录 skillId、owner、trigger、effectGraph。
+- 防递归上限能阻止无限触发。
+
+### 验收
+
+- “拿了没用”的核心遗物问题解决。
+- 怪物技能不再只靠少数 StatSystem if 分支。
+
+---
+
+## 8. R6：奖励、房间、商店流程收束
+
+### 目标
+
+把奖励闭环从旧流程改成新版稳定流程，并让房间系统成为后续表现层可接的清晰状态机。
+
+### 任务 1：帮助奖励流程
+
+1. 清场后自动打开帮助奖励三选一。
+2. 可跳过 +10。
+3. 选择/跳过后关闭 Overlay。
+4. 进入 `RoomChoosing`。
+5. 生成 2 个房间按钮。
+
+### 任务 2：房间候选
+
+1. `GenerateRoomCandidates` 改为 2 个候选。
+2. 候选来源可先简单随机：商店、金币、宝箱、温泉/属性。
+3. 后续可配置权重与去重。
+
+### 任务 3：房间事件
+
+先稳定四类：
+
+| 房间 | R6 最小行为 |
+|---|---|
+| 金币房 | +50 金币，显示事件，然后下一节点 |
+| 宝箱房 | 打开遗物三选一，可跳过 +20，选择后下一节点 |
+| 温泉/属性房 | 提高血量上限并回满或注入属性提升效果，完成后下一节点 |
+| 商店 | 展示 6 张帮助卡；可购买/删卡；关闭商店后下一节点 |
+
+注意：房间是否“注入战斗牌组”如果策划仍有分歧，R6 先按最新版 `层级系统.md` 的房间类型说明实现；文档冲突另开设计问题，不阻塞主流程。
+
+### 任务 4：节点结束结算
+
+点击房间按钮后统一执行：
+
+```text
+SettleUnusedHelpCards
+Restore/RemoveHelpDeckSnapshotByRestoreAfterNode
+Clear battle/demon/node temp state
+ResolveRoom
+```
+
+不要在帮助奖励选择时提前结算未用帮助卡。
+
+### 任务 5：商店收束
+
+1. 购买帮助卡受容量和同名 3 张上限。
+2. 删除帮助卡 +10 金币。
+3. 商店中删除永久移除/临时移除状态卡要明确限制：建议只允许删除 active owned help cards。
+4. 关闭商店进入房间完成流程，不再回到帮助奖励。
+
+### 测试
+
+- 清场→帮助奖励→房间按钮→点击房间→节点结束。
+- 跳过帮助奖励 +10 后仍进入 RoomChoosing。
+- RoomChoosing 阶段使用帮助卡会影响节点结束结算。
+- 金币房完成后直接进入下一节点。
+- 宝箱房选择遗物后进入下一节点。
+- 商店关闭后进入下一节点，不再打开帮助奖励。
+- 删除帮助卡金币变化正确。
+
+### 验收
+
+- 奖励/房间顺序完全符合新版设计。
+- 原型 UI 至少能表达完整流程。
+
+---
+
+## 9. R7：存档、重放、Debug
+
+### 目标
+
+把 playtest 期最重要的定位能力补上：跨会话存档、可复现重放、可复制 bug report。
+
+### R7-1：EasySaveUtility
+
+1. 实现 `EasySaveUtility : ISaveUtility`。
+2. `TableNine.cs` 运行态注册 EasySave，测试态可继续用 MemorySave。
+3. 存档 schemaVersion。
+4. 存档不保存 UnityEngine.Object 引用。
+
+### R7-2：SaveData 扩展
+
+至少保存：
+
+- seed / random state。
+- layer / nodeInLayer / phase。
+- player：hp、armor、base stats、gold、skills、relics、consumed relics。
+- collection：uid、definitionId、hp、armor、boardSlot、itemSlot、counters。
+- help deck：owned uid、state、restoreAfterNode、snapshot。
+- battle draw pile。
+- board slots。
+- item slots。
+- reward/overlay 上下文。
+
+### R7-3：重放工厂扩展
+
+Command Replay 至少覆盖：
+
+- `StartNewRunCommand`
 - `ClickBoardSlotCommand`
-- `RequestRefillBoardCommand` / `RefillBoardCommand`
-
-### 验收
-
-- 在测试里连续移除多个格子，补牌数量正确。
-- 快速连续请求补牌不会让牌堆数量异常。
-
----
-
-## 阶段 5：战斗与有效属性
-
-### 目标
-
-实现玩家与怪物基础战斗、先攻、死亡、金币、通关判断。
-
-### 任务
-
-1. 实现 `EffectiveStats` 与 `StatSystem`。
-2. 实现 `GetEffectivePlayerStatsQuery`、`GetEffectiveMonsterStatsQuery`。
-3. 实现 `StartCombatCommand`。
-4. 实现 `ApplyDamageCommand`：
-   - 普通战斗伤害 = 攻击 - 防御，最低 0。
-   - 先不接复杂减伤，只保留扩展点。
-5. 实现先攻判断。
-6. 实现 `KillMonsterCommand`：
-   - 怪物移除。
-   - +5 金币。
-   - 发送 `MonsterKilledEvent`。
-7. 实现 `CheckClearConditionCommand`：棋盘 + 战斗牌堆无怪物时进入 `ClearReady`。
-8. 测试：
-   - 双方无先攻时玩家先。
-   - 怪物被首击击杀不反击。
-   - 怪物存活会反击。
-   - 伤害最低 0。
-   - 怪物死亡 +5 金币。
-
-### 产出
-
-- `CombatSystem`
-- `StatSystem`
-- 战斗相关 Command/Event/Query
-
-### 验收
-
-- 第 1 节点可通过测试完整击杀所有怪物并进入 `ClearReady`。
-
----
-
-## 阶段 6：效果系统 MVP 与基础帮助卡
-
-### 目标
-
-建立可扩展效果流水线，并上线第一批帮助卡。
-
-### 任务
-
-1. 定义 `IEffectAtom`、`EffectContext`、`EffectGraphDefinition`。
-2. 实现 `EffectSystem.ResolveEffectGraph`。
-3. 实现 Atom：
-   - `DamageAtom`
-   - `HealAtom`
-   - `AddGoldAtom`
-   - `ModifyStatAtom`
-   - `OpenChoiceOverlayAtom`
-   - `ConsumeHelpCardAtom`
-4. 实现 `UseHelpCardCommand`。
-5. 接入帮助卡：
-   - 恢复药水。
-   - 飞刀。
-   - 属性提升卡。
-   - 普通宝箱卡先只打开候选，不接完整遗物池。
-6. 实现目标选择：
-   - 单体目标。
-   - 任意怪物。
-   - 自身玩家。
-7. 测试：
-   - 恢复药水永久移除。
-   - 飞刀造成 6 伤害。
-   - 属性提升正确修改永久属性。
-   - 帮助卡道具格使用不受邻接限制。
-
-### 产出
-
-- `EffectSystem` MVP
-- 基础 Atom
-- 基础帮助卡可用
-
-### 验收
-
-- UI 未完成也能通过 Command 使用帮助卡并改变状态。
-
----
-
-## 阶段 7：奖励、房间、帮助卡快照恢复
-
-### 目标
-
-完成通关后奖励闭环，确保帮助卡组恢复/永久移除/新增追加不出错。
-
-### 任务
-
-1. 实现 `LevelClearReadyEvent` 后的房间候选。
-2. 实现 `ChooseRoomCommand`：
-   - 结算未使用帮助卡金币。
-   - 恢复节点开始快照。
-   - 保留永久移除。
-   - 追加新获得卡。
-3. 实现帮助卡三选一：
-   - 品质概率 65/30/5/0。
-   - 跳过 +10 金币。
-   - 同名最多 3。
-   - 容量按所有卡数量计数，层容量 12/18/24。
-4. 实现房间：
-   - 金币房：金币卡进入战斗牌组。
-   - 宝箱房：宝箱卡进入战斗牌组。
-   - 属性房：属性卡进入战斗牌组。
-   - 商店：进入商店流程。
-5. 实现 `RewardModel` 保存当前候选。
-6. 测试：
-   - 节点内临时使用的帮助卡恢复。
-   - 永久移除不恢复。
-   - 未使用帮助卡每张 +10。
-   - 跳过选卡 +10。
-   - 达到容量/同名上限弹窗且不加入。
-
-### 产出
-
-- `RewardSystem`
+- `ClickItemSlotCommand`
+- `UseHelpCardCommand`
+- `ResolveTargetingCommand`
+- `ResolveAttributeChoiceCommand`
+- `PickHelpCardRewardCommand`
+- `SkipHelpRewardCommand`
 - `ChooseRoomCommand`
-- 帮助卡奖励流程
-- 房间基础流程
+- `PickRelicRewardCommand`
+- `SkipChestRewardCommand`
+- `BuyHelpCardCommand`
+- `DeleteHelpCardForGoldCommand`
+- `CloseShopCommand`
+- `ChooseTutorSkillCommand`
+
+### R7-4：状态 Hash
+
+新增查询：
+
+```csharp
+GetBoardSnapshotHashQuery
+GetRunSnapshotHashQuery
+```
+
+Hash 包含：
+
+- 棋盘 1~9 uid/id/hp/armor。
+- 玩家 hp/armor/gold。
+- 战斗牌堆 uid/id 顺序。
+- 帮助卡状态。
+- phase 和锁。
+
+### R7-5：Debug 面板
+
+扩展显示：
+
+- 当前护甲。
+- DamageReduction。
+- 帮助卡快照明细。
+- 临时/永久移除列表。
+- 怪物剩余判断详情。
+- 最近 50 条事件。
+- 最近 50 条 Command。
+- 一键复制 bug report。
+- 一键保存/读档。
+- 一键重放并比较 hash。
+
+### 测试
+
+- 存档后重启进程仍能读取。
+- Save/Load 后棋盘 hash 一致。
+- 同 seed + command list 重放后棋盘 hash 一致。
+- 覆盖层中保存/读档不会锁死输入。
 
 ### 验收
 
-- 可从第 1 节点通关进入第 2 节点，帮助卡状态正确。
+- 质检可以用 seed + command log 复现吞卡、并发补牌、战斗异常。
 
 ---
 
-## 阶段 8：遗物、宝箱、商店、导师技能
+## 10. R8：表现层接入
 
 ### 目标
 
-完成 playtest 的局外成长与节点间成长内容。
+在规则稳定后，把美术像素图、DOTween 动效、音效/BGM、ResKit、Yarn 接到明确事件点上。
 
-### 任务
+### 前置条件
 
-1. 实现 `RelicSystem`：
-   - 遗物列表。
-   - 12 格上限。
-   - 去重。
-   - 丢弃 +20。
-2. 实现宝箱三选一：
-   - 普通/蓝色/金色宝箱概率配置。
-   - 已拥有遗物排除。
-   - 跳过 +20。
-   - 满格弹窗。
-3. 实现第一批遗物：
-   - 活着的肉。
-   - 木盾、木剑、木甲套装。
-   - 荆棘甲。
-   - 凤凰羽毛。
-4. 实现 `ShopSystem`：
-   - 展示 6 张帮助卡。
-   - 购买。
-   - 删除帮助卡换金币。
-   - 金币不足/容量满提示。
-5. 实现导师技能三选一：
-   - 精英死亡触发。
-   - 玩家技能不可叠加，同类取强/覆盖。
-6. 实现第一批玩家技能：轻车熟路、刺皮、硬皮。
-7. 测试：
-   - 宝箱不会出现已拥有遗物。
-   - 遗物满格时不能获得新遗物。
-   - 凤凰羽毛阻止一次死亡并移除。
-   - 商店删除帮助卡加金币。
-   - 轻车熟路触发白色帮助卡三选一。
+必须完成：
 
-### 产出
+- R2 基础规则。
+- R3 战斗事件。
+- R6 通关/房间流程。
+- 核心事件：`CardMovedEvent`、`DamageAppliedEvent`、`ArmorChangedEvent`、`FlowPhaseChangedEvent`、`OverlayOpenedEvent`。
 
-- `RelicSystem`
-- `ShopSystem`
-- 宝箱/导师奖励流程
-- 遗物与技能 MVP
+### 任务 1：CardView / BoardSlotView
 
-### 验收
+1. `CardView` 显示：图、名称、攻、防、血、护甲、技能/状态图标。
+2. `BoardSlotView` 管 slot 绑定。
+3. `CardViewPresenter` 监听事件刷新。
+4. PoolKit 可后接，先保证视图状态正确。
 
-- 精英战斗后能拿导师技能；宝箱卡能给遗物；商店可购买/删卡。
+### 任务 2：DOTween / Anim
+
+`Anim/` 只监听事件：
+
+- `CardPlacedEvent`：发牌/补牌入场。
+- `CardMovedEvent`：移动。
+- `BoardRotatedEvent`：旋转节奏。
+- `DamageAppliedEvent`：命中、跳字。
+- `ArmorChangedEvent`：护甲吸收特效。
+- `MonsterKilledEvent`：死亡。
+- `EffectResolvedEvent`：帮助卡/技能/遗物特效。
+
+规则等待动画通过 `ISequenceUtility`，不要在动画回调里直接改 Model。
+
+### 任务 3：AudioKit
+
+按事件接：
+
+- 点击。
+- 发牌。
+- 旋转。
+- 攻击命中。
+- 护甲吸收。
+- 治疗。
+- 怪物死亡。
+- 奖励选择。
+- 商店购买。
+- 胜利/失败。
+
+### 任务 4：ResKit
+
+资源 ID 绑定：
+
+- cardId -> sprite/prefab。
+- effectId -> effect prefab。
+- audioId -> clip。
+- overlayId -> panel prefab。
+
+缺资源时必须降级为占位图/静音，不阻塞规则。
+
+### 任务 5：UIKit Overlay
+
+整理：
+
+- HelpRewardPanel。
+- RoomChoiceHUD，非阻塞。
+- ChestRewardPanel。
+- ShopPanel。
+- TutorSkillPanel。
+- AttributeChoicePanel。
+- PausePanel。
+- DebugPanel。
+
+### 任务 6：Yarn / NarrativeSystem
+
+1. Yarn 触发只监听事件。
+2. Yarn 命令如果改状态，必须转发 QFramework Command。
+3. 对话时加 `DialogueRunning` 锁。
+4. 首次商店、首次宝箱、首次精英、首次死亡预防可作为教程触发点。
+
+### PlayMode 验收
+
+- 第一节点完整可视化打通。
+- 动画期间重复点击不会破坏状态。
+- 音频缺失不报错。
+- 房间按钮出现时仍能用场上帮助卡。
+- Debug 面板可打开且不破坏输入锁。
 
 ---
 
-## 阶段 9：怪物技能与复杂触发系统
+## 11. R9：全 playtest 验收
 
 ### 目标
 
-把所有位置词条、移动触发、光环、召唤、禁止移动纳入统一触发队列。
+重新定义真正的“全 playtest 完成”。
 
-### 任务
+### 内容验收
 
-1. 实现 `EffectTriggerQueue`：优先级排序、防递归、触发日志。
-2. 实现触发阶段：
-   - `OnMoveToSlot`
-   - `OnAfterBoardMove`
-   - `OnBeforeCombat`
-   - `OnModifyDamage`
-   - `OnCardRemoved`
-   - `OnMonsterKilled`
-   - `OnAfterPlayerAction`
-3. 实现怪物技能：
-   - 黑桃幼崽、红桃幼崽、方块幼崽、梅花幼崽。
-   - 尖盾、爱之躯、破防专家、叫人！。
-   - 复仇、医疗兵、防护光环、不休追击。
-   - 侧方打击、红桃之母、牢不可破、竖向拉杆。
-   - 决斗、战舞、暴力、黑桃皇室。
-4. 为每个技能写最小测试。
-5. 添加 Debug 触发链输出。
+必须达标：
 
-### 产出
+- 3 层 27 节点可完整推进。
+- 第 5 节点精英、第 9 节点层主正确生成。
+- 全部 playtest 帮助卡有运行时效果或明确降级说明。
+- 全部核心怪物技能有运行时效果或明确降级说明。
+- 全部核心遗物有运行时效果或明确降级说明。
+- 失败和胜利都能进入稳定终态。
+- 存档/读档跨会话可用。
+- 重放能复现棋盘状态。
+- Debug 面板能输出 bug report。
 
-- `SkillSystem` 完整版
-- 怪物技能全覆盖
-- 触发队列与防递归
+### 平衡验收
 
-### 验收
+- 第一层普通节点不会因护甲规则改动导致完全无伤或必死。
+- 防御转护甲后，木盾/木甲价值明确。
+- 帮助卡默认永久移除后，帮助卡奖励频率和商店价格需要复核。
+- 未用帮助卡 +10 的收益不会压过正常使用收益。
+- 精英/层主注入奖励卡不会导致流程卡死。
 
-- 每个技能至少有一个自动化测试或调试场景验证。
-- 红桃之母不会递归召唤红桃之母。
-- 决斗锁移动在源卡移除后解除。
+### 表现验收
 
----
+- 所有核心卡牌有图或占位图。
+- 主要动作有动画或可接受的灰盒动效。
+- 主要事件有音效或静音降级。
+- BGM 切换不影响流程。
+- UI 在 16:9 和常用窗口尺寸下可操作。
 
-## 阶段 10：UIKit 可玩 UI
+### 质检验收
 
-### 目标
-
-把规则沙盒接到完整可玩界面。
-
-### 任务
-
-1. 建立 `UIGameplayPanel`：玩家信息、装备栏、九宫格、道具牌格、技能栏、牌组预览、介绍区。
-2. 用 CodeGenKit/ViewController 绑定 UI 控件。
-3. 实现 `CardView`、`BoardSlotView`、`ItemSlotView`。
-4. 接入事件：
-   - 发牌。
-   - 移动。
-   - 受击。
-   - 移除。
-   - 属性刷新。
-   - 牌组预览。
-5. 建立 Overlay：
-   - 房间选择。
-   - 帮助卡奖励。
-   - 商店。
-   - 宝箱。
-   - 导师。
-   - 属性提升。
-   - 弹窗。
-6. UI 点击全部发 Command。
-7. 覆盖层打开/关闭接输入锁。
-
-### 产出
-
-- 可玩 UI 主界面。
-- 所有核心 Overlay。
-- Popup 系统。
-
-### 验收
-
-- 不打开 Debug 面板也能完整玩完第一层。
-- 覆盖层显示时底层棋盘不能点击。
-- UI 显示的是有效属性，不是裸值。
+- EditMode 全通过。
+- PlayMode 垂直切片通过。
+- 随机 10 个 seed 至少能跑到第一层结束或给出可复现 bug report。
+- 配置校验无 error；warning 有明确记录。
+- 旧 M1-M5 质检报告中的 P0 项全部关闭或转为已确认降级。
 
 ---
 
-## 阶段 11：动画、音频、资源加载
+## 12. 阶段间禁止事项
 
-### 目标
+### R2 完成前禁止
 
-用 QFramework Toolkits 完成表现层，同时不污染规则主干。
+- 大规模接 DOTween 动画。
+- 大规模重做 UI prefab。
+- 继续新增基于 `攻击 - 防御` 的技能/遗物。
+- 继续新增 `isPermanentRemoveOnUse` 调用。
 
-### 任务
+### R3 完成前禁止
 
-1. ResKit：
-   - 标记 UI Prefab、Card Prefab、Sprite、Audio。
-   - `QFResKitUtility` 接入模拟模式。
-2. PoolKit：
-   - CardView 池。
-   - DamageNumber 池。
-   - Popup/Effect 池。
-3. ActionKit：
-   - 发牌间隔。
-   - 补牌延迟 0.45/0.5 秒。
-   - 战斗 hit sequence。
-   - Overlay 动效。
-4. AudioKit：
-   - BGM。
-   - 点击、战斗、击杀、奖励、错误提示音。
-   - 设置界面音量开关。
-5. Anim：
-   - `CardDealAnimator`
-   - `BoardMoveAnimator`
-   - `CombatHitAnimator`
-   - `DamageNumberAnimator`
-   - `OverlayAnimator`
-6. 测试模式下 `ISequenceUtility` 可切换为立即执行。
+- 做复杂反伤/免死/多段伤害表现。
+- 把荆棘甲、刺皮、凤凰羽毛硬编码到 UI 或单个 Command。
 
-### 产出
+### R4 完成前禁止
 
-- 表现层完整接入。
-- 资源加载路径统一。
-- 音效/BGM 设置可保存。
+- 继续把新帮助卡写进 `UseHelpCardCommand` 的 `switch`。
+- 为每张帮助卡单独写一个 UI 流程。
 
-### 验收
+### R7 完成前谨慎
 
-- 动画期间输入锁正确。
-- 关闭动画/快速模式时规则测试仍能跑。
-- CardView 被移除后能回收到对象池。
+- 宣称“可 playtest 质检”。
+- 合入大批内容配置但没有重放定位手段。
 
 ---
 
-## 阶段 12：Easy Save 与 Yarn
+## 13. 推荐任务切片给后续 AI
 
-### 目标
+### 第一批：R1 + R2 最小闭环
 
-接入既有团队习惯工具，并保持架构边界。
+交给 AI 的任务描述建议：
 
-### 任务
+```text
+请基于 dev 分支现有代码，只做新版基础规则改造：
+1. CardDefinition 增加 restoreAfterNode 并迁移旧 isPermanentRemoveOnUse 语义。
+2. CardRuntime 增加 CurrentArmor。
+3. EffectiveStats 增加 CurrentArmor 和 DamageReduction。
+4. ApplyDamageCommand 改为先扣护甲再扣血。
+5. CombatSystem 伤害公式改为 attack - damageReduction，不再减 defense。
+6. StartNodeCommand 节点开始按有效防御填护甲。
+7. ConsumeHelpCardCommand 改为读取 restoreAfterNode，默认永久移除。
+8. CheckClearConditionCommand 改为先弹帮助卡三选一，再进入 RoomChoosing。
+请补齐对应 EditMode 测试，暂不接 UI 动画。
+```
 
-1. `EasySaveUtility` 封装 ES3。
-2. `SaveSystem` 生成 `RunSaveData`。
-3. 安全点保存：新局、节点开始、节点结束、手动暂停。
-4. 读档恢复：
-   - 恢复玩家、帮助卡组、技能、遗物、层/节点。
-   - 不恢复节点中动画中间态。
-5. Save schema version。
-6. `YarnDialogueUtility` 封装 DialogueRunner。
-7. Yarn 运行时加 `DialogueRunning` 输入锁。
-8. Yarn 命令转发 QFramework Command。
-9. 做首批教程节点：首次帮助卡、首次宝箱、首次商店、首次精英。
+### 第二批：R3 战斗管线
 
-### 产出
+```text
+请重构 StartCombatCommand：引入 CombatContext/DamageContext/ResolveCombatCommand/CommitPlayerActionCommand。
+必须支持先攻、存活反击、先手击杀不反击、荆棘甲并行伤害、刺皮与反击同步、凤凰羽毛死亡预防。
+请补集成测试，尤其是 ClickBoardSlotCommand 发起战斗的端到端测试。
+```
 
-- 存档/读档。
-- Yarn 基础对话。
-- Yarn 命令桥。
+### 第三批：R4 EffectSystem MVP
 
-### 验收
+```text
+请实现 EffectSystem MVP 和 EffectAtom 注册表，把 help_potion、help_throwing_knife、help_attribute_up、宝箱卡、help_gold_card、help_blessing 从 UseHelpCardCommand switch 迁移到 EffectGraph/Atom。
+UseHelpCardCommand 最终只负责校验、构建 EffectContext、调用 ResolveEffectGraphCommand。
+```
 
-- 退出再进入可从安全点恢复。
-- Yarn 对话期间底层输入被锁。
-- Yarn 命令不会直接改 Model。
+### 第四批：R6 流程收束
 
----
+```text
+请收束通关奖励与房间流程：清场后帮助奖励，帮助奖励结束后 2 个房间按钮，RoomChoosing 阶段允许继续拾取/使用帮助卡，点击房间后结算未用帮助卡金币并恢复/移除帮助卡，再处理房间事件和进入下一节点。
+```
 
-## 阶段 13：完整内容接入
+### 第五批：R8 表现接入
 
-### 目标
-
-把所有 playtest 设计案内容配置化并通过校验。
-
-### 任务
-
-1. 帮助卡 20 张全部接入效果图。
-2. 第一层怪物、精英、层主全部配置。
-3. 技能全部配置。
-4. 遗物全部配置。
-5. 每关流程 1~9 节点规则全部配置；扩展到 3 层时复制并调参。
-6. 房间奖励与商店池配置。
-7. 内容校验器跑通。
-8. 给每类复杂效果至少一个测试场景。
-
-### 产出
-
-- 完整 playtest 内容配置。
-- 内容校验报告。
-- 复杂卡/技能测试场景。
-
-### 验收
-
-- 内容校验无 error；warning 只保留已确认的策划待定项。
-- 3 层 27 节点可完整进入，不因缺配置中断。
+```text
+规则阶段完成后，请基于事件系统接入 CardView、BoardSlotView、DOTween 动画、AudioKit 音效和 UIKit Overlay。表现层只能监听事件和发送 Command，不允许直接改 Model。
+```
 
 ---
 
-## 阶段 14：Debug、回放、QA 稳定
+## 14. 完成定义
 
-### 目标
+本 Plan 的完成不是“文档写完”，而是：
 
-让 playtest 反馈可复现、可定位、可修复。
+```text
+R0-R7 完成：项目可稳定规则 playtest，可保存，可重放，可定位 bug。
+R8 完成：美术、动画、音效、UI 能接入且不污染规则层。
+R9 完成：才允许重新宣称全 playtest 达标。
+```
 
-### 任务
+在 R9 之前，项目状态建议写作：
 
-1. `UIDebugPanel`：
-   - seed。
-   - Command 序号。
-   - 当前 phase。
-   - 输入锁原因。
-   - 棋盘 9 格。
-   - 战斗牌堆与下一张。
-   - 帮助卡组快照。
-   - 最近事件。
-2. Command 日志落盘。
-3. 种子 + Command list 重放。
-4. 异常快照：
-   - 当前棋盘。
-   - 玩家属性。
-   - 牌堆。
-   - 输入锁。
-   - 最近触发链。
-5. 常见断言：
-   - 不允许两个卡占同一格。
-   - 不允许 uid 丢失。
-   - 不允许牌同时在棋盘和牌堆。
-   - 不允许输入锁永久残留。
-   - 不允许奖励候选为空但 UI 打开。
-6. Playtest 快捷键：
-   - 一键杀死所有怪。
-   - 一键开宝箱。
-   - 一键获得指定遗物/技能/帮助卡。
-   - 切换快速动画。
-
-### 产出
-
-- Debug 面板。
-- 回放系统。
-- 异常快照。
-- QA 快捷工具。
-
-### 验收
-
-- 任意 playtest Bug 可要求玩家提交 seed + log。
-- 本地能重放到相同棋盘状态。
+```text
+TableNine 当前处于“规则主干重构与表现接入前置阶段”。
+已完成配置和原型闭环；正在对齐新版设计文档的护甲、伤害、帮助卡生命周期、通关流程、战斗管线和效果系统。
+```
 
 ---
 
-## 阶段 15：打包前整理
+## 15. 当前最高优先级清单
 
-### 目标
+从明天开始最应该做的 10 件事：
 
-清理 playtest 阻塞项，保证构建稳定。
+1. 跑一次现有测试，记录基线。
+2. 给 `CardRuntime` 加 `CurrentArmor`。
+3. 给 `CardDefinition` 加 `RestoreAfterNode`。
+4. 给 `EffectiveStats` 加 `DamageReduction`。
+5. 改 `ApplyDamageCommand`：护甲优先。
+6. 改 `CombatSystem.CalculateDamage`：攻击减伤害减免，不减防御。
+7. 改 `ConsumeHelpCardCommand`：默认永久移除。
+8. 改 `CheckClearConditionCommand`：先帮助奖励，再房间。
+9. 加 R2 对应 EditMode 测试。
+10. 暂停所有大规模表现层接入，直到 R2 通过。
 
-### 任务
-
-1. WebGL/PC 目标平台确认。
-2. 禁用浏览器默认右键菜单，保证遗物右键丢弃可用。
-3. ResKit 资源模式确认：Editor 模拟模式、构建模式。
-4. Easy Save 路径和清档按钮确认。
-5. 错误弹窗兜底。
-6. 所有 Debug 工具仅开发构建打开。
-7. UI 分辨率适配。
-8. 性能检查：
-   - CardView 池。
-   - DamageNumber 池。
-   - 无频繁 LINQ 热路径，尤其是每帧 UI。
-   - StatSystem 可接受实时查询；若卡顿再做 AuraCache。
-9. 最终内容校验。
-
-### 产出
-
-- Playtest 构建。
-- 已知问题清单。
-- 复现说明。
-
-### 验收
-
-- 新局、失败、胜利、读档、重开无崩溃。
-- 一局内不会出现吞卡、重复补牌、输入锁卡死。
-
----
-
-## 并行工作建议
-
-### 程序主线
-
-1. 阶段 0~5：规则主干。
-2. 阶段 6~9：效果/奖励/技能/遗物。
-3. 阶段 10~12：UI/表现/存档/Yarn。
-4. 阶段 13~15：全内容与稳定。
-
-### 策划/技术策划主线
-
-1. 把所有卡、怪、技能、遗物转成稳定 ID。
-2. 修正概率与规则歧义。
-3. 用 Odin 配效果图。
-4. 跑配置校验器。
-5. 每次内容变更提交校验报告。
-
-### 美术/UI 主线
-
-1. 先出灰盒 UI Prefab。
-2. 绑定 ViewController。
-3. 替换 CardView 素材。
-4. 逐步加动画和音效。
-
----
-
-## 风险清单与处理策略
-
-| 风险 | 影响 | 处理 |
-|---|---|---|
-| 补牌并发吞卡 | 核心玩法崩坏 | `refillRunning/refillPending` + Command 测试 + 牌归属断言。 |
-| 效果触发递归 | 卡死或无限召唤 | `EffectTriggerQueue`、单 Command 触发上限、触发链日志。 |
-| 帮助卡临时/永久移除混乱 | 卡组构筑错误 | uid + 节点快照 + 移除模式枚举 + 测试。 |
-| 规则与表现耦合 | 难测、难修 | 规则立即改 Model，Anim 只监听 Event；时间由 `ISequenceUtility` 控制。 |
-| 有效属性来源太多 | UI 显示与战斗不一致 | 所有显示和战斗都走 `StatSystem`。 |
-| 概率/配置错误 | 奖励异常 | 编辑器校验器强制检查。 |
-| UI 覆盖层穿透点击 | 重复战斗/状态错乱 | `OverlayVisible` 输入锁 + UI raycast 阻挡。 |
-| 存档保存中间态 | 读档状态不可恢复 | 只在安全点保存；不保存动画/补牌中间态。 |
-| 中文名硬编码 | 改名导致逻辑坏 | 稳定 ID，中文只显示。 |
-
----
-
-## 第一批测试用例清单
-
-### Board
-
-- `SlotNo_To_XY_And_Back_IsCorrect`
-- `Orthogonal_Neighbor_Of_Center_Is_2_4_6_8`
-- `Diagonal_Is_Not_Interactable`
-- `RotateClockwise_Moves_Ring_Correctly`
-- `Rotate_Does_Not_Duplicate_Cards`
-
-### Deck
-
-- `NewRun_Creates_Unique_HelpCard_Uids`
-- `OpeningDeal_Places_Three_Help_Three_Demon_Two_Battle`
-- `Refill_Multiple_Empty_Slots_Draws_Until_Full_Or_DeckEmpty`
-- `Refill_Debounce_Does_Not_Double_Draw`
-- `HelpDeck_Snapshot_Restores_Temporary_Removed_Cards`
-- `HelpDeck_Permanent_Removed_Cards_Do_Not_Restore`
-
-### Combat
-
-- `Combat_Damage_Min_Zero`
-- `Player_Attacks_First_When_No_FirstStrike`
-- `Player_Attacks_First_When_Both_FirstStrike`
-- `FirstStrike_Side_Attacks_First_When_Only_One_Has_FirstStrike`
-- `Dead_Monster_Does_Not_CounterAttack`
-- `MonsterKill_Adds_5_Gold`
-
-### Rewards
-
-- `HelpReward_Skip_Adds_10_Gold`
-- `ChestReward_Skip_Adds_20_Gold`
-- `RelicReward_Excludes_Owned_Relics`
-- `Relic_Full_Shows_Popup_And_Does_Not_Add`
-- `Shop_Delete_HelpCard_Adds_10_Gold`
-
-### Effects
-
-- `Potion_Heals_10_And_Permanently_Removes`
-- `ThrowingKnife_Deals_6_Damage`
-- `AttributeCard_Attack_Option_Adds_1_Attack`
-- `Blessing_Prevents_One_Damage_Only`
-- `PhoenixFeather_Prevents_Lethal_And_Removes_Relic`
-
----
-
-## 内容落地顺序
-
-为了尽快 playtest，不建议按文档顺序全部做完再接 UI。建议顺序：
-
-1. 小鬼 + 初始帮助卡组。
-2. 无色卡 + 四个 2 级花色怪。
-3. 恢复药水 + 飞刀 + 属性提升卡 + 普通宝箱卡。
-4. 基础战斗 + 补牌 + 通关。
-5. 帮助卡奖励 + 商店 + 宝箱。
-6. 幼崽技能 + 先攻。
-7. 第一层完整怪物。
-8. 精英 + 导师。
-9. 层主 + 胜利。
-10. 全帮助卡、全遗物、全技能。
-
----
-
-## 阶段完成定义
-
-每个阶段完成时必须满足：
-
-- Unity 编译无错误。
-- 相关 EditMode 测试通过。
-- 没有新增未解释的配置校验 error。
-- 关键 Command 有日志。
-- 新增 UI 的点击入口只发 Command，不直接改 Model。
-- 新增外部库调用只出现在 Utility/UI/Anim，不进入 Model。
-- 新增规则至少有一个自动化测试或 Debug 场景。
-
+完成这 10 件事后，项目方向会从“旧 M5 原型继续膨胀”切回“新版设计可落地的规则主干”。
