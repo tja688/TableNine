@@ -188,6 +188,20 @@ public sealed class TableNineUIPanelRegistry : ScriptableObject, ISerializationC
     }
 
 #if ODIN_INSPECTOR
+    [Button(ButtonSizes.Medium, Name = "打开 UI 面板管理窗口")]
+    [PropertyOrder(-10)]
+#endif
+    public void OpenRegistryEditorWindow()
+    {
+#if UNITY_EDITOR
+        var type = System.Type.GetType("TableNineUI.Editor.TableNineUIRegistryEditorWindow, Assembly-CSharp-Editor");
+        if (type == null) return;
+        var openMethod = type.GetMethod("OpenWithRegistry", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        openMethod?.Invoke(null, new object[] { this });
+#endif
+    }
+
+#if ODIN_INSPECTOR
     [Button(ButtonSizes.Medium)]
 #endif
     public void ApplyRecommendedDefaults()
