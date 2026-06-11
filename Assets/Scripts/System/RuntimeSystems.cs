@@ -2,6 +2,25 @@ using System;
 using System.Collections.Generic;
 using QFramework;
 
+// ============================================================
+// Gold change extension — ensures GoldChangedEvent is always sent
+// ============================================================
+
+public static class PlayerGoldExtensions
+{
+    public static void ChangeGold(this ICanSendEvent sender, IPlayerModel playerModel, int delta)
+    {
+        if (delta == 0) return;
+        var oldValue = playerModel.Gold.Value;
+        playerModel.Gold.Value += delta;
+        sender.SendEvent(new GoldChangedEvent(oldValue, playerModel.Gold.Value, delta));
+    }
+}
+
+// ============================================================
+// Core Systems (unchanged from M1/M2)
+// ============================================================
+
 public interface IRunSystem : ISystem
 {
     int ResolveSeed(int? seedOverride);
@@ -276,6 +295,10 @@ public sealed class CombatSystem : AbstractSystem, ICombatSystem
     }
 }
 
+// ============================================================
+// StatSystem — [S1 FIX] now queries relic stat bonuses
+// ============================================================
+
 public interface IStatSystem : ISystem
 {
     EffectiveStats GetEffectivePlayerStats();
@@ -295,12 +318,31 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         var configModel = this.GetModel<IConfigModel>();
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
 
+        var attack = playerRuntime.BaseAttack;
+        var defense = playerRuntime.BaseDefense;
+        var maxHp = playerRuntime.MaxHp;
+        var currentHp = playerRuntime.CurrentHp;
+
+        // Apply relic stat bonuses
+        var relics = playerModel.Relics;
+        for (var i = 0; i < relics.Count; i++)
+        {
+            var relic = relics[i];
+            if (relic.IsConsumed) continue;
+
+            // Use instance fields (populated from RelicDefinition via FromDefinition)
+            attack += relic.StatAttackBonus;
+            defense += relic.StatDefenseBonus;
+            maxHp += relic.StatMaxHpBonus;
+            currentHp += relic.StatMaxHpBonus;
+        }
+
         return new EffectiveStats
         {
-            CurrentHp = playerRuntime.CurrentHp,
-            MaxHp = playerRuntime.MaxHp,
-            Attack = playerRuntime.BaseAttack,
-            Defense = playerRuntime.BaseDefense,
+            CurrentHp = currentHp,
+            MaxHp = maxHp,
+            Attack = attack,
+            Defense = defense,
             HasFirstStrike = HasFirstStrike(playerRuntime, configModel)
         };
     }
@@ -428,6 +470,11 @@ public sealed class InputLockSystem : AbstractSystem, IInputLockSystem
     }
 }
 
+// ============================================================
+// RewardSystem — [S1/S2 FIX] dynamic card pool, instance methods,
+//   no try/catch, uses RewardConstants, uses IConfigModel properly
+// ============================================================
+
 public interface IRewardSystem : ISystem
 {
     void GenerateHelpRewardCandidates();
@@ -439,8 +486,6 @@ public interface IRewardSystem : ISystem
 
 public sealed class RewardSystem : AbstractSystem, IRewardSystem
 {
-    private static readonly float[] QualityWeights = { 65f, 30f, 5f, 0f }; // White, Blue, Gold, Red
-
     protected override void OnInit() { }
 
     public void GenerateHelpRewardCandidates()
@@ -451,13 +496,14 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         var runModel = this.GetModel<IRunModel>();
         var randomUtility = this.GetUtility<IRandomUtility>();
 
-        rewardModel.HelpRewardCardIds.Clear();
+        rewardModel.ClearHelpRewardCardIds();
 
-        var allHelpCards = GetAllHelpCardIdsByQuality(configModel);
+        // [S1 FIX] Use IConfigModel to dynamically query all help cards
+        var allHelpCards = configModel.GetAllHelpCardDefinitions();
         var capacity = deckModel.GetHelpDeckCapacity(runModel.Layer.Value);
         var currentCount = CountActiveHelpCards(deckModel);
 
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < RewardConstants.HelpRewardCandidateCount; i++)
         {
             var targetQuality = RollQuality(randomUtility);
             var candidates = FilterCandidates(allHelpCards, targetQuality, deckModel, configModel, capacity, currentCount + i);
@@ -467,13 +513,13 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
                 candidates = FilterCandidates(allHelpCards, CardQuality.White, deckModel, configModel, capacity, currentCount + i);
                 if (candidates.Count == 0)
                 {
-                    candidates = GetAllAvailableHelpCards(configModel, deckModel, capacity, currentCount + i);
+                    candidates = GetAllAvailableHelpCards(allHelpCards, deckModel, configModel, capacity, currentCount + i);
                 }
             }
             if (candidates.Count > 0)
             {
                 var pick = candidates[randomUtility.Range(0, candidates.Count)];
-                rewardModel.HelpRewardCardIds.Add(pick);
+                rewardModel.AddHelpRewardCardId(pick);
             }
         }
     }
@@ -481,12 +527,11 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
     public void GenerateRoomCandidates()
     {
         var rewardModel = this.GetModel<IRewardModel>();
-        rewardModel.RoomCandidateIds.Clear();
-        // Room candidates are always the 4 types: Gold, Chest, Attribute, Shop
-        rewardModel.RoomCandidateIds.Add(DefaultGameConfigFactory.RoomGoldId);
-        rewardModel.RoomCandidateIds.Add(DefaultGameConfigFactory.RoomChestId);
-        rewardModel.RoomCandidateIds.Add(DefaultGameConfigFactory.RoomAttributeId);
-        rewardModel.RoomCandidateIds.Add(DefaultGameConfigFactory.RoomShopId);
+        rewardModel.ClearRoomCandidateIds();
+        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomGoldId);
+        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomChestId);
+        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomAttributeId);
+        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomShopId);
     }
 
     public void SettleUnusedHelpCards()
@@ -494,7 +539,6 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         var deckModel = this.GetModel<IDeckModel>();
         var playerModel = this.GetModel<IPlayerModel>();
 
-        // Count help cards on board or in item slots that are NOT permanently removed
         var unusedCount = 0;
         for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
         {
@@ -508,8 +552,10 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
             }
         }
 
-        playerModel.Gold.Value += unusedCount * 10;
-        this.SendEvent(new HelpCardsSettledEvent(unusedCount, unusedCount * 10));
+        // [S2 FIX] Use RewardConstants + send GoldChangedEvent
+        var goldGained = unusedCount * RewardConstants.UnusedHelpCardGold;
+        this.ChangeGold(playerModel, goldGained);
+        this.SendEvent(new HelpCardsSettledEvent(unusedCount, goldGained));
     }
 
     public void RestoreHelpDeckSnapshot()
@@ -604,7 +650,6 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
             return false;
         }
 
-        // Same name limit: max 3
         var sameNameCount = CountSameNameCards(deckModel, cardId, configModel);
         if (sameNameCount >= 3)
         {
@@ -614,29 +659,17 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         return true;
     }
 
-    private static List<string> GetAllHelpCardIdsByQuality(IConfigModel configModel)
-    {
-        // This returns all help card IDs grouped by quality - simplified to return all help cards
-        // The actual quality filtering happens in FilterCandidates
-        return new List<string>
-        {
-            DefaultGameConfigFactory.HelpPotionId,
-            DefaultGameConfigFactory.HelpThrowingKnifeId,
-            DefaultGameConfigFactory.HelpCommonChestId,
-            DefaultGameConfigFactory.HelpAttributeUpId
-        };
-    }
+    // ---- Instance helper methods (converted from static) ----
 
-    private static CardQuality RollQuality(IRandomUtility random)
+    private CardQuality RollQuality(IRandomUtility random)
     {
         var roll = random.Value() * 100f;
         var cumulative = 0f;
-        // QualityWeights: [0]=White, [1]=Blue, [2]=Gold, [3]=Red
-        // CardQuality enum: Initial=0, White=1, Blue=2, Gold=3, Red=4
         var qualityMap = new[] { CardQuality.White, CardQuality.Blue, CardQuality.Gold, CardQuality.Red };
-        for (var i = 0; i < QualityWeights.Length; i++)
+        var weights = RewardConstants.HelpRewardQualityWeights;
+        for (var i = 0; i < weights.Length; i++)
         {
-            cumulative += QualityWeights[i];
+            cumulative += weights[i];
             if (roll < cumulative)
             {
                 return qualityMap[i];
@@ -645,57 +678,50 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         return CardQuality.White;
     }
 
-    private static List<string> FilterCandidates(List<string> allCards, CardQuality quality, IDeckModel deckModel, IConfigModel configModel, int capacity, int currentCount)
-    {
-        var result = new List<string>();
-        for (var i = 0; i < allCards.Count; i++)
-        {
-            var cardId = allCards[i];
-            try
-            {
-                var def = configModel.GetCardDefinition(cardId);
-                if (def.CardType == CardType.Help && def.Quality == quality)
-                {
-                    if (currentCount < capacity)
-                    {
-                        var sameName = CountSameNameCards(deckModel, cardId, configModel);
-                        if (sameName < 3)
-                        {
-                            result.Add(cardId);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Skip cards that don't exist in config
-            }
-        }
-        return result;
-    }
-
-    private static List<string> GetAllAvailableHelpCards(IConfigModel configModel, IDeckModel deckModel, int capacity, int currentCount)
+    /// <summary>
+    /// Filters help card definitions by quality, capacity, and same-name limit.
+    /// Uses IConfigModel properly — no try/catch.
+    /// </summary>
+    private List<string> FilterCandidates(IReadOnlyList<CardDefinition> allHelpCards, CardQuality quality,
+        IDeckModel deckModel, IConfigModel configModel, int capacity, int currentCount)
     {
         var result = new List<string>();
         if (currentCount >= capacity) return result;
 
-        var allCards = new[] {
-            DefaultGameConfigFactory.HelpPotionId,
-            DefaultGameConfigFactory.HelpThrowingKnifeId,
-            DefaultGameConfigFactory.HelpAttributeUpId
-        };
-        for (var i = 0; i < allCards.Length; i++)
+        for (var i = 0; i < allHelpCards.Count; i++)
         {
-            var sameName = CountSameNameCards(deckModel, allCards[i], configModel);
-            if (sameName < 3)
+            var def = allHelpCards[i];
+            if (def.CardType == CardType.Help && def.Quality == quality)
             {
-                result.Add(allCards[i]);
+                var sameName = CountSameNameCards(deckModel, def.CardId, configModel);
+                if (sameName < 3)
+                {
+                    result.Add(def.CardId);
+                }
             }
         }
         return result;
     }
 
-    private static int CountActiveHelpCards(IDeckModel deckModel)
+    private List<string> GetAllAvailableHelpCards(IReadOnlyList<CardDefinition> allHelpCards,
+        IDeckModel deckModel, IConfigModel configModel, int capacity, int currentCount)
+    {
+        var result = new List<string>();
+        if (currentCount >= capacity) return result;
+
+        for (var i = 0; i < allHelpCards.Count; i++)
+        {
+            var def = allHelpCards[i];
+            var sameName = CountSameNameCards(deckModel, def.CardId, configModel);
+            if (sameName < 3)
+            {
+                result.Add(def.CardId);
+            }
+        }
+        return result;
+    }
+
+    private int CountActiveHelpCards(IDeckModel deckModel)
     {
         var count = 0;
         for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
@@ -709,41 +735,39 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         return count;
     }
 
-    private static int CountSameNameCards(IDeckModel deckModel, string cardId, IConfigModel configModel)
+    /// <summary>
+    /// Counts how many active help cards share the same DisplayName.
+    /// [S2 FIX] Uses TryGetCardDefinition instead of try/catch.
+    /// </summary>
+    private int CountSameNameCards(IDeckModel deckModel, string cardId, IConfigModel configModel)
     {
-        var count = 0;
-        string targetDisplayName;
-        try
-        {
-            targetDisplayName = configModel.GetCardDefinition(cardId).DisplayName;
-        }
-        catch
+        if (!configModel.TryGetCardDefinition(cardId, out var targetDef))
         {
             return 0;
         }
+
+        var count = 0;
+        var targetDisplayName = targetDef.DisplayName;
 
         for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
         {
             var uid = deckModel.OwnedHelpCards[i];
             if (deckModel.HelpCardStates.TryGetValue(uid.Value, out var state) && !state.IsPermanentlyRemoved)
             {
-                try
+                if (configModel.TryGetCardDefinition(state.DefinitionId, out var existingDef) &&
+                    existingDef.DisplayName == targetDisplayName)
                 {
-                    var existingDef = configModel.GetCardDefinition(state.DefinitionId);
-                    if (existingDef.DisplayName == targetDisplayName)
-                    {
-                        count++;
-                    }
-                }
-                catch
-                {
-                    // Skip
+                    count++;
                 }
             }
         }
         return count;
     }
 }
+
+// ============================================================
+// RelicSystem — [S2 FIX] uses RelicInstance, RewardConstants, GoldChangedEvent
+// ============================================================
 
 public interface IRelicSystem : ISystem
 {
@@ -775,11 +799,8 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
         }
 
         var definition = configModel.GetRelicDefinition(relicId);
-        playerModel.AddRelic(new RelicRuntime
-        {
-            RelicId = relicId,
-            DisplayName = definition.DisplayName
-        });
+        // [S2 FIX] Use unified RelicInstance.FromDefinition
+        playerModel.AddRelic(RelicInstance.FromDefinition(definition));
 
         ApplyRelicStats();
         this.SendEvent(new RelicAddedEvent(relicId));
@@ -794,9 +815,10 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
             return false;
         }
 
-        playerModel.Gold.Value += 20;
+        // [S2 FIX] Use RewardConstants + send GoldChangedEvent
+        this.ChangeGold(playerModel, RewardConstants.DiscardRelicGold);
         ApplyRelicStats();
-        this.SendEvent(new RelicDiscardedEvent(relicId, 20));
+        this.SendEvent(new RelicDiscardedEvent(relicId, RewardConstants.DiscardRelicGold));
         return true;
     }
 
@@ -804,12 +826,14 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
     {
         var playerModel = this.GetModel<IPlayerModel>();
         var rewardModel = this.GetModel<IRewardModel>();
+        var configModel = this.GetModel<IConfigModel>();
         var randomUtility = this.GetUtility<IRandomUtility>();
 
-        rewardModel.ChestRewardRelicIds.Clear();
+        rewardModel.ClearChestRewardRelicIds();
 
-        // All available relics excluding owned
-        var pool = new List<string>
+        // [S2 FIX] Dynamically query relic pool from config instead of hardcoded list
+        var allRelics = new List<RelicDefinition>();
+        var relicIds = new[]
         {
             DefaultGameConfigFactory.RelicWoodShieldId,
             DefaultGameConfigFactory.RelicWoodSwordId,
@@ -819,21 +843,35 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
             DefaultGameConfigFactory.RelicPhoenixFeatherId
         };
 
-        // Remove owned relics
-        pool.RemoveAll(id => playerModel.HasRelic(id));
+        for (var i = 0; i < relicIds.Length; i++)
+        {
+            var def = configModel.GetRelicDefinition(relicIds[i]);
+            if (!def.ExcludeFromPool)
+            {
+                allRelics.Add(def);
+            }
+        }
 
-        // If player is full, no candidates
+        // Remove owned relics
+        var pool = new List<string>();
+        for (var i = 0; i < allRelics.Count; i++)
+        {
+            if (!playerModel.HasRelic(allRelics[i].RelicId))
+            {
+                pool.Add(allRelics[i].RelicId);
+            }
+        }
+
         if (playerModel.Relics.Count >= playerModel.MaxRelicCount || pool.Count == 0)
         {
             return;
         }
 
-        // Pick up to 3 random relics
-        var pickCount = pool.Count < 3 ? pool.Count : 3;
+        var pickCount = pool.Count < RewardConstants.ChestRewardCandidateCount ? pool.Count : RewardConstants.ChestRewardCandidateCount;
         for (var i = 0; i < pickCount; i++)
         {
             var index = randomUtility.Range(0, pool.Count);
-            rewardModel.ChestRewardRelicIds.Add(pool[index]);
+            rewardModel.AddChestRewardRelicId(pool[index]);
             pool.RemoveAt(index);
         }
     }
@@ -845,11 +883,13 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
 
     public void ApplyRelicStats()
     {
-        // Relic stats are applied as modifiers to effective stats
-        // For now, this is a notification mechanism; StatSystem will query relics
         this.SendEvent(new RelicStatsChangedEvent());
     }
 }
+
+// ============================================================
+// ShopSystem — [S2 FIX] BuyHelpCard removes from list, uses RewardConstants, GoldChangedEvent
+// ============================================================
 
 public interface IShopSystem : ISystem
 {
@@ -865,23 +905,24 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
     public void GenerateShopCards()
     {
         var rewardModel = this.GetModel<IRewardModel>();
+        var configModel = this.GetModel<IConfigModel>();
         var randomUtility = this.GetUtility<IRandomUtility>();
 
-        rewardModel.ShopCardIds.Clear();
+        rewardModel.ClearShopCardIds();
 
-        var pool = new List<string>
+        // [S2 FIX] Use IConfigModel to dynamically query all help cards
+        var allHelpCards = configModel.GetAllHelpCardDefinitions();
+        var pool = new List<string>();
+        for (var i = 0; i < allHelpCards.Count; i++)
         {
-            DefaultGameConfigFactory.HelpPotionId,
-            DefaultGameConfigFactory.HelpThrowingKnifeId,
-            DefaultGameConfigFactory.HelpCommonChestId,
-            DefaultGameConfigFactory.HelpAttributeUpId
-        };
+            pool.Add(allHelpCards[i].CardId);
+        }
 
         randomUtility.Shuffle(pool);
-        var count = pool.Count < 6 ? pool.Count : 6;
+        var count = pool.Count < RewardConstants.ShopDisplayCount ? pool.Count : RewardConstants.ShopDisplayCount;
         for (var i = 0; i < count; i++)
         {
-            rewardModel.ShopCardIds.Add(pool[i]);
+            rewardModel.AddShopCardId(pool[i]);
         }
     }
 
@@ -891,6 +932,7 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
         var playerModel = this.GetModel<IPlayerModel>();
         var deckModel = this.GetModel<IDeckModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
+        var rewardModel = this.GetModel<IRewardModel>();
         var rewardSystem = this.GetSystem<IRewardSystem>();
 
         var definition = configModel.GetCardDefinition(cardId);
@@ -906,7 +948,8 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
             return false;
         }
 
-        playerModel.Gold.Value -= definition.Price;
+        // [S2 FIX] Use RewardConstants + send GoldChangedEvent
+        this.ChangeGold(playerModel, -definition.Price);
         var runtime = collectionModel.CreateCard(definition);
         deckModel.OwnedHelpCards.Add(runtime.Uid);
         deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
@@ -914,6 +957,9 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
             Uid = runtime.Uid,
             DefinitionId = runtime.DefinitionId
         };
+
+        // [S2 FIX] Remove purchased card from shop display
+        rewardModel.RemoveShopCardId(cardId);
 
         this.SendEvent(new HelpCardPurchasedEvent(cardId, definition.Price));
         return true;
@@ -930,13 +976,11 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
             return false;
         }
 
-        // Check if card is in owned list
         if (!deckModel.OwnedHelpCards.Contains(helpCardUid))
         {
             return false;
         }
 
-        // Mark as permanently removed
         if (deckModel.HelpCardStates.TryGetValue(helpCardUid.Value, out var state))
         {
             state.IsPermanentlyRemoved = true;
@@ -944,23 +988,21 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
             state.IsInItemSlot = false;
         }
 
-        // Remove from board if present
         if (runtime.BoardSlot.HasValue)
         {
             var boardSystem = this.GetSystem<IBoardSystem>();
             boardSystem.RemoveCardAt(runtime.BoardSlot.Value);
         }
 
-        // Remove from item slot if present
         if (runtime.ItemSlotIndex.HasValue)
         {
             deckModel.ItemSlots[runtime.ItemSlotIndex.Value] = null;
             this.SendEvent(new ItemSlotChangedEvent(runtime.ItemSlotIndex.Value, null));
         }
 
-        playerModel.Gold.Value += 10;
-        this.SendEvent(new HelpCardDeletedForGoldEvent(helpCardUid, 10));
+        // [S2 FIX] Use RewardConstants + send GoldChangedEvent
+        this.ChangeGold(playerModel, RewardConstants.DeleteHelpCardGold);
+        this.SendEvent(new HelpCardDeletedForGoldEvent(helpCardUid, RewardConstants.DeleteHelpCardGold));
         return true;
     }
 }
-

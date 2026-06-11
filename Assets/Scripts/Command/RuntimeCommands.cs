@@ -472,7 +472,7 @@ public sealed class KillMonsterCommand : AbstractCommand
             boardSystem.RemoveCardAt(monsterRuntime.BoardSlot.Value);
         }
 
-        playerModel.Gold.Value += 5;
+        this.ChangeGold(playerModel, RewardConstants.MonsterKillGold);
         collectionModel.RemoveCard(MonsterUid);
         this.SendEvent(new MonsterKilledEvent(MonsterUid, monsterRuntime.DefinitionId));
     }
@@ -546,7 +546,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 this.SendEvent(new AttributeChoiceRequestedEvent(HelpCardUid));
                 break;
             case DefaultGameConfigFactory.HelpCommonChestId:
-                playerModel.Gold.Value += 20;
+                this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
                 this.SendEvent(new GameplayMessageEvent("普通宝箱卡暂以 20 金币替代遗物选择。"));
                 this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
                 break;
@@ -729,33 +729,18 @@ public sealed class ChooseRoomCommand : AbstractCommand
         // 1. Settle unused help cards (+10 gold each)
         rewardSystem.SettleUnusedHelpCards();
 
-        // 2. Restore help deck snapshot (temp removed cards come back)
+        // 2. Restore help deck snapshot (temp removed cards come back, item slots cleared)
         rewardSystem.RestoreHelpDeckSnapshot();
 
-        // 3. Clear item slots
-        for (var i = 0; i < deckModel.ItemSlots.Length; i++)
-        {
-            if (deckModel.ItemSlots[i].HasValue)
-            {
-                var uid = deckModel.ItemSlots[i].Value;
-                if (collectionModel.TryGetCard(uid, out var card))
-                {
-                    card.ItemSlotIndex = null;
-                }
-                deckModel.ItemSlots[i] = null;
-            }
-        }
-
-        // 4. Get room definition and apply effect
+        // 3. Get room definition and apply effect
         var roomDef = configModel.GetRoomDefinition(RoomId);
         this.SendEvent(new RoomChosenEvent(RoomId, roomDef.RoomType));
 
         switch (roomDef.RoomType)
         {
             case RoomType.Gold:
-                playerModel.Gold.Value += roomDef.RewardGold;
+                this.ChangeGold(playerModel, roomDef.RewardGold);
                 this.SendEvent(new GameplayMessageEvent($"金币房：获得 {roomDef.RewardGold} 金币。"));
-                // After gold room, go to help reward
                 flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
                 rewardSystem.GenerateHelpRewardCandidates();
                 this.SendEvent(new HelpRewardGeneratedEvent(
@@ -864,8 +849,8 @@ public sealed class SkipHelpRewardCommand : AbstractCommand
         var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var flowModel = this.GetModel<IFlowModel>();
 
-        playerModel.Gold.Value += 10;
-        this.SendEvent(new HelpRewardSkippedEvent(10));
+        this.ChangeGold(playerModel, RewardConstants.SkipHelpRewardGold);
+        this.SendEvent(new HelpRewardSkippedEvent(RewardConstants.SkipHelpRewardGold));
         this.SendEvent(new GameplayMessageEvent("跳过选卡，获得 10 金币。"));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
         flowModel.SetPhase(FlowPhase.PlayerControl);
@@ -911,8 +896,8 @@ public sealed class SkipChestRewardCommand : AbstractCommand
         var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var flowModel = this.GetModel<IFlowModel>();
 
-        playerModel.Gold.Value += 20;
-        this.SendEvent(new ChestRewardSkippedEvent(20));
+        this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
+        this.SendEvent(new ChestRewardSkippedEvent(RewardConstants.SkipChestRewardGold));
         this.SendEvent(new GameplayMessageEvent("跳过宝箱，获得 20 金币。"));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
 

@@ -437,14 +437,6 @@ public struct InteractionResult
     public string Reason;
 }
 
-public enum RewardContext
-{
-    NodeClear,
-    Chest,
-    Shop,
-    Tutor
-}
-
 public struct DeckCapacity
 {
     public DeckCapacity(int maxTotal, int sameNameLimit)
@@ -519,6 +511,7 @@ public sealed class RelicInstance
     public int StatMaxHpBonus;
     public bool IsOneShot;
     public bool HasTriggered;
+    public bool IsConsumed;
 
     public static RelicInstance FromDefinition(RelicDefinition definition)
     {
@@ -531,17 +524,10 @@ public sealed class RelicInstance
             StatDefenseBonus = definition.StatDefenseBonus,
             StatMaxHpBonus = definition.StatMaxHpBonus,
             IsOneShot = definition.IsOneShot,
-            HasTriggered = false
+            HasTriggered = false,
+            IsConsumed = false
         };
     }
-}
-
-public enum RoomRewardCardId
-{
-    None,
-    GoldCard,
-    ChestCard,
-    AttributeCard
 }
 
 public static class RewardConstants
@@ -583,9 +569,4 @@ public sealed class ChestRewardCandidate
     public CardQuality Quality;
 }
 
-public sealed class RelicRuntime
-{
-    public string RelicId;
-    public string DisplayName;
-    public bool IsConsumed;
-}
+

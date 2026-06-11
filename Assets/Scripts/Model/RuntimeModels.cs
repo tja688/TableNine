@@ -55,9 +55,9 @@ public interface IPlayerModel : IModel
     int BaseAttack { get; }
     int BaseDefense { get; }
     IReadOnlyList<string> SkillIds { get; }
-    IReadOnlyList<RelicRuntime> Relics { get; }
+    IReadOnlyList<RelicInstance> Relics { get; }
     int MaxRelicCount { get; }
-    void AddRelic(RelicRuntime relic);
+    void AddRelic(RelicInstance relic);
     bool RemoveRelic(string relicId);
     bool HasRelic(string relicId);
     void ResetFromCharacter(CharacterDefinition characterDefinition, CardUid playerCardUid);
@@ -68,7 +68,7 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
 {
     private readonly BindableProperty<int> mGold = new BindableProperty<int>();
     private readonly List<string> mSkillIds = new List<string>();
-    private readonly List<RelicRuntime> mRelics = new List<RelicRuntime>();
+    private readonly List<RelicInstance> mRelics = new List<RelicInstance>();
 
     public CardUid PlayerCardUid { get; set; }
     public BindableProperty<int> Gold => mGold;
@@ -76,14 +76,14 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
     public int BaseAttack { get; private set; }
     public int BaseDefense { get; private set; }
     public IReadOnlyList<string> SkillIds => mSkillIds;
-    public IReadOnlyList<RelicRuntime> Relics => mRelics;
+    public IReadOnlyList<RelicInstance> Relics => mRelics;
     public int MaxRelicCount => 12;
 
     protected override void OnInit()
     {
     }
 
-    public void AddRelic(RelicRuntime relic)
+    public void AddRelic(RelicInstance relic)
     {
         if (mRelics.Count >= MaxRelicCount) return;
         if (HasRelic(relic.RelicId)) return;
@@ -633,13 +633,22 @@ public sealed class FlowModel : AbstractModel, IFlowModel
 
 public interface IRewardModel : IModel
 {
-    List<string> HelpRewardCardIds { get; }
-    List<string> ChestRewardRelicIds { get; }
-    List<string> TutorSkillIds { get; }
-    List<string> ShopCardIds { get; }
-    List<string> RoomCandidateIds { get; }
+    IReadOnlyList<string> HelpRewardCardIds { get; }
+    IReadOnlyList<string> ChestRewardRelicIds { get; }
+    IReadOnlyList<string> TutorSkillIds { get; }
+    IReadOnlyList<string> ShopCardIds { get; }
+    IReadOnlyList<string> RoomCandidateIds { get; }
     RewardSource CurrentRewardSource { get; set; }
     void Clear();
+    void ClearHelpRewardCardIds();
+    void ClearChestRewardRelicIds();
+    void ClearShopCardIds();
+    void ClearRoomCandidateIds();
+    void AddHelpRewardCardId(string cardId);
+    void AddChestRewardRelicId(string relicId);
+    void AddRoomCandidateId(string roomId);
+    void AddShopCardId(string cardId);
+    void RemoveShopCardId(string cardId);
 }
 
 public sealed class RewardModel : AbstractModel, IRewardModel
@@ -650,11 +659,11 @@ public sealed class RewardModel : AbstractModel, IRewardModel
     private readonly List<string> mShopCardIds = new List<string>();
     private readonly List<string> mRoomCandidateIds = new List<string>();
 
-    public List<string> HelpRewardCardIds => mHelpRewardCardIds;
-    public List<string> ChestRewardRelicIds => mChestRewardRelicIds;
-    public List<string> TutorSkillIds => mTutorSkillIds;
-    public List<string> ShopCardIds => mShopCardIds;
-    public List<string> RoomCandidateIds => mRoomCandidateIds;
+    public IReadOnlyList<string> HelpRewardCardIds => mHelpRewardCardIds;
+    public IReadOnlyList<string> ChestRewardRelicIds => mChestRewardRelicIds;
+    public IReadOnlyList<string> TutorSkillIds => mTutorSkillIds;
+    public IReadOnlyList<string> ShopCardIds => mShopCardIds;
+    public IReadOnlyList<string> RoomCandidateIds => mRoomCandidateIds;
     public RewardSource CurrentRewardSource { get; set; }
 
     protected override void OnInit()
@@ -671,4 +680,14 @@ public sealed class RewardModel : AbstractModel, IRewardModel
         mRoomCandidateIds.Clear();
         CurrentRewardSource = RewardSource.None;
     }
+
+    public void ClearHelpRewardCardIds() => mHelpRewardCardIds.Clear();
+    public void ClearChestRewardRelicIds() => mChestRewardRelicIds.Clear();
+    public void ClearShopCardIds() => mShopCardIds.Clear();
+    public void ClearRoomCandidateIds() => mRoomCandidateIds.Clear();
+    public void AddHelpRewardCardId(string cardId) => mHelpRewardCardIds.Add(cardId);
+    public void AddChestRewardRelicId(string relicId) => mChestRewardRelicIds.Add(relicId);
+    public void AddRoomCandidateId(string roomId) => mRoomCandidateIds.Add(roomId);
+    public void AddShopCardId(string cardId) => mShopCardIds.Add(cardId);
+    public void RemoveShopCardId(string cardId) => mShopCardIds.Remove(cardId);
 }

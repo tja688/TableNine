@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using QFramework;
 
@@ -345,8 +347,8 @@ public sealed class TableNineM3EditModeTests
         var unReg = TableNine.Interface.RegisterEvent<PopupRequestedEvent>(popups.Add);
 
         // 手动设置候选（因为满容量时 Generate 不会产生候选）
-        rewardModel.HelpRewardCardIds.Clear();
-        rewardModel.HelpRewardCardIds.Add(DefaultGameConfigFactory.HelpBlessingId);
+        rewardModel.ClearHelpRewardCardIds();
+        rewardModel.AddHelpRewardCardId(DefaultGameConfigFactory.HelpBlessingId);
 
         TableNine.Interface.SendCommand(new PickHelpCardRewardCommand(DefaultGameConfigFactory.HelpBlessingId));
 
@@ -791,6 +793,242 @@ public sealed class TableNineM3EditModeTests
         Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomChestId));
         Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomAttributeId));
         Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomShopId));
+    }
+
+    // ========================
+    // 补充测试：QA 报告指出的测试盲区
+    // ========================
+
+    [Test]
+    public void ChooseTutorSkill_Adds_Skill_Successfully()
+    {
+        StartRun(42);
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+
+        var skillCountBefore = playerModel.SkillIds.Count;
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillFirstStrikeId));
+
+        Assert.That(playerModel.SkillIds.Count, Is.EqualTo(skillCountBefore + 1), "应新增一个导师技能");
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl), "选取后应回到 PlayerControl");
+    }
+
+    [Test]
+    public void ChooseTutorSkill_Duplicate_Shows_Popup()
+    {
+        StartRun(42);
+        var popups = new List<PopupRequestedEvent>();
+        var unReg = TableNine.Interface.RegisterEvent<PopupRequestedEvent>(popups.Add);
+
+        // 小鬼初始已有轻车熟路，再次选取应弹 Popup
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillLightFootedId));
+
+        unReg.UnRegister();
+        Assert.That(popups.Count, Is.GreaterThan(0), "重复选取导师技能应弹出提示");
+    }
+
+    [Test]
+    public void Relic_Full_Shows_Popup_And_Does_Not_Add()
+    {
+        StartRun(42);
+        var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+        var popups = new List<PopupRequestedEvent>();
+        var unReg = TableNine.Interface.RegisterEvent<PopupRequestedEvent>(popups.Add);
+
+        // 填满 12 个遗物格（用反射绕过 HasRelic 重复检查）
+        var relicIds = new[]
+        {
+            DefaultGameConfigFactory.RelicWoodShieldId,
+            DefaultGameConfigFactory.RelicWoodSwordId,
+            DefaultGameConfigFactory.RelicWoodArmorId,
+            DefaultGameConfigFactory.RelicLivingFleshId,
+            DefaultGameConfigFactory.RelicThornArmorId,
+            DefaultGameConfigFactory.RelicPhoenixFeatherId
+        };
+
+        var relicsField = playerModel.GetType().GetField("mRelics",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        var relicsList = (List<RelicInstance>)relicsField.GetValue(playerModel);
+
+        for (var i = 0; i < 12; i++)
+        {
+            var def = configModel.GetRelicDefinition(relicIds[i % relicIds.Length]);
+            relicsList.Add(RelicInstance.FromDefinition(def));
+        }
+
+        Assert.That(playerModel.Relics.Count, Is.EqualTo(12), "遗物栏应已满");
+
+        // 尝试通过 RelicSystem 添加新遗物
+        var result = relicSystem.AddRelic(relicIds[0]);
+
+        unReg.UnRegister();
+        Assert.That(result, Is.False, "遗物满时添加应失败");
+        Assert.That(popups.Count, Is.GreaterThan(0), "遗物满时应弹出提示");
+    }
+
+    [Test]
+    public void Relic_IsConsumed_HasRelic_Returns_False()
+    {
+        StartRun(42);
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+        var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
+
+        var def = configModel.GetRelicDefinition(DefaultGameConfigFactory.RelicPhoenixFeatherId);
+        var relic = RelicInstance.FromDefinition(def);
+        playerModel.AddRelic(relic);
+
+        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.True,
+            "添加后应拥有遗物");
+
+        // 标记为已消耗
+        relic.IsConsumed = true;
+
+        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.False,
+            "消耗后 HasRelic 应返回 false");
+        Assert.That(playerModel.Relics.Count, Is.EqualTo(1), "消耗后遗物仍在列表中");
+    }
+
+    [Test]
+    public void Shop_Buy_Removes_Card_From_Display()
+    {
+        StartRun(42);
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var shopSystem = TableNine.Interface.GetSystem<IShopSystem>();
+        var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+
+        playerModel.Gold.Value = 1000;
+        shopSystem.GenerateShopCards();
+
+        var countBefore = rewardModel.ShopCardIds.Count;
+
+        // 找一个可购买的商品
+        string buyableCardId = null;
+        for (var i = 0; i < rewardModel.ShopCardIds.Count; i++)
+        {
+            if (deckModel.CountHelpCardsById(rewardModel.ShopCardIds[i]) < 3)
+            {
+                buyableCardId = rewardModel.ShopCardIds[i];
+                break;
+            }
+        }
+
+        if (buyableCardId == null)
+        {
+            Assert.Inconclusive("商店所有商品均达同名上限。");
+            return;
+        }
+
+        shopSystem.BuyHelpCard(buyableCardId);
+
+        Assert.That(rewardModel.ShopCardIds.Count, Is.EqualTo(countBefore - 1),
+            "购买后商品应从商店列表移除");
+    }
+
+    [Test]
+    public void ProceedToNextNode_Board_Has_Cards_After_Advance()
+    {
+        StartRunAndClearNode();
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+
+        TableNine.Interface.SendCommand(new ProceedToNextNodeCommand());
+
+        // 新节点应发牌，棋盘上应有卡
+        var cardCount = 0;
+        for (var i = 1; i <= 9; i++)
+        {
+            var uid = boardModel.GetCardAt(new BoardSlotNo(i));
+            if (uid.HasValue)
+            {
+                cardCount++;
+            }
+        }
+
+        Assert.That(cardCount, Is.GreaterThan(0), "推进到新节点后棋盘上应有卡片");
+    }
+
+    [Test]
+    public void EndToEnd_GoldRoom_SkipReward_ProceedToNextNode()
+    {
+        StartRunAndClearNode();
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var runModel = TableNine.Interface.GetModel<IRunModel>();
+
+        // 选金币房
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
+
+        // 跳过帮助卡奖励
+        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
+
+        var nodeBefore = runModel.NodeInLayer.Value;
+
+        // 推进到下一节点
+        TableNine.Interface.SendCommand(new ProceedToNextNodeCommand());
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1), "节点应推进 +1");
+    }
+
+    [Test]
+    public void GoldChangedEvent_Fired_On_MonsterKill()
+    {
+        StartRun(42);
+        var events = new List<GoldChangedEvent>();
+        var unReg = TableNine.Interface.RegisterEvent<GoldChangedEvent>(events.Add);
+
+        // 找到一只怪物并击杀
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+
+        CardUid? monsterUid = null;
+        for (var i = 1; i <= 9; i++)
+        {
+            var uid = boardModel.GetCardAt(new BoardSlotNo(i));
+            if (uid.HasValue && collectionModel.TryGetCard(uid.Value, out var rt) && rt.CardType == CardType.Monster)
+            {
+                monsterUid = uid.Value;
+                break;
+            }
+        }
+
+        if (!monsterUid.HasValue)
+        {
+            unReg.UnRegister();
+            Assert.Inconclusive("棋盘上没有怪物。");
+            return;
+        }
+
+        TableNine.Interface.SendCommand(new KillMonsterCommand(monsterUid.Value));
+
+        unReg.UnRegister();
+        Assert.That(events.Count, Is.GreaterThan(0), "击杀怪物应触发 GoldChangedEvent");
+        Assert.That(events[events.Count - 1].Delta, Is.EqualTo(RewardConstants.MonsterKillGold),
+            "金币增量应为 MonsterKillGold");
+    }
+
+    [Test]
+    public void Relic_Stat_Bonus_Applied_To_EffectiveStats()
+    {
+        StartRun(42);
+        var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
+        var statSystem = TableNine.Interface.GetSystem<IStatSystem>();
+
+        var statsBefore = statSystem.GetEffectivePlayerStats();
+
+        // 添加木盾（DEF+2）和木剑（ATK+2）
+        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodSwordId);
+
+        var statsAfter = statSystem.GetEffectivePlayerStats();
+
+        Assert.That(statsAfter.Defense - statsBefore.Defense, Is.EqualTo(2), "木盾应 +2 防御");
+        Assert.That(statsAfter.Attack - statsBefore.Attack, Is.EqualTo(2), "木剑应 +2 攻击");
     }
 
     // ========================
