@@ -15,7 +15,7 @@
 游戏开发过程性笔记：Assets/Notes，根据自己需求选择性阅读。如果开发过程中有长文本或者用户要求落地笔记、汇报等需求，统一落地在此目录。注意维护有变动的笔记。
 当前Notes中几个值得关注的笔记:
 1、游戏开发核心架构设计案：Assets/Notes/ArchitectureDesign.md。
-2、UI协作开发落地+装配编辑器工作流：Assets/Notes/UIIntegrationWorkflow.md+Assets/Notes/UIEditorAndWorkflow.md
+2、UI 协作开发 / 面板接入 / 编辑器工作流：Assets/Notes/UIWorkflow.md
 3、Assets/Notes/QframeworkNotes/QFramework_Docs_用户手册.md，在QFramework范式开发过程中遇到问题可以简单参考，注意手册体量较大，根据目录查找即可。
 4、在Assets/Notes/QframeworkNotes/QFramework_Docs_API.md 有QFramework API文档。
 
