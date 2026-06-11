@@ -126,11 +126,24 @@ public sealed class TableNineUIPanelRegistry : ScriptableObject, ISerializationC
 #endif
     [SerializeField] private GameObject mFallbackScrollViewPrefab;
 
+#if ODIN_INSPECTOR
+    [Title("DescriptionPanel")]
+    [InfoBox("UIGameplayPanel / DescriptionPanel 单行描述文案配置。")]
+    [PropertyOrder(110)]
+#endif
+    [SerializeField] private TableNineDescriptionPanelConfig mDescriptionPanelConfig;
+
     public GameObject FallbackButtonPrefab => mFallbackButtonPrefab;
     public GameObject FallbackTextPrefab => mFallbackTextPrefab;
     public GameObject FallbackIconPrefab => mFallbackIconPrefab;
     public GameObject FallbackPanelPrefab => mFallbackPanelPrefab;
     public GameObject FallbackScrollViewPrefab => mFallbackScrollViewPrefab;
+    public TableNineDescriptionPanelConfig DescriptionPanelConfig => mDescriptionPanelConfig;
+
+    public void SetDescriptionPanelConfig(TableNineDescriptionPanelConfig config)
+    {
+        mDescriptionPanelConfig = config;
+    }
 
     private List<PanelEntry> mRuntimeEntries;
 

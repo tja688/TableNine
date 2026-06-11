@@ -18,7 +18,7 @@ public sealed class UIGameplayPanel : UIPanel, IController
     [SerializeField] private TMP_Text mRelicText;
     [SerializeField] private TMP_Text mDescriptionText;
 
-    private string mLastMessage = "左键点击玩家正交相邻格交互，拾取后的帮助卡点击下方道具槽使用。";
+    private string mLastMessage;
 
     public IArchitecture GetArchitecture()
     {
@@ -27,6 +27,7 @@ public sealed class UIGameplayPanel : UIPanel, IController
 
     protected override void OnInit(IUIData uiData = null)
     {
+        mLastMessage = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudDefaultHint);
         AutoBind();
         RegisterEvents();
         RefreshAll();
@@ -74,19 +75,22 @@ public sealed class UIGameplayPanel : UIPanel, IController
     {
         mEventRegisters.Add(this.RegisterEvent<GameplayMessageEvent>(evt =>
         {
-            mLastMessage = evt.Message;
+            mLastMessage = DescriptionPanelTexts.Sanitize(evt.Message);
             RefreshDescription();
         }));
 
         mEventRegisters.Add(this.RegisterEvent<LevelClearReadyEvent>(evt =>
         {
-            mLastMessage = $"第 {evt.Layer} 层第 {evt.NodeInLayer} 节点已清空。";
+            mLastMessage = DescriptionPanelTexts.Format(
+                DescriptionPanelTextKeys.HudLevelClear,
+                evt.Layer,
+                evt.NodeInLayer);
             RefreshDescription();
         }));
 
         mEventRegisters.Add(this.RegisterEvent<MonsterKilledEvent>(_ =>
         {
-            mLastMessage = "怪物被击杀，获得 5 金币。";
+            mLastMessage = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudMonsterKilled);
             RefreshAll();
         }));
 
@@ -160,7 +164,7 @@ public sealed class UIGameplayPanel : UIPanel, IController
 
         if (!TableNine.IsInitialized || !this.GetModel<IRunModel>().IsRunActive.Value)
         {
-            mDescriptionText.text = "正在准备首个可玩节点。";
+            mDescriptionText.text = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudPreparing);
             return;
         }
 
@@ -168,23 +172,23 @@ public sealed class UIGameplayPanel : UIPanel, IController
         var flowModel = this.GetModel<IFlowModel>();
         if (deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.ThrowingKnifeTarget)
         {
-            mDescriptionText.text = "飞刀待命：点击任意怪物结算 6 点伤害。";
+            mDescriptionText.text = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudThrowingKnifeReady);
             return;
         }
 
         if (deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.AttributeChoice)
         {
-            mDescriptionText.text = "属性提升卡：请在覆盖层中选择属性。";
+            mDescriptionText.text = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudAttributeChoice);
             return;
         }
 
         if (flowModel.Phase.Value == FlowPhase.ClearReady)
         {
-            mDescriptionText.text = "节点已清空。你仍可拾取或使用帮助卡。";
+            mDescriptionText.text = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudNodeClearReady);
             return;
         }
 
-        mDescriptionText.text = $"[{flowModel.Phase.Value}] 牌堆 {deckModel.BattleDrawPile.Count}\n{mLastMessage}";
+        mDescriptionText.text = DescriptionPanelTexts.Sanitize(mLastMessage);
     }
 
     private TMP_Text FindTmpText(string childName)

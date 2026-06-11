@@ -48,6 +48,7 @@ public sealed class GameplayBootstrap : MonoBehaviour
         }
 
         UIKit.Config = new TableNineUIKitConfig(mUIPanelRegistry);
+        DescriptionPanelTexts.Initialize(mUIPanelRegistry != null ? mUIPanelRegistry.DescriptionPanelConfig : null);
         DisableSceneEventSystemBeforeUIKitRoot();
         UIKit.Root.SetResolution(426, 240, 0.5f);
         UIKit.Root.ScreenSpaceOverlayRenderMode();

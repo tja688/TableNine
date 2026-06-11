@@ -60,7 +60,7 @@ namespace TableNineUI.Editor
                 Category = Category.Hud,
                 TriggerEvent = "BattleDeckChangedEvent / DamageAppliedEvent / GoldChangedEvent 等",
                 ExpectedElements = "角色名、头像、血量/血条、攻击、防御、金币、遗物栏(12格)、卡组信息、下一张预览、技能文本、战斗日志、通关按钮",
-                DesignNote = "必须使用正式 Prefab。建议补攻击/防御数值、血条、节点信息文本。"
+                DesignNote = "必须使用正式 Prefab。DescriptionPanel 单行描述上限 40 字，文案在 UI 面板管理 → DescriptionPanel 描述文案 中维护。"
             },
 
             ["popup.message"] = new PanelMeta

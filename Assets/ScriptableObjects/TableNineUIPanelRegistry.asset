@@ -117,3 +117,4 @@ MonoBehaviour:
   mFallbackIconPrefab: {fileID: 5329456979962947402, guid: c1e723efc8636b0448c3f06fe2b2d91a, type: 3}
   mFallbackPanelPrefab: {fileID: 0}
   mFallbackScrollViewPrefab: {fileID: 0}
+  mDescriptionPanelConfig: {fileID: 11400000, guid: 29c05772fb4a06a42b56cb2d79a6019e, type: 2}

@@ -130,7 +130,17 @@ Fallback 组件 Prefab 在 Registry 资产底部配置，由 `TableNineUIRuntime
 | 布局 | 顶栏 + Toolbar；左侧分类导航（250px）；右侧详情（说明 + 接入配置 + Fallback + 备注）；底部「全局 Fallback 预制件」 |
 | 工具 | **同步推荐默认值**（合并代码默认，不覆盖已有 Prefab）、**刷新**、**定位资产** |
 | 样式 | UI Toolkit **inline C# 样式**（暖棕控制台风）；**不依赖 USS** |
-| 代码 | `Assets/Scripts/Editor/TableNineUIRegistryEditor.cs` |
+| DescriptionPanel 文案 | 侧栏底部 **DescriptionPanel 描述文案**：列出全部 HUD 描述键，实时字数校验（**40 字上限**，含空格；禁止换行），支持 **应用精简默认文案** |
+| 代码 | `Assets/Scripts/Editor/TableNineUIRegistryEditor.cs`、`DescriptionPanelConfigEditorSection.cs` |
+
+### DescriptionPanel 文案约束
+
+- **展示区域**：`UIGameplayPanel` 内 `DescriptionPanel / DescriptionText`（约 108×85 px，12px 像素字体）。
+- **字数上限**：单行 **40 字**（`DescriptionPanelTextRules.MaxLength`）；空格计入字数；**不要使用换行**（历史上 `[Phase] 牌堆 N\n消息` 会造成严重溢出，已移除）。
+- **配置资产**：`TableNineDescriptionPanelConfig`（推荐路径 `Assets/ScriptableObjects/TableNineDescriptionPanelConfig.asset`），由 `TableNineUIPanelRegistry.DescriptionPanelConfig` 引用；Bootstrap 启动时注入 `DescriptionPanelTexts`。
+- **运行时入口**：`DescriptionPanelTexts.Get(key)` / `Format(key, args)`；Gameplay 侧通过 `GameplayMessageEvent` 或 HUD 状态键写入，面板侧 `Sanitize` 兜底截断。
+- **键名常量**：`DescriptionPanelTextKeys`；内置精简默认见 `DescriptionPanelTextDefaults`。
+- **编辑器校验**：输入框下方显示 `当前字数 / 40`；超限或含换行时显示 Warning/Error。
 
 ## 8. 架构约束
 
@@ -148,6 +158,10 @@ Fallback 组件 Prefab 在 Registry 资产底部配置，由 `TableNineUIRuntime
 | `TableNineUIPanelRegistry.cs` / `.asset` | 运行时映射 + 默认条目 |
 | `UIPanelMetadataCatalog.cs` | 编辑器中文元数据 |
 | `TableNineUIRegistryEditor.cs` | 面板管理窗口 |
+| `DescriptionPanelConfigEditorSection.cs` | DescriptionPanel 文案专属编辑区 |
+| `TableNineDescriptionPanelConfig.cs` | DescriptionPanel 文案 ScriptableObject |
+| `DescriptionPanelTextKeys.cs` / `DescriptionPanelTexts.cs` | 文案键与运行时访问 |
+| `DescriptionPanelTextRules.cs` | 40 字校验规则 |
 | `TableNineUIRouter.cs` / `TableNineUIRuntime` | 事件路由与开关面板 |
 | `TableNineUIRequestPanelData.cs` | 请求数据结构 |
 | `UIFallbackPanel.cs` | Fallback 运行时 |
@@ -167,3 +181,4 @@ Fallback 组件 Prefab 在 Registry 资产底部配置，由 `TableNineUIRuntime
 - [ ] `.asset` — 同步默认值并绑 Prefab / Fallback
 - [ ] EditMode 测试
 - [ ] 本文档 §4 面板表 — 更新 Router 状态一行
+- [ ] DescriptionPanel 新文案 — 在 **UI 面板管理 → DescriptionPanel 描述文案** 登记键值，并确认 ≤40 字

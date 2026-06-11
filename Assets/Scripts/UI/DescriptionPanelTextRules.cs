@@ -1,0 +1,56 @@
+using System;
+
+/// <summary>
+/// DescriptionPanel 文案长度规则。换行符与空格均计入字数。
+/// </summary>
+public static class DescriptionPanelTextRules
+{
+    public const int MaxLength = 40;
+
+    public static int CountLength(string text)
+    {
+        return string.IsNullOrEmpty(text) ? 0 : text.Length;
+    }
+
+    public static bool IsWithinLimit(string text)
+    {
+        return CountLength(text) <= MaxLength;
+    }
+
+    public static bool ContainsLineBreak(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return false;
+        }
+
+        return text.IndexOf('\n') >= 0 || text.IndexOf('\r') >= 0;
+    }
+
+    public static string Clamp(string text)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= MaxLength)
+        {
+            return text ?? string.Empty;
+        }
+
+        return text.Substring(0, MaxLength);
+    }
+
+    public static string Format(string format, params object[] args)
+    {
+        if (string.IsNullOrEmpty(format))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return string.Format(format, args);
+        }
+        catch (FormatException)
+        {
+            return format;
+        }
+    }
+}

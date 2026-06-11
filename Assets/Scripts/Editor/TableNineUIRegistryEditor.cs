@@ -20,7 +20,6 @@ namespace TableNineUI.Editor
         private const string PrefKeyPrefix = "TableNineUI.RegistryEditor.";
         private const string PrefSelectedKey = PrefKeyPrefix + "selectedKey";
         private const string PrefSearchKey = PrefKeyPrefix + "search";
-        private const string GlobalFallbackKey = "__global_fallback__";
 
         private TableNineUIPanelRegistry mRegistry;
         private SerializedObject mSerializedObj;
@@ -456,26 +455,55 @@ namespace TableNineUI.Editor
             header.Add(subtitle);
             mRoot.Add(header);
 
-            // 2) Toolbar
-            var toolbar = new Toolbar();
-            toolbar.style.height = 34;
+            // 2) Toolbar — 左侧操作按钮，右侧搜索框（窄窗口时搜索不被侧栏挤压）
+            var toolbar = new VisualElement();
+            toolbar.style.flexDirection = FlexDirection.Row;
+            toolbar.style.alignItems = Align.Center;
+            toolbar.style.flexWrap = Wrap.Wrap;
+            toolbar.style.minHeight = 34;
             toolbar.style.paddingLeft = 8;
             toolbar.style.paddingRight = 8;
+            toolbar.style.paddingTop = 4;
+            toolbar.style.paddingBottom = 4;
             toolbar.style.backgroundColor = Theme.HeaderBg;
             toolbar.style.borderBottomWidth = 1;
             toolbar.style.borderBottomColor = Theme.Divider;
 
-            var syncBtn = new ToolbarButton(OnSyncDefaults) { text = "同步推荐默认值" };
+            var syncBtn = new Button(OnSyncDefaults) { text = "同步推荐默认值" };
             syncBtn.tooltip = "将推荐的面板默认配置合并到注册表中（不会覆盖已有 Prefab 引用）";
+            StyleToolbarButton(syncBtn);
             toolbar.Add(syncBtn);
 
-            var refreshBtn = new ToolbarButton(RefreshAll) { text = "刷新" };
+            var refreshBtn = new Button(RefreshAll) { text = "刷新" };
             refreshBtn.tooltip = "刷新编辑器显示";
+            StyleToolbarButton(refreshBtn);
             toolbar.Add(refreshBtn);
 
-            var pingBtn = new ToolbarButton(OnPingAsset) { text = "定位资产" };
+            var pingBtn = new Button(OnPingAsset) { text = "定位资产" };
             pingBtn.tooltip = "在项目面板中高亮定位此注册表资产";
+            StyleToolbarButton(pingBtn);
             toolbar.Add(pingBtn);
+
+            var toolbarSpacer = new VisualElement();
+            toolbarSpacer.style.flexGrow = 1;
+            toolbarSpacer.style.minWidth = 8;
+            toolbar.Add(toolbarSpacer);
+
+            mSearchField = new TextField("搜索") { value = mSearchText };
+            mSearchField.style.minWidth = 180;
+            mSearchField.style.width = 240;
+            mSearchField.style.maxWidth = 320;
+            mSearchField.style.flexShrink = 0;
+            mSearchField.style.marginLeft = 8;
+            mSearchField.style.marginRight = 4;
+            StyleSearchField(mSearchField);
+            mSearchField.RegisterValueChangedCallback(evt =>
+            {
+                mSearchText = evt.newValue ?? "";
+                EditorPrefs.SetString(PrefSearchKey, mSearchText);
+                RebuildSidebarList();
+            });
+            toolbar.Add(mSearchField);
 
             mRoot.Add(toolbar);
 
@@ -490,26 +518,6 @@ namespace TableNineUI.Editor
             sidebarColumn.style.borderRightWidth = 1;
             sidebarColumn.style.borderRightColor = Theme.Divider;
 
-            var searchWrap = new VisualElement();
-            searchWrap.style.paddingLeft = 10;
-            searchWrap.style.paddingRight = 10;
-            searchWrap.style.paddingTop = 10;
-            searchWrap.style.paddingBottom = 6;
-            searchWrap.style.borderBottomWidth = 1;
-            searchWrap.style.borderBottomColor = Theme.Divider;
-
-            mSearchField = new TextField("搜索") { value = mSearchText };
-            mSearchField.style.flexGrow = 1;
-            StyleSearchField(mSearchField);
-            mSearchField.RegisterValueChangedCallback(evt =>
-            {
-                mSearchText = evt.newValue ?? "";
-                EditorPrefs.SetString(PrefSearchKey, mSearchText);
-                RebuildSidebarList();
-            });
-            searchWrap.Add(mSearchField);
-            sidebarColumn.Add(searchWrap);
-
             var sidebarScroll = new ScrollView(ScrollViewMode.Vertical);
             sidebarScroll.style.flexGrow = 1;
             mSidebarList = new VisualElement();
@@ -519,21 +527,6 @@ namespace TableNineUI.Editor
             mSidebarList.style.paddingBottom = 8;
             sidebarScroll.Add(mSidebarList);
             sidebarColumn.Add(sidebarScroll);
-
-            var footer = new VisualElement();
-            footer.style.paddingLeft = 10;
-            footer.style.paddingRight = 10;
-            footer.style.paddingTop = 6;
-            footer.style.paddingBottom = 10;
-            footer.style.borderTopWidth = 1;
-            footer.style.borderTopColor = Theme.Divider;
-
-            footer.Add(CreateNavButton(
-                "全局 Fallback 预制件",
-                "组件化预制件模板引用",
-                GlobalFallbackKey,
-                SelectGlobalFallback));
-            sidebarColumn.Add(footer);
 
             split.Add(sidebarColumn);
 
@@ -548,6 +541,13 @@ namespace TableNineUI.Editor
             split.Add(mDetailScroll);
 
             mRoot.Add(split);
+        }
+
+        private static void StyleToolbarButton(Button button)
+        {
+            button.style.height = 26;
+            button.style.marginRight = 6;
+            button.style.marginBottom = 2;
         }
 
         private static void StyleSearchField(TextField field)
@@ -625,46 +625,77 @@ namespace TableNineUI.Editor
         {
             if (mSidebarList == null) return;
 
-            mNavButtons.RemoveAll(e => e.Key != GlobalFallbackKey);
+            mNavButtons.Clear();
             mSidebarList.Clear();
 
-            if (mRegistry == null || mAllEntries.Count == 0)
-            {
-                UpdateNavigationStyles();
-                return;
-            }
-
             var filter = (mSearchText ?? "").Trim().ToLowerInvariant();
-            var grouped = new Dictionary<Category, List<PanelEntryInfo>>();
-
-            foreach (var info in mAllEntries)
-            {
-                if (!MatchesFilter(info, filter)) continue;
-
-                var cat = info.Meta.Category;
-                if (!grouped.ContainsKey(cat))
-                    grouped[cat] = new List<PanelEntryInfo>();
-                grouped[cat].Add(info);
-            }
-
             bool anyVisible = false;
-            foreach (var cat in CategoryOrder)
-            {
-                if (!grouped.TryGetValue(cat, out var entries) || entries.Count == 0)
-                    continue;
 
-                anyVisible = true;
-                BuildSidebarCategory(cat, entries);
+            if (mRegistry != null && mAllEntries.Count > 0)
+            {
+                var grouped = new Dictionary<Category, List<PanelEntryInfo>>();
+
+                foreach (var info in mAllEntries)
+                {
+                    if (!MatchesFilter(info, filter)) continue;
+
+                    var cat = info.Meta.Category;
+                    if (!grouped.ContainsKey(cat))
+                        grouped[cat] = new List<PanelEntryInfo>();
+                    grouped[cat].Add(info);
+                }
+
+                foreach (var cat in CategoryOrder)
+                {
+                    if (!grouped.TryGetValue(cat, out var entries) || entries.Count == 0)
+                        continue;
+
+                    anyVisible = true;
+                    BuildSidebarCategory(cat, entries);
+                }
             }
+
+            if (BuildSpecialNavSection(filter, anyVisible))
+                anyVisible = true;
 
             if (!anyVisible)
             {
-                var empty = CreateDescriptionLabel(string.IsNullOrEmpty(filter) ? "暂无面板条目" : "无匹配结果");
+                var empty = CreateDescriptionLabel(string.IsNullOrEmpty(filter) ? "暂无条目" : "无匹配结果");
                 empty.style.paddingTop = 12;
                 mSidebarList.Add(empty);
             }
 
             UpdateNavigationStyles();
+        }
+
+        private bool BuildSpecialNavSection(string filter, bool hasPanelEntriesAbove)
+        {
+            var visibleEntries = UIRegistryEditorNavCatalog.Entries
+                .Where(entry => UIRegistryEditorNavCatalog.MatchesFilter(entry, filter))
+                .ToList();
+
+            if (visibleEntries.Count == 0)
+                return false;
+
+            var header = CreateTitleLabel(
+                $"\u2699  {UIRegistryEditorNavCatalog.ConfigSectionLabel.ToUpperInvariant()}  ({visibleEntries.Count})",
+                10, true, Theme.TextTertiary);
+            header.style.marginTop = hasPanelEntriesAbove ? 12 : 4;
+            header.style.marginBottom = 6;
+            header.style.marginLeft = 2;
+            mSidebarList.Add(header);
+
+            foreach (var entry in visibleEntries)
+            {
+                var key = entry.Key;
+                mSidebarList.Add(CreateNavButton(
+                    entry.Title,
+                    entry.Description,
+                    key,
+                    () => SelectNavKey(key)));
+            }
+
+            return true;
         }
 
         private bool MatchesFilter(PanelEntryInfo info, string filter)
@@ -714,17 +745,17 @@ namespace TableNineUI.Editor
             RebuildDetailPane();
         }
 
-        private void SelectGlobalFallback()
+        private void SelectNavKey(string key)
         {
-            mSelectedKey = GlobalFallbackKey;
-            EditorPrefs.SetString(PrefSelectedKey, GlobalFallbackKey);
+            mSelectedKey = key;
+            EditorPrefs.SetString(PrefSelectedKey, key);
             UpdateNavigationStyles();
             RebuildDetailPane();
         }
 
         private void EnsureValidSelection()
         {
-            if (mSelectedKey == GlobalFallbackKey) return;
+            if (UIRegistryEditorNavCatalog.IsSpecialNavKey(mSelectedKey)) return;
 
             if (!string.IsNullOrEmpty(mSelectedKey) && mAllEntries.Any(e => e.UIKey == mSelectedKey))
                 return;
@@ -750,12 +781,15 @@ namespace TableNineUI.Editor
 
             EnsureValidSelection();
 
-            var stats = ComputeStats();
-            mDetailScroll.Add(CreateStatsGrid(stats.total, stats.formal, stats.fallback, stats.missing));
-
-            if (mSelectedKey == GlobalFallbackKey)
+            if (!UIRegistryEditorNavCatalog.IsSpecialNavKey(mSelectedKey))
             {
-                BuildGlobalFallbackDetail();
+                var stats = ComputeStats();
+                mDetailScroll.Add(CreateStatsGrid(stats.total, stats.formal, stats.fallback, stats.missing));
+            }
+
+            if (UIRegistryEditorNavCatalog.IsSpecialNavKey(mSelectedKey))
+            {
+                BuildSpecialNavDetail(mSelectedKey);
                 return;
             }
 
@@ -782,7 +816,7 @@ namespace TableNineUI.Editor
                 "从左侧导航选择一个 UI 面板，查看中文说明、设计备注与接入配置。"));
 
             mDetailScroll.Add(new HelpBox(
-                "侧栏按分类收纳全部面板。新增面板只需在 UIPanelMetadataCatalog 字典追加一条元数据。",
+                "侧栏按分类收纳全部面板与系统配置。新增面板在 UIPanelMetadataCatalog 追加元数据；新增配置页在 UIRegistryEditorNavCatalog 追加条目。",
                 HelpBoxMessageType.Info));
         }
 
@@ -940,6 +974,29 @@ namespace TableNineUI.Editor
                 {
                     body.Add(WrapProperty("备注内容", "", notesProp));
                 });
+        }
+
+        private void BuildSpecialNavDetail(string key)
+        {
+            switch (key)
+            {
+                case DescriptionPanelConfigEditorSection.NavKey:
+                    BuildDescriptionPanelTextsDetail();
+                    break;
+                case UIRegistryEditorNavCatalog.GlobalFallbackKey:
+                    BuildGlobalFallbackDetail();
+                    break;
+            }
+        }
+
+        private void BuildDescriptionPanelTextsDetail()
+        {
+            var config = DescriptionPanelConfigEditorSection.ResolveConfig(mRegistry);
+            DescriptionPanelConfigEditorSection.BuildDetailPane(
+                mDetailScroll.contentContainer,
+                mRegistry,
+                config,
+                RefreshAll);
         }
 
         private void BuildGlobalFallbackDetail()

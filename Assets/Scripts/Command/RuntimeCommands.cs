@@ -532,7 +532,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                     playerRuntime.CurrentHp = playerRuntime.MaxHp;
                 }
 
-                this.SendEvent(new GameplayMessageEvent("恢复药水生效：恢复 10 点生命。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgPotionHeal)));
                 this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
                 break;
             }
@@ -540,22 +540,24 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
                 deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.ThrowingKnifeTarget;
                 flowModel.SetPhase(FlowPhase.PlayerControl);
-                this.SendEvent(new GameplayMessageEvent("飞刀待命：请选择任意一只怪物。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgThrowingKnifeSelect)));
                 break;
             case DefaultGameConfigFactory.HelpAttributeUpId:
                 deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
                 deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.AttributeChoice;
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                this.SendEvent(new GameplayMessageEvent("属性提升卡：请选择要提升的属性。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttributeSelect)));
                 this.SendEvent(new AttributeChoiceRequestedEvent(HelpCardUid));
                 break;
             case DefaultGameConfigFactory.HelpCommonChestId:
                 this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
-                this.SendEvent(new GameplayMessageEvent("普通宝箱卡暂以 20 金币替代遗物选择。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgChestFallback)));
                 this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
                 break;
             default:
-                this.SendEvent(new GameplayMessageEvent($"{helpDefinition.DisplayName} 暂未接入效果。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                    DescriptionPanelTextKeys.MsgNotImplemented,
+                    helpDefinition.DisplayName)));
                 break;
         }
     }
@@ -596,7 +598,9 @@ public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
             this.SendCommand(new KillMonsterCommand(targetUid.Value));
         }
 
-        this.SendEvent(new GameplayMessageEvent($"飞刀命中：{targetRuntime.DisplayName} 受到 6 点伤害。"));
+        this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+            DescriptionPanelTextKeys.MsgThrowingKnifeHit,
+            targetRuntime.DisplayName)));
         this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
 
         if (targetDied)
@@ -637,16 +641,16 @@ public sealed class ResolveAttributeChoiceCommand : AbstractCommand
         {
             case AttributeUpgradeChoice.Attack:
                 playerRuntime.BaseAttack += 1;
-                message = "属性提升：攻击 +1。";
+                message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrAttack);
                 break;
             case AttributeUpgradeChoice.Defense:
                 playerRuntime.BaseDefense += 1;
-                message = "属性提升：防御 +1。";
+                message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrDefense);
                 break;
             case AttributeUpgradeChoice.MaxHp:
                 playerRuntime.MaxHp += 2;
                 playerRuntime.CurrentHp += 2;
-                message = "属性提升：生命上限和当前生命 +2。";
+                message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrMaxHp);
                 break;
         }
 
@@ -745,7 +749,9 @@ public sealed class ChooseRoomCommand : AbstractCommand
         {
             case RoomType.Gold:
                 this.ChangeGold(playerModel, roomDef.RewardGold);
-                this.SendEvent(new GameplayMessageEvent($"金币房：获得 {roomDef.RewardGold} 金币。"));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                    DescriptionPanelTextKeys.MsgRoomGold,
+                    roomDef.RewardGold)));
                 flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 rewardSystem.GenerateHelpRewardCandidates();
@@ -772,7 +778,9 @@ public sealed class ChooseRoomCommand : AbstractCommand
                         Uid = attrRuntime.Uid,
                         DefinitionId = attrRuntime.DefinitionId
                     };
-                    this.SendEvent(new GameplayMessageEvent($"属性房：获得 {attrDef.DisplayName}。"));
+                    this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                        DescriptionPanelTextKeys.MsgRoomAttribute,
+                        attrDef.DisplayName)));
                 }
                 flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
@@ -844,7 +852,9 @@ public sealed class PickHelpCardRewardCommand : AbstractCommand
         };
 
         this.SendEvent(new HelpRewardPickedEvent(CardId));
-        this.SendEvent(new GameplayMessageEvent($"获得帮助卡：{definition.DisplayName}。"));
+        this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+            DescriptionPanelTextKeys.MsgHelpCardGained,
+            definition.DisplayName)));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
@@ -860,7 +870,7 @@ public sealed class SkipHelpRewardCommand : AbstractCommand
 
         this.ChangeGold(playerModel, RewardConstants.SkipHelpRewardGold);
         this.SendEvent(new HelpRewardSkippedEvent(RewardConstants.SkipHelpRewardGold));
-        this.SendEvent(new GameplayMessageEvent("跳过选卡，获得 10 金币。"));
+        this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgHelpRewardSkip)));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
@@ -907,7 +917,7 @@ public sealed class SkipChestRewardCommand : AbstractCommand
 
         this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
         this.SendEvent(new ChestRewardSkippedEvent(RewardConstants.SkipChestRewardGold));
-        this.SendEvent(new GameplayMessageEvent("跳过宝箱，获得 20 金币。"));
+        this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgChestSkip)));
 
         // After chest skip, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
@@ -931,7 +941,7 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
         if (nextNode > 9)
         {
             flowModel.SetPhase(FlowPhase.Victory);
-            this.SendEvent(new GameplayMessageEvent("恭喜通关！"));
+            this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgVictory)));
             return;
         }
 
@@ -1052,7 +1062,9 @@ public sealed class ChooseTutorSkillCommand : AbstractCommand
         playerModel.AddSkill(SkillId);
 
         this.SendEvent(new TutorSkillChosenEvent(SkillId));
-        this.SendEvent(new GameplayMessageEvent($"获得导师技能：{skillDef.DisplayName}。"));
+        this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+            DescriptionPanelTextKeys.MsgTutorSkill,
+            skillDef.DisplayName)));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
