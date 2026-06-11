@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-public static class DefaultGameConfigFactory
+public static partial class DefaultGameConfigFactory
 {
     public const string CharacterImpId = "character_imp";
     public const string SkillLightFootedId = "skill_light_footed";
@@ -208,140 +208,8 @@ public static class DefaultGameConfigFactory
             SkillIds = new List<string> { SkillClubCubId, SkillFirstStrikeId }
         });
 
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 1,
-            TotalCardCount = 10,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 2,
-            TotalCardCount = 11,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 3,
-            TotalCardCount = 12,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 4,
-            TotalCardCount = 13,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 5,
-            TotalCardCount = 14,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 6,
-            TotalCardCount = 15,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 7,
-            TotalCardCount = 16,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 8,
-            TotalCardCount = 17,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
-
-        config.MonsterDeckRules.Add(new MonsterDeckRuleDefinition
-        {
-            Layer = 1,
-            NodeInLayer = 9,
-            TotalCardCount = 18,
-            AllowedMonsterCardIds = new List<string>
-            {
-                MonsterColorlessId,
-                MonsterSpade2Id,
-                MonsterHeart2Id,
-                MonsterDiamond2Id,
-                MonsterClub2Id
-            }
-        });
+        AddLayer1MonstersAndSkills(config);
+        Layer1MonsterDeckRules.Populate(config);
 
         // Relic definitions
         config.Relics.Add(new RelicDefinition

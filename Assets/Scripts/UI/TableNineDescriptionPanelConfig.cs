@@ -144,6 +144,7 @@ public static class DescriptionPanelTextDefaults
             Entry(DescriptionPanelTextKeys.MsgHelpRewardSkip, "跳过选卡", "跳过选卡，+10金币", "SkipHelpRewardCommand"),
             Entry(DescriptionPanelTextKeys.MsgChestSkip, "跳过宝箱", "跳过宝箱，+20金币", "SkipChestRewardCommand"),
             Entry(DescriptionPanelTextKeys.MsgVictory, "通关", "恭喜通关！", "ProceedToNextNodeCommand"),
+            Entry(DescriptionPanelTextKeys.MsgLayerComplete, "层通关", "恭喜！第{0}层 9 个节点已全部通过。", "ProceedToNextNodeCommand"),
             Entry(DescriptionPanelTextKeys.MsgTutorSkill, "导师技能", "获得导师技能：{0}", "PickTutorSkillCommand，模板")
         };
     }

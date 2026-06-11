@@ -339,8 +339,23 @@ public sealed class RefillBoardCommand : AbstractCommand
         deckModel.RefillPending = false;
         deckSystem.UpdateNextBattlePreview();
         inputLockSystem.Unlock(InputLockReason.BoardRefillRunning);
-        flowModel.SetPhase(FlowPhase.PlayerControl);
 
+        if (deckModel.PendingTutorSkillChoice)
+        {
+            deckModel.PendingTutorSkillChoice = false;
+            var rewardSystem = this.GetSystem<IRewardSystem>();
+            var rewardModel = this.GetModel<IRewardModel>();
+            rewardSystem.GenerateTutorSkillCandidates();
+            if (rewardModel.TutorSkillIds.Count > 0)
+            {
+                flowModel.SetPhase(FlowPhase.TutorSkillChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
+                this.SendEvent(new TutorSkillChoiceRequestedEvent(rewardModel.TutorSkillIds));
+                return;
+            }
+        }
+
+        flowModel.SetPhase(FlowPhase.PlayerControl);
         this.SendCommand(new CheckClearConditionCommand());
     }
 }
@@ -461,11 +476,15 @@ public sealed class KillMonsterCommand : AbstractCommand
     {
         var collectionModel = this.GetModel<ICollectionModel>();
         var playerModel = this.GetModel<IPlayerModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var deckSystem = this.GetSystem<IDeckSystem>();
         var boardSystem = this.GetSystem<IBoardSystem>();
         if (!collectionModel.TryGetCard(MonsterUid, out var monsterRuntime))
         {
             return;
         }
+
+        var monsterLevel = monsterRuntime.MonsterLevel;
 
         if (monsterRuntime.BoardSlot.HasValue)
         {
@@ -475,6 +494,27 @@ public sealed class KillMonsterCommand : AbstractCommand
         this.ChangeGold(playerModel, RewardConstants.MonsterKillGold);
         collectionModel.RemoveCard(MonsterUid);
         this.SendEvent(new MonsterKilledEvent(MonsterUid, monsterRuntime.DefinitionId));
+
+        if (monsterLevel == MonsterLevel.Elite)
+        {
+            deckSystem.InjectHelpCardsToBattleDeck(new[]
+            {
+                DefaultGameConfigFactory.HelpBlueChestId,
+                DefaultGameConfigFactory.HelpGoldCardId,
+                DefaultGameConfigFactory.HelpAttributeUpId
+            });
+            deckModel.PendingTutorSkillChoice = true;
+        }
+        else if (monsterLevel == MonsterLevel.Boss)
+        {
+            deckSystem.InjectHelpCardsToBattleDeck(new[]
+            {
+                DefaultGameConfigFactory.HelpGoldChestId,
+                DefaultGameConfigFactory.HelpGoldCardId,
+                DefaultGameConfigFactory.HelpGoldCardId,
+                DefaultGameConfigFactory.HelpAttributeUpId
+            });
+        }
     }
 }
 
@@ -550,10 +590,29 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 this.SendEvent(new AttributeChoiceRequestedEvent(HelpCardUid));
                 break;
             case DefaultGameConfigFactory.HelpCommonChestId:
-                this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgChestFallback)));
+            case DefaultGameConfigFactory.HelpChestCardId:
+            case DefaultGameConfigFactory.HelpBlueChestId:
+            case DefaultGameConfigFactory.HelpGoldChestId:
+            {
+                var rewardModel = this.GetModel<IRewardModel>();
+                rewardModel.CurrentRewardSource = RewardSource.ChestCard;
+                flowModel.SetPhase(FlowPhase.ChestRewardChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
+                this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
+                this.SendEvent(new ChestRewardGeneratedEvent(
+                    this.GetModel<IRewardModel>().ChestRewardRelicIds));
                 this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
                 break;
+            }
+            case DefaultGameConfigFactory.HelpGoldCardId:
+            {
+                this.ChangeGold(playerModel, 50);
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                    DescriptionPanelTextKeys.MsgRoomGold,
+                    50)));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, true));
+                break;
+            }
             default:
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
                     DescriptionPanelTextKeys.MsgNotImplemented,
@@ -898,7 +957,16 @@ public sealed class PickRelicRewardCommand : AbstractCommand
 
         this.SendEvent(new RelicRewardPickedEvent(RelicId));
 
-        // After chest, go to help reward
+        if (this.GetModel<IRewardModel>().CurrentRewardSource == RewardSource.ChestCard)
+        {
+            this.GetModel<IRewardModel>().CurrentRewardSource = RewardSource.None;
+            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+            flowModel.SetPhase(FlowPhase.PlayerControl);
+            this.SendCommand(new CheckClearConditionCommand());
+            return;
+        }
+
+        // After chest room reward, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
         inputLockSystem.Lock(InputLockReason.OverlayVisible);
         this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
@@ -919,7 +987,16 @@ public sealed class SkipChestRewardCommand : AbstractCommand
         this.SendEvent(new ChestRewardSkippedEvent(RewardConstants.SkipChestRewardGold));
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgChestSkip)));
 
-        // After chest skip, go to help reward
+        if (this.GetModel<IRewardModel>().CurrentRewardSource == RewardSource.ChestCard)
+        {
+            this.GetModel<IRewardModel>().CurrentRewardSource = RewardSource.None;
+            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+            flowModel.SetPhase(FlowPhase.PlayerControl);
+            this.SendCommand(new CheckClearConditionCommand());
+            return;
+        }
+
+        // After chest room skip, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
         inputLockSystem.Lock(InputLockReason.OverlayVisible);
         this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
@@ -940,8 +1017,20 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
         var nextNode = runModel.NodeInLayer.Value + 1;
         if (nextNode > 9)
         {
-            flowModel.SetPhase(FlowPhase.Victory);
-            this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgVictory)));
+            if (runModel.Layer.Value >= 3)
+            {
+                flowModel.SetPhase(FlowPhase.Victory);
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgVictory)));
+            }
+            else
+            {
+                flowModel.SetPhase(FlowPhase.LayerComplete);
+                this.SendEvent(new LayerCompletedEvent(runModel.Layer.Value));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                    DescriptionPanelTextKeys.MsgLayerComplete,
+                    runModel.Layer.Value)));
+            }
+
             return;
         }
 
@@ -1067,5 +1156,6 @@ public sealed class ChooseTutorSkillCommand : AbstractCommand
             skillDef.DisplayName)));
         inputLockSystem.Unlock(InputLockReason.OverlayVisible);
         flowModel.SetPhase(FlowPhase.PlayerControl);
+        this.SendCommand(new CheckClearConditionCommand());
     }
 }

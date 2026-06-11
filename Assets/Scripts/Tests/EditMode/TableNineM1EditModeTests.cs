@@ -186,12 +186,14 @@ public sealed class TableNineM1EditModeTests
         var adjacentMonsterUid = MoveAnyAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monsterRuntime = collectionModel.GetCard(adjacentMonsterUid);
         monsterRuntime.CurrentHp = 1;
+        monsterRuntime.BaseDefense = 0;
 
+        var goldBefore = playerModel.Gold.Value;
         var playerHpBefore = collectionModel.GetCard(playerModel.PlayerCardUid).CurrentHp;
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(2)));
 
         Assert.That(collectionModel.GetCard(playerModel.PlayerCardUid).CurrentHp, Is.EqualTo(playerHpBefore));
-        Assert.That(playerModel.Gold.Value, Is.EqualTo(5));
+        Assert.That(playerModel.Gold.Value - goldBefore, Is.EqualTo(RewardConstants.MonsterKillGold));
         Assert.That(collectionModel.TryGetCard(adjacentMonsterUid, out _), Is.False);
     }
 

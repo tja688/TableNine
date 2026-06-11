@@ -720,19 +720,18 @@ public sealed class TableNineM3EditModeTests
     }
 
     [Test]
-    public void ProceedToNextNode_At_Node_9_Enters_Victory()
+    public void ProceedToNextNode_At_Layer1_Node_9_Enters_LayerComplete()
     {
         StartRun(42);
         var runModel = TableNine.Interface.GetModel<IRunModel>();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
 
-        // 手动设置为第 9 节点
         runModel.SetNode(1, 9);
 
         TableNine.Interface.SendCommand(new ProceedToNextNodeCommand());
 
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.Victory),
-            "第 9 节点后推进应进入 Victory");
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.LayerComplete),
+            "第一层第 9 节点后推进应进入 LayerComplete");
     }
 
     [Test]

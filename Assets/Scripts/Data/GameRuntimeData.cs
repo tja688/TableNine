@@ -66,6 +66,7 @@ public enum FlowPhase
     TutorSkillChoosing,
     Shop,
     GameOver,
+    LayerComplete,
     Victory
 }
 
@@ -108,6 +109,7 @@ public enum RewardSource
     NodeClear,
     ChestCard,
     EliteKill,
+    BossKill,
     Room
 }
 
@@ -278,12 +280,23 @@ public sealed class SkillDefinition
 }
 
 [Serializable]
+public sealed class MonsterLevelQuotaDefinition
+{
+    public MonsterLevel Level;
+    public int MinCount;
+    public int MaxCount;
+    public List<string> PoolCardIds = new List<string>();
+}
+
+[Serializable]
 public sealed class MonsterDeckRuleDefinition
 {
     public int Layer;
     public int NodeInLayer;
     public int TotalCardCount;
     public List<string> AllowedMonsterCardIds = new List<string>();
+    public List<MonsterLevelQuotaDefinition> LevelQuotas = new List<MonsterLevelQuotaDefinition>();
+    public List<string> MandatoryMonsterCardIds = new List<string>();
 }
 
 [CreateAssetMenu(fileName = "GameConfigDatabase", menuName = "TableNine/Game Config Database")]

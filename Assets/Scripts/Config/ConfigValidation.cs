@@ -96,6 +96,18 @@ public static class ConfigValidator
                     errors.Add($"Monster deck rule {rule.Layer}-{rule.NodeInLayer} references missing cardId: {cardId}");
                 }
             }
+
+            if (rule.Layer == 1 && rule.NodeInLayer == 5 &&
+                !rule.MandatoryMonsterCardIds.Contains(DefaultGameConfigFactory.MonsterSpadeEliteId))
+            {
+                errors.Add("Layer 1 node 5 must include elite monster in mandatory list.");
+            }
+
+            if (rule.Layer == 1 && rule.NodeInLayer == 9 &&
+                !rule.MandatoryMonsterCardIds.Contains(DefaultGameConfigFactory.MonsterSpadeBossId))
+            {
+                errors.Add("Layer 1 node 9 must include boss monster in mandatory list.");
+            }
         }
 
         for (var i = 0; i < config.Rooms.Count; i++)

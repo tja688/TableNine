@@ -26,5 +26,6 @@ public static class DescriptionPanelTextKeys
     public const string MsgHelpRewardSkip = "msg.help_reward_skip";
     public const string MsgChestSkip = "msg.chest_skip";
     public const string MsgVictory = "msg.victory";
+    public const string MsgLayerComplete = "msg.layer_complete";
     public const string MsgTutorSkill = "msg.tutor_skill";
 }

@@ -177,6 +177,7 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
 public interface IDeckSystem : ISystem
 {
     void GenerateDemonDeck(int layer, int nodeInLayer);
+    void InjectHelpCardsToBattleDeck(IReadOnlyList<string> cardIds);
     void SnapshotHelpDeck();
     void UpdateNextBattlePreview();
     bool HasMonsterRemaining();
@@ -197,13 +198,66 @@ public sealed class DeckSystem : AbstractSystem, IDeckSystem
         var rule = configModel.GetMonsterDeckRule(layer, nodeInLayer);
 
         deckModel.DemonDeckQueue.Clear();
-        for (var i = 0; i < rule.TotalCardCount; i++)
+
+        var cardIds = rule.LevelQuotas.Count > 0
+            ? MonsterDeckComposer.Compose(rule, randomUtility)
+            : ComposeLegacyDeck(rule, randomUtility);
+
+        randomUtility.Shuffle(cardIds);
+        for (var i = 0; i < cardIds.Count; i++)
         {
-            var cardId = rule.AllowedMonsterCardIds[randomUtility.Range(0, rule.AllowedMonsterCardIds.Count)];
-            var definition = configModel.GetCardDefinition(cardId);
+            var definition = configModel.GetCardDefinition(cardIds[i]);
             var runtime = collectionModel.CreateCard(definition);
             deckModel.DemonDeckQueue.Enqueue(runtime.Uid);
         }
+    }
+
+    public void InjectHelpCardsToBattleDeck(IReadOnlyList<string> cardIds)
+    {
+        if (cardIds == null || cardIds.Count == 0)
+        {
+            return;
+        }
+
+        var configModel = this.GetModel<IConfigModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var randomUtility = this.GetUtility<IRandomUtility>();
+
+        var injectedIds = new List<string>();
+        for (var i = 0; i < cardIds.Count; i++)
+        {
+            var definition = configModel.GetCardDefinition(cardIds[i]);
+            var runtime = collectionModel.CreateCard(definition);
+            deckModel.BattleDrawPile.Enqueue(runtime.Uid);
+            injectedIds.Add(cardIds[i]);
+        }
+
+        var pile = new List<CardUid>(deckModel.BattleDrawPile.Count);
+        while (deckModel.BattleDrawPile.Count > 0)
+        {
+            pile.Add(deckModel.BattleDrawPile.Dequeue());
+        }
+
+        randomUtility.Shuffle(pile);
+        for (var i = 0; i < pile.Count; i++)
+        {
+            deckModel.BattleDrawPile.Enqueue(pile[i]);
+        }
+
+        UpdateNextBattlePreview();
+        this.SendEvent(new BattleDeckCardsInjectedEvent(injectedIds));
+    }
+
+    private static List<string> ComposeLegacyDeck(MonsterDeckRuleDefinition rule, IRandomUtility randomUtility)
+    {
+        var cardIds = new List<string>(rule.TotalCardCount);
+        for (var i = 0; i < rule.TotalCardCount; i++)
+        {
+            cardIds.Add(rule.AllowedMonsterCardIds[randomUtility.Range(0, rule.AllowedMonsterCardIds.Count)]);
+        }
+
+        return cardIds;
     }
 
     public void SnapshotHelpDeck()
@@ -479,6 +533,7 @@ public interface IRewardSystem : ISystem
 {
     void GenerateHelpRewardCandidates();
     void GenerateRoomCandidates();
+    void GenerateTutorSkillCandidates();
     void SettleUnusedHelpCards();
     void RestoreHelpDeckSnapshot();
     bool CanAddHelpCard(string cardId);
@@ -532,6 +587,46 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomChestId);
         rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomAttributeId);
         rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomShopId);
+    }
+
+    public void GenerateTutorSkillCandidates()
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        var rewardModel = this.GetModel<IRewardModel>();
+        var randomUtility = this.GetUtility<IRandomUtility>();
+
+        rewardModel.ClearTutorSkillIds();
+
+        var pool = new List<string>();
+        var tutorPool = DefaultGameConfigFactory.TutorSkillPoolIds;
+        for (var i = 0; i < tutorPool.Length; i++)
+        {
+            var skillId = tutorPool[i];
+            var alreadyOwned = false;
+            for (var j = 0; j < playerModel.SkillIds.Count; j++)
+            {
+                if (playerModel.SkillIds[j] == skillId)
+                {
+                    alreadyOwned = true;
+                    break;
+                }
+            }
+
+            if (!alreadyOwned)
+            {
+                pool.Add(skillId);
+            }
+        }
+
+        var pickCount = pool.Count < RewardConstants.HelpRewardCandidateCount
+            ? pool.Count
+            : RewardConstants.HelpRewardCandidateCount;
+        for (var i = 0; i < pickCount; i++)
+        {
+            var index = randomUtility.Range(0, pool.Count);
+            rewardModel.AddTutorSkillId(pool[index]);
+            pool.RemoveAt(index);
+        }
     }
 
     public void SettleUnusedHelpCards()
@@ -1004,5 +1099,89 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
         this.ChangeGold(playerModel, RewardConstants.DeleteHelpCardGold);
         this.SendEvent(new HelpCardDeletedForGoldEvent(helpCardUid, RewardConstants.DeleteHelpCardGold));
         return true;
+    }
+}
+
+public static class MonsterDeckComposer
+{
+    private const int MaxComposeAttempts = 64;
+
+    public static List<string> Compose(MonsterDeckRuleDefinition rule, IRandomUtility randomUtility)
+    {
+        for (var attempt = 0; attempt < MaxComposeAttempts; attempt++)
+        {
+            var result = TryCompose(rule, randomUtility);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return BuildFallbackDeck(rule, randomUtility);
+    }
+
+    private static List<string> TryCompose(MonsterDeckRuleDefinition rule, IRandomUtility randomUtility)
+    {
+        var cardIds = new List<string>(rule.TotalCardCount);
+        for (var i = 0; i < rule.MandatoryMonsterCardIds.Count; i++)
+        {
+            cardIds.Add(rule.MandatoryMonsterCardIds[i]);
+        }
+
+        var remaining = rule.TotalCardCount - cardIds.Count;
+        if (rule.LevelQuotas.Count == 0)
+        {
+            return remaining == 0 ? cardIds : null;
+        }
+
+        var counts = new int[rule.LevelQuotas.Count];
+        for (var i = 0; i < rule.LevelQuotas.Count - 1; i++)
+        {
+            var quota = rule.LevelQuotas[i];
+            counts[i] = quota.MinCount == quota.MaxCount
+                ? quota.MinCount
+                : randomUtility.Range(quota.MinCount, quota.MaxCount + 1);
+            remaining -= counts[i];
+        }
+
+        var lastQuota = rule.LevelQuotas[rule.LevelQuotas.Count - 1];
+        counts[rule.LevelQuotas.Count - 1] = remaining;
+        if (remaining < lastQuota.MinCount || remaining > lastQuota.MaxCount)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < rule.LevelQuotas.Count; i++)
+        {
+            var quota = rule.LevelQuotas[i];
+            if (quota.PoolCardIds.Count == 0 || counts[i] < 0)
+            {
+                return null;
+            }
+
+            for (var c = 0; c < counts[i]; c++)
+            {
+                var pick = quota.PoolCardIds[randomUtility.Range(0, quota.PoolCardIds.Count)];
+                cardIds.Add(pick);
+            }
+        }
+
+        return cardIds.Count == rule.TotalCardCount ? cardIds : null;
+    }
+
+    private static List<string> BuildFallbackDeck(MonsterDeckRuleDefinition rule, IRandomUtility randomUtility)
+    {
+        var cardIds = new List<string>(rule.TotalCardCount);
+        for (var i = 0; i < rule.MandatoryMonsterCardIds.Count; i++)
+        {
+            cardIds.Add(rule.MandatoryMonsterCardIds[i]);
+        }
+
+        while (cardIds.Count < rule.TotalCardCount)
+        {
+            cardIds.Add(rule.AllowedMonsterCardIds[randomUtility.Range(0, rule.AllowedMonsterCardIds.Count)]);
+        }
+
+        return cardIds;
     }
 }

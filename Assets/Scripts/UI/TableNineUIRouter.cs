@@ -26,6 +26,8 @@ public sealed class TableNineUIRouter : IController, IDisposable
         Register<RoomChoiceRequestedEvent>(OnRoomChoiceRequested);
         Register<RoomChosenEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.RoomChoice));
         Register<HelpRewardGeneratedEvent>(OnHelpRewardGenerated);
+        Register<TutorSkillChoiceRequestedEvent>(OnTutorSkillChoiceRequested);
+        Register<TutorSkillChosenEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.TutorSkillChoice));
         Register<HelpRewardPickedEvent>(_ => CloseHelpRewardAndPromptNextNode());
         Register<HelpRewardSkippedEvent>(_ => CloseHelpRewardAndPromptNextNode());
         Register<ChestRewardGeneratedEvent>(OnChestRewardGenerated);
@@ -161,6 +163,29 @@ public sealed class TableNineUIRouter : IController, IDisposable
         TableNineUIRuntime.Open(mRegistry, data);
     }
 
+    private void OnTutorSkillChoiceRequested(TutorSkillChoiceRequestedEvent evt)
+    {
+        var configModel = this.GetModel<IConfigModel>();
+        var data = new TableNineUIRequestPanelData
+        {
+            Key = TableNineUIKeys.TutorSkillChoice,
+            Title = "导师卡",
+            Message = "选择一项技能永久习得。",
+            CloseOnChoice = false
+        };
+
+        for (var i = 0; i < evt.SkillIds.Count; i++)
+        {
+            var skillId = evt.SkillIds[i];
+            var capturedSkillId = skillId;
+            var skill = configModel.GetSkillDefinition(skillId);
+            data.Choices.Add(TableNineUIChoiceData.Command(skillId, skill.DisplayName, "永久习得", string.Empty,
+                controller => controller.SendCommand(new ChooseTutorSkillCommand(capturedSkillId))));
+        }
+
+        TableNineUIRuntime.Open(mRegistry, data);
+    }
+
     private void OpenShop()
     {
         var rewardModel = this.GetModel<IRewardModel>();
@@ -224,12 +249,15 @@ public sealed class TableNineUIRouter : IController, IDisposable
     private void OpenNextNodePrompt()
     {
         var runModel = this.GetModel<IRunModel>();
+        var isLayerEnd = runModel.NodeInLayer.Value >= 9;
         TableNineUIRuntime.Open(mRegistry, new TableNineUIRequestPanelData
         {
             Key = TableNineUIKeys.NextNodePrompt,
-            Title = "节点奖励已结算",
-            Message = $"第 {runModel.Layer.Value} 层第 {runModel.NodeInLayer.Value} 节点完成。",
-            CloseLabel = "下一节点",
+            Title = isLayerEnd ? "层通关" : "节点奖励已结算",
+            Message = isLayerEnd
+                ? $"第 {runModel.Layer.Value} 层 9 个节点已全部完成。"
+                : $"第 {runModel.Layer.Value} 层第 {runModel.NodeInLayer.Value} 节点完成。",
+            CloseLabel = isLayerEnd ? "确认" : "下一节点",
             CloseAction = controller => controller.SendCommand(new ProceedToNextNodeCommand())
         });
     }

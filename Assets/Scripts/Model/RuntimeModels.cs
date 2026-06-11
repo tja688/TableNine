@@ -204,6 +204,7 @@ public interface IDeckModel : IModel
     BindableProperty<CardPreview> NextBattleCardPreview { get; }
     bool RefillRunning { get; set; }
     bool RefillPending { get; set; }
+    bool PendingTutorSkillChoice { get; set; }
     void ResetForNewRun();
     void ClearNodeState();
     int FindFirstEmptyItemSlot();
@@ -233,6 +234,7 @@ public sealed class DeckModel : AbstractModel, IDeckModel
     public BindableProperty<CardPreview> NextBattleCardPreview => mNextBattleCardPreview;
     public bool RefillRunning { get; set; }
     public bool RefillPending { get; set; }
+    public bool PendingTutorSkillChoice { get; set; }
 
     protected override void OnInit()
     {
@@ -267,6 +269,7 @@ public sealed class DeckModel : AbstractModel, IDeckModel
         NextBattleCardPreview.Value = CardPreview.Empty;
         RefillRunning = false;
         RefillPending = false;
+        PendingTutorSkillChoice = false;
     }
 
     public int FindFirstEmptyItemSlot()
@@ -642,10 +645,12 @@ public interface IRewardModel : IModel
     void Clear();
     void ClearHelpRewardCardIds();
     void ClearChestRewardRelicIds();
+    void ClearTutorSkillIds();
     void ClearShopCardIds();
     void ClearRoomCandidateIds();
     void AddHelpRewardCardId(string cardId);
     void AddChestRewardRelicId(string relicId);
+    void AddTutorSkillId(string skillId);
     void AddRoomCandidateId(string roomId);
     void AddShopCardId(string cardId);
     void RemoveShopCardId(string cardId);
@@ -683,10 +688,12 @@ public sealed class RewardModel : AbstractModel, IRewardModel
 
     public void ClearHelpRewardCardIds() => mHelpRewardCardIds.Clear();
     public void ClearChestRewardRelicIds() => mChestRewardRelicIds.Clear();
+    public void ClearTutorSkillIds() => mTutorSkillIds.Clear();
     public void ClearShopCardIds() => mShopCardIds.Clear();
     public void ClearRoomCandidateIds() => mRoomCandidateIds.Clear();
     public void AddHelpRewardCardId(string cardId) => mHelpRewardCardIds.Add(cardId);
     public void AddChestRewardRelicId(string relicId) => mChestRewardRelicIds.Add(relicId);
+    public void AddTutorSkillId(string skillId) => mTutorSkillIds.Add(skillId);
     public void AddRoomCandidateId(string roomId) => mRoomCandidateIds.Add(roomId);
     public void AddShopCardId(string cardId) => mShopCardIds.Add(cardId);
     public void RemoveShopCardId(string cardId) => mShopCardIds.Remove(cardId);

@@ -267,6 +267,26 @@ public readonly struct TutorSkillChosenEvent
     public string SkillId { get; }
 }
 
+public readonly struct BattleDeckCardsInjectedEvent
+{
+    public BattleDeckCardsInjectedEvent(IReadOnlyList<string> cardIds)
+    {
+        CardIds = cardIds;
+    }
+
+    public IReadOnlyList<string> CardIds { get; }
+}
+
+public readonly struct LayerCompletedEvent
+{
+    public LayerCompletedEvent(int layer)
+    {
+        Layer = layer;
+    }
+
+    public int Layer { get; }
+}
+
 public readonly struct NodeAdvancedEvent
 {
     public NodeAdvancedEvent(int layer, int fromNode, int toNode)
