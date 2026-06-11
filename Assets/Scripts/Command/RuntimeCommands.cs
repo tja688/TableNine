@@ -485,10 +485,14 @@ public sealed class CheckClearConditionCommand : AbstractCommand
         var deckSystem = this.GetSystem<IDeckSystem>();
         var flowModel = this.GetModel<IFlowModel>();
         var runModel = this.GetModel<IRunModel>();
-        if (!deckSystem.HasMonsterRemaining())
+        if (!deckSystem.HasMonsterRemaining() && flowModel.Phase.Value != FlowPhase.ClearReady)
         {
+            var rewardSystem = this.GetSystem<IRewardSystem>();
+            var rewardModel = this.GetModel<IRewardModel>();
             flowModel.SetPhase(FlowPhase.ClearReady);
+            rewardSystem.GenerateRoomCandidates();
             this.SendEvent(new LevelClearReadyEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
+            this.SendEvent(new RoomChoiceRequestedEvent(rewardModel.RoomCandidateIds));
         }
     }
 }
@@ -722,6 +726,7 @@ public sealed class ChooseRoomCommand : AbstractCommand
         var configModel = this.GetModel<IConfigModel>();
         var flowModel = this.GetModel<IFlowModel>();
         var rewardSystem = this.GetSystem<IRewardSystem>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var playerModel = this.GetModel<IPlayerModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
         var deckModel = this.GetModel<IDeckModel>();
@@ -742,6 +747,7 @@ public sealed class ChooseRoomCommand : AbstractCommand
                 this.ChangeGold(playerModel, roomDef.RewardGold);
                 this.SendEvent(new GameplayMessageEvent($"金币房：获得 {roomDef.RewardGold} 金币。"));
                 flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 rewardSystem.GenerateHelpRewardCandidates();
                 this.SendEvent(new HelpRewardGeneratedEvent(
                     this.GetModel<IRewardModel>().HelpRewardCardIds));
@@ -749,6 +755,7 @@ public sealed class ChooseRoomCommand : AbstractCommand
 
             case RoomType.Chest:
                 flowModel.SetPhase(FlowPhase.ChestRewardChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
                 this.SendEvent(new ChestRewardGeneratedEvent(
                     this.GetModel<IRewardModel>().ChestRewardRelicIds));
@@ -768,6 +775,7 @@ public sealed class ChooseRoomCommand : AbstractCommand
                     this.SendEvent(new GameplayMessageEvent($"属性房：获得 {attrDef.DisplayName}。"));
                 }
                 flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 rewardSystem.GenerateHelpRewardCandidates();
                 this.SendEvent(new HelpRewardGeneratedEvent(
                     this.GetModel<IRewardModel>().HelpRewardCardIds));
@@ -775,6 +783,7 @@ public sealed class ChooseRoomCommand : AbstractCommand
 
             case RoomType.Shop:
                 flowModel.SetPhase(FlowPhase.Shop);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 this.GetSystem<IShopSystem>().GenerateShopCards();
                 this.SendEvent(new ShopOpenedEvent(
                     this.GetModel<IRewardModel>().ShopCardIds));
@@ -878,10 +887,10 @@ public sealed class PickRelicRewardCommand : AbstractCommand
         }
 
         this.SendEvent(new RelicRewardPickedEvent(RelicId));
-        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
 
         // After chest, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        inputLockSystem.Lock(InputLockReason.OverlayVisible);
         this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
         this.SendEvent(new HelpRewardGeneratedEvent(
             this.GetModel<IRewardModel>().HelpRewardCardIds));
@@ -899,10 +908,10 @@ public sealed class SkipChestRewardCommand : AbstractCommand
         this.ChangeGold(playerModel, RewardConstants.SkipChestRewardGold);
         this.SendEvent(new ChestRewardSkippedEvent(RewardConstants.SkipChestRewardGold));
         this.SendEvent(new GameplayMessageEvent("跳过宝箱，获得 20 金币。"));
-        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
 
         // After chest skip, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        inputLockSystem.Lock(InputLockReason.OverlayVisible);
         this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
         this.SendEvent(new HelpRewardGeneratedEvent(
             this.GetModel<IRewardModel>().HelpRewardCardIds));
@@ -989,10 +998,9 @@ public sealed class CloseShopCommand : AbstractCommand
         var rewardSystem = this.GetSystem<IRewardSystem>();
         var rewardModel = this.GetModel<IRewardModel>();
 
-        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
-
         // After shop, go to help reward
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
+        inputLockSystem.Lock(InputLockReason.OverlayVisible);
         rewardSystem.GenerateHelpRewardCandidates();
         this.SendEvent(new HelpRewardGeneratedEvent(rewardModel.HelpRewardCardIds));
     }

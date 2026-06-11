@@ -7,6 +7,7 @@ public sealed class GameplayBootstrap : MonoBehaviour
     [SerializeField] private TableNineUIPanelRegistry mUIPanelRegistry;
 
     private bool mBootstrapped;
+    private TableNineUIRouter mUIRouter;
 
     private void Awake()
     {
@@ -32,6 +33,12 @@ public sealed class GameplayBootstrap : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        mUIRouter?.Dispose();
+        mUIRouter = null;
+    }
+
     private void SetupUIKit()
     {
         if (mUIPanelRegistry == null)
@@ -46,6 +53,10 @@ public sealed class GameplayBootstrap : MonoBehaviour
         UIKit.Root.ScreenSpaceOverlayRenderMode();
         UIKit.CloseAllPanel();
         UIKit.OpenPanel<UIGameplayPanel>(UILevel.Common);
+
+        mUIRouter?.Dispose();
+        mUIRouter = new TableNineUIRouter(mUIPanelRegistry);
+        mUIRouter.Start();
     }
 
     private static void DisableSceneEventSystemBeforeUIKitRoot()

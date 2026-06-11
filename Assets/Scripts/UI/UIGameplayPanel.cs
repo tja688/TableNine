@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using QFramework;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public sealed class UIGameplayPanelData : UIPanelData
 {
@@ -94,20 +93,6 @@ public sealed class UIGameplayPanel : UIPanel, IController
         mEventRegisters.Add(this.RegisterEvent<BattleDeckChangedEvent>(_ => RefreshAll()));
         mEventRegisters.Add(this.RegisterEvent<DamageAppliedEvent>(_ => RefreshAll()));
         mEventRegisters.Add(this.RegisterEvent<ItemSlotChangedEvent>(_ => RefreshAll()));
-        mEventRegisters.Add(this.RegisterEvent<AttributeChoiceRequestedEvent>(_ =>
-        {
-            UIKit.OpenPanel<UIChoiceOverlayPanel>(UILevel.PopUI, new UIChoiceOverlayPanelData
-            {
-                Mode = ChoiceOverlayMode.AttributeUpgrade
-            });
-        }));
-        mEventRegisters.Add(this.RegisterEvent<PopupRequestedEvent>(evt =>
-        {
-            UIKit.OpenPanel<UIPopupPanel>(UILevel.PopUI, new UIPopupPanelData
-            {
-                Message = evt.Message
-            });
-        }));
     }
 
     private void RefreshAll()

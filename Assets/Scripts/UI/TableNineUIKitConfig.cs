@@ -29,6 +29,7 @@ public sealed class TableNineUIKitConfig : UIKitConfig
     {
         private readonly TableNineUIPanelRegistry mRegistry;
         private GameObject mPrefab;
+        private bool mGeneratedFallbackPrefab;
 
         public RegistryPanelLoader(TableNineUIPanelRegistry registry)
         {
@@ -38,6 +39,12 @@ public sealed class TableNineUIKitConfig : UIKitConfig
         public GameObject LoadPanelPrefab(PanelSearchKeys panelSearchKeys)
         {
             mPrefab = mRegistry != null ? mRegistry.GetPanelPrefab(panelSearchKeys) : null;
+            if (mPrefab == null && panelSearchKeys.PanelType == typeof(UIFallbackPanel))
+            {
+                mGeneratedFallbackPrefab = true;
+                mPrefab = TableNineFallbackPanelPrefabFactory.CreatePrefab();
+            }
+
             if (mPrefab == null)
             {
                 var panelName = panelSearchKeys.GameObjName ?? panelSearchKeys.PanelType?.Name ?? "<unknown>";
@@ -54,6 +61,12 @@ public sealed class TableNineUIKitConfig : UIKitConfig
 
         public void Unload()
         {
+            if (mGeneratedFallbackPrefab && mPrefab != null)
+            {
+                Object.Destroy(mPrefab);
+            }
+
+            mGeneratedFallbackPrefab = false;
             mPrefab = null;
         }
     }

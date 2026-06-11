@@ -6,7 +6,8 @@
     "ResKit",
     "UIKit",
     "Unity.ugui",
-    "Unity.TextMeshPro"
+    "Unity.TextMeshPro",
+    "Sirenix.OdinInspector.Attributes"
   ],
   "optionalUnityReferences": [],
   "includePlatforms": [],

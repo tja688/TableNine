@@ -26,9 +26,10 @@ public sealed class UIPopupPanel : UIPanel
     protected override void OnOpen(IUIData uiData = null)
     {
         var data = uiData as UIPopupPanelData;
+        var requestData = uiData as TableNineUIRequestPanelData;
         if (mInfoText != null)
         {
-            mInfoText.text = data != null ? data.Message : string.Empty;
+            mInfoText.text = requestData != null ? requestData.Message : data != null ? data.Message : string.Empty;
         }
     }
 

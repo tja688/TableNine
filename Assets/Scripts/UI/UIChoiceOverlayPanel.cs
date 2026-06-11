@@ -23,6 +23,7 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
     [SerializeField] private TMP_Text mPassText;
 
     private ChoiceOverlayMode mMode;
+    private TableNineUIRequestPanelData mRequestData;
 
     public IArchitecture GetArchitecture()
     {
@@ -37,6 +38,7 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
 
     protected override void OnOpen(IUIData uiData = null)
     {
+        mRequestData = uiData as TableNineUIRequestPanelData;
         var data = uiData as UIChoiceOverlayPanelData;
         mMode = data != null ? data.Mode : ChoiceOverlayMode.AttributeUpgrade;
         BindButtons();
@@ -45,6 +47,7 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
     protected override void OnClose()
     {
         ClearButtonListeners();
+        mRequestData = null;
     }
 
     protected override void OnBeforeDestroy()
@@ -83,6 +86,12 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
     {
         ClearButtonListeners();
 
+        if (mRequestData != null)
+        {
+            BindRequestButtons();
+            return;
+        }
+
         if (mPassButton != null)
         {
             mPassButton.gameObject.SetActive(false);
@@ -101,6 +110,88 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         mChoiceButtons[0].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Attack)));
         mChoiceButtons[1].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Defense)));
         mChoiceButtons[2].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.MaxHp)));
+    }
+
+    private void BindRequestButtons()
+    {
+        if (mPassText != null)
+        {
+            mPassText.text = string.IsNullOrWhiteSpace(mRequestData.Message)
+                ? mRequestData.Title
+                : mRequestData.Message;
+        }
+
+        if (mChoiceButtons != null)
+        {
+            for (var i = 0; i < mChoiceButtons.Length; i++)
+            {
+                var button = mChoiceButtons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                var hasChoice = i < mRequestData.Choices.Count;
+                button.gameObject.SetActive(hasChoice);
+                if (!hasChoice)
+                {
+                    continue;
+                }
+
+                var choice = mRequestData.Choices[i];
+                var capturedChoice = choice;
+                var label = button.GetComponentInChildren<TMP_Text>();
+                if (label != null)
+                {
+                    label.text = string.IsNullOrWhiteSpace(capturedChoice.MetaText)
+                        ? capturedChoice.Label
+                        : $"{capturedChoice.Label}\n{capturedChoice.MetaText}";
+                }
+
+                button.interactable = capturedChoice.IsEnabled;
+                button.onClick.AddListener(() =>
+                {
+                    if (!capturedChoice.IsEnabled)
+                    {
+                        return;
+                    }
+
+                    capturedChoice.Action?.Invoke(this);
+                    if (mRequestData.CloseOnChoice && capturedChoice.CloseAfterClick)
+                    {
+                        CloseSelf();
+                    }
+                });
+            }
+        }
+
+        if (mPassButton == null)
+        {
+            return;
+        }
+
+        var hasCloseAction = !string.IsNullOrWhiteSpace(mRequestData.CloseLabel) || mRequestData.CloseAction != null;
+        mPassButton.gameObject.SetActive(hasCloseAction);
+        if (!hasCloseAction)
+        {
+            return;
+        }
+
+        if (mPassText != null)
+        {
+            mPassText.text = string.IsNullOrWhiteSpace(mRequestData.CloseLabel)
+                ? mPassText.text
+                : mRequestData.CloseLabel;
+        }
+
+        mPassButton.onClick.AddListener(() =>
+        {
+            mRequestData.CloseAction?.Invoke(this);
+            if (mRequestData.CloseAction == null)
+            {
+                CloseSelf();
+            }
+        });
     }
 
     private void ClearButtonListeners()

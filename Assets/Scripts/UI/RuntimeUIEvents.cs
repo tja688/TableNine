@@ -30,6 +30,26 @@ public readonly struct PopupRequestedEvent
     public string Message { get; }
 }
 
+public readonly struct RoomChoiceRequestedEvent
+{
+    public RoomChoiceRequestedEvent(System.Collections.Generic.IReadOnlyList<string> roomIds)
+    {
+        RoomIds = roomIds;
+    }
+
+    public System.Collections.Generic.IReadOnlyList<string> RoomIds { get; }
+}
+
+public readonly struct TutorSkillChoiceRequestedEvent
+{
+    public TutorSkillChoiceRequestedEvent(System.Collections.Generic.IReadOnlyList<string> skillIds)
+    {
+        SkillIds = skillIds;
+    }
+
+    public System.Collections.Generic.IReadOnlyList<string> SkillIds { get; }
+}
+
 public readonly struct ItemSlotChangedEvent
 {
     public ItemSlotChangedEvent(int itemSlotIndex, CardUid? uid)
