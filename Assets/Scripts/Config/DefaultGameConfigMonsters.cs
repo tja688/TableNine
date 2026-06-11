@@ -19,6 +19,10 @@ public static partial class DefaultGameConfigFactory
 
     public const string MonsterSpadeEliteId = "monster_spade_a";
     public const string MonsterSpadeBossId = "monster_spade_j";
+    public const string MonsterHeartEliteId = "monster_heart_a";
+    public const string MonsterHeartBossId = "monster_heart_j";
+    public const string MonsterDiamondEliteId = "monster_diamond_a";
+    public const string MonsterDiamondBossId = "monster_diamond_j";
 
     public const string HelpBlueChestId = "help_blue_chest";
     public const string HelpGoldChestId = "help_gold_chest";

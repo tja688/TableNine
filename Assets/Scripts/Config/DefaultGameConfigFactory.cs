@@ -209,7 +209,8 @@ public static partial class DefaultGameConfigFactory
         });
 
         AddLayer1MonstersAndSkills(config);
-        Layer1MonsterDeckRules.Populate(config);
+        AddPlaytestContent(config);
+        AllLayersMonsterDeckRules.Populate(config);
 
         // Relic definitions
         config.Relics.Add(new RelicDefinition

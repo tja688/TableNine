@@ -53,6 +53,8 @@ public sealed class StartNewRunCommand : AbstractCommand
         }
 
         this.SendCommand(new StartNodeCommand(1, 1));
+        this.GetUtility<ICommandReplayUtility>()?.Clear();
+        this.SendCommand(new SaveRunCommand(SaveRunReason.NewRun));
     }
 }
 
@@ -426,6 +428,8 @@ public sealed class StartCombatCommand : AbstractCommand
         if (this.SendQuery(new GetEffectivePlayerStatsQuery()).CurrentHp <= 0)
         {
             flowModel.SetPhase(FlowPhase.GameOver);
+            this.SendEvent(new GameOverEvent("player_hp_zero"));
+            this.SendCommand(new SaveRunCommand(SaveRunReason.GameOver));
             return;
         }
 
@@ -450,6 +454,16 @@ public sealed class ApplyDamageCommand : AbstractCommand
         var collectionModel = this.GetModel<ICollectionModel>();
         if (!collectionModel.TryGetCard(TargetUid, out var runtime))
         {
+            return;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        if (runtime.CardType == CardType.Player &&
+            deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.BlessingShield &&
+            Damage > 0)
+        {
+            deckModel.PendingHelpCardAction.Clear();
+            this.SendEvent(new DamagePreventedEvent(TargetUid, DefaultGameConfigFactory.HelpBlessingId));
             return;
         }
 
@@ -610,6 +624,14 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
                     DescriptionPanelTextKeys.MsgRoomGold,
                     50)));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, true));
+                break;
+            }
+            case DefaultGameConfigFactory.HelpBlessingId:
+            {
+                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
+                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.BlessingShield;
+                this.SendEvent(new GameplayMessageEvent("庇佑已生效：下一次受到伤害为0。"));
                 this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, true));
                 break;
             }
@@ -1012,6 +1034,24 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
         var runModel = this.GetModel<IRunModel>();
         var flowModel = this.GetModel<IFlowModel>();
 
+        if (flowModel.Phase.Value == FlowPhase.LayerComplete)
+        {
+            var nextLayer = runModel.Layer.Value + 1;
+            if (nextLayer > 3)
+            {
+                flowModel.SetPhase(FlowPhase.Victory);
+                this.SendEvent(new VictoryEvent());
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgVictory)));
+                this.SendCommand(new SaveRunCommand(SaveRunReason.Victory));
+                return;
+            }
+
+            this.SendEvent(new LayerAdvancedEvent(runModel.Layer.Value, nextLayer));
+            this.SendCommand(new StartNodeCommand(nextLayer, 1));
+            this.SendCommand(new SaveRunCommand(SaveRunReason.NodeStart));
+            return;
+        }
+
         this.SendEvent(new NodeCompletedEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
 
         var nextNode = runModel.NodeInLayer.Value + 1;
@@ -1020,7 +1060,9 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
             if (runModel.Layer.Value >= 3)
             {
                 flowModel.SetPhase(FlowPhase.Victory);
+                this.SendEvent(new VictoryEvent());
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgVictory)));
+                this.SendCommand(new SaveRunCommand(SaveRunReason.Victory));
             }
             else
             {
@@ -1029,6 +1071,7 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
                     DescriptionPanelTextKeys.MsgLayerComplete,
                     runModel.Layer.Value)));
+                this.SendCommand(new SaveRunCommand(SaveRunReason.LayerComplete));
             }
 
             return;
@@ -1036,6 +1079,7 @@ public sealed class ProceedToNextNodeCommand : AbstractCommand
 
         this.SendEvent(new NodeAdvancedEvent(runModel.Layer.Value, runModel.NodeInLayer.Value, nextNode));
         this.SendCommand(new StartNodeCommand(runModel.Layer.Value, nextNode));
+        this.SendCommand(new SaveRunCommand(SaveRunReason.NodeStart));
     }
 }
 

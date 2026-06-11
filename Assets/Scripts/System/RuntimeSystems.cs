@@ -926,24 +926,12 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
 
         rewardModel.ClearChestRewardRelicIds();
 
-        // [S2 FIX] Dynamically query relic pool from config instead of hardcoded list
         var allRelics = new List<RelicDefinition>();
-        var relicIds = new[]
+        foreach (var pair in configModel.GetAllRelicDefinitions())
         {
-            DefaultGameConfigFactory.RelicWoodShieldId,
-            DefaultGameConfigFactory.RelicWoodSwordId,
-            DefaultGameConfigFactory.RelicWoodArmorId,
-            DefaultGameConfigFactory.RelicLivingFleshId,
-            DefaultGameConfigFactory.RelicThornArmorId,
-            DefaultGameConfigFactory.RelicPhoenixFeatherId
-        };
-
-        for (var i = 0; i < relicIds.Length; i++)
-        {
-            var def = configModel.GetRelicDefinition(relicIds[i]);
-            if (!def.ExcludeFromPool)
+            if (!pair.ExcludeFromPool)
             {
-                allRelics.Add(def);
+                allRelics.Add(pair);
             }
         }
 

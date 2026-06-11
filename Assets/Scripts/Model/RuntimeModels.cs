@@ -330,10 +330,13 @@ public interface ICollectionModel : IModel
     IReadOnlyDictionary<int, CardRuntime> Cards { get; }
     CardRuntime CreatePlayerCard(CharacterDefinition definition);
     CardRuntime CreateCard(CardDefinition definition);
+    void RestoreCard(CardRuntime runtime);
     CardRuntime GetCard(CardUid uid);
     bool TryGetCard(CardUid uid, out CardRuntime cardRuntime);
     bool RemoveCard(CardUid uid);
     void Clear();
+    int GetNextUid();
+    void SetNextUid(int nextUid);
 }
 
 public sealed class CollectionModel : AbstractModel, ICollectionModel
@@ -365,6 +368,25 @@ public sealed class CollectionModel : AbstractModel, ICollectionModel
 
         mCards[runtime.Uid.Value] = runtime;
         return runtime;
+    }
+
+    public void RestoreCard(CardRuntime runtime)
+    {
+        mCards[runtime.Uid.Value] = runtime;
+        if (runtime.Uid.Value >= mNextUid)
+        {
+            mNextUid = runtime.Uid.Value + 1;
+        }
+    }
+
+    public int GetNextUid()
+    {
+        return mNextUid;
+    }
+
+    public void SetNextUid(int nextUid)
+    {
+        mNextUid = nextUid < 1 ? 1 : nextUid;
     }
 
     public CardRuntime CreateCard(CardDefinition definition)
@@ -427,6 +449,7 @@ public interface IConfigModel : IModel
     IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality);
     bool TryGetCardDefinition(string cardId, out CardDefinition definition);
     RelicDefinition GetRelicDefinition(string relicId);
+    IReadOnlyList<RelicDefinition> GetAllRelicDefinitions();
     RoomDefinition GetRoomDefinition(string roomId);
     IReadOnlyList<CardDefinition> GetCardsByType(CardType cardType);
 }
@@ -554,6 +577,17 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     public RelicDefinition GetRelicDefinition(string relicId)
     {
         return mRelicsById[relicId];
+    }
+
+    public IReadOnlyList<RelicDefinition> GetAllRelicDefinitions()
+    {
+        var result = new List<RelicDefinition>(mRelicsById.Count);
+        foreach (var relic in mRelicsById.Values)
+        {
+            result.Add(relic);
+        }
+
+        return result;
     }
 
     public RoomDefinition GetRoomDefinition(string roomId)

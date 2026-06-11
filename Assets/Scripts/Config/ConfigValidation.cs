@@ -97,16 +97,59 @@ public static class ConfigValidator
                 }
             }
 
-            if (rule.Layer == 1 && rule.NodeInLayer == 5 &&
-                !rule.MandatoryMonsterCardIds.Contains(DefaultGameConfigFactory.MonsterSpadeEliteId))
+            if (rule.NodeInLayer == 5)
             {
-                errors.Add("Layer 1 node 5 must include elite monster in mandatory list.");
+                var eliteId = DefaultGameConfigFactory.GetEliteMonsterId(rule.Layer);
+                if (!rule.MandatoryMonsterCardIds.Contains(eliteId))
+                {
+                    errors.Add($"Layer {rule.Layer} node 5 must include elite monster {eliteId}.");
+                }
             }
 
-            if (rule.Layer == 1 && rule.NodeInLayer == 9 &&
-                !rule.MandatoryMonsterCardIds.Contains(DefaultGameConfigFactory.MonsterSpadeBossId))
+            if (rule.NodeInLayer == 9)
             {
-                errors.Add("Layer 1 node 9 must include boss monster in mandatory list.");
+                var bossId = DefaultGameConfigFactory.GetBossMonsterId(rule.Layer);
+                if (!rule.MandatoryMonsterCardIds.Contains(bossId))
+                {
+                    errors.Add($"Layer {rule.Layer} node 9 must include boss monster {bossId}.");
+                }
+            }
+        }
+
+        var expectedRuleCount = 27;
+        if (config.MonsterDeckRules.Count != expectedRuleCount)
+        {
+            errors.Add($"Expected {expectedRuleCount} monster deck rules (3 layers x 9 nodes), got {config.MonsterDeckRules.Count}.");
+        }
+
+        for (var layer = 1; layer <= 3; layer++)
+        {
+            for (var node = 1; node <= 9; node++)
+            {
+                var hasRule = false;
+                for (var i = 0; i < config.MonsterDeckRules.Count; i++)
+                {
+                    var rule = config.MonsterDeckRules[i];
+                    if (rule.Layer == layer && rule.NodeInLayer == node)
+                    {
+                        hasRule = true;
+                        break;
+                    }
+                }
+
+                if (!hasRule)
+                {
+                    errors.Add($"Missing monster deck rule for layer {layer} node {node}.");
+                }
+            }
+        }
+
+        for (var i = 0; i < DefaultGameConfigFactory.PlaytestHelpCardIds.Length; i++)
+        {
+            var helpId = DefaultGameConfigFactory.PlaytestHelpCardIds[i];
+            if (!cardIds.Contains(helpId))
+            {
+                errors.Add($"Missing playtest help card: {helpId}");
             }
         }
 

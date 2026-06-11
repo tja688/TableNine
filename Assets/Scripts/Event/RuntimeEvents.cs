@@ -299,3 +299,81 @@ public readonly struct NodeAdvancedEvent
     public int FromNode { get; }
     public int ToNode { get; }
 }
+
+public readonly struct LayerAdvancedEvent
+{
+    public LayerAdvancedEvent(int fromLayer, int toLayer)
+    {
+        FromLayer = fromLayer;
+        ToLayer = toLayer;
+    }
+
+    public int FromLayer { get; }
+    public int ToLayer { get; }
+}
+
+public readonly struct VictoryEvent { }
+
+public readonly struct GameOverEvent
+{
+    public GameOverEvent(string reason)
+    {
+        Reason = reason;
+    }
+
+    public string Reason { get; }
+}
+
+public readonly struct DamagePreventedEvent
+{
+    public DamagePreventedEvent(CardUid targetUid, string sourceId)
+    {
+        TargetUid = targetUid;
+        SourceId = sourceId;
+    }
+
+    public CardUid TargetUid { get; }
+    public string SourceId { get; }
+}
+
+public readonly struct RunSavedEvent
+{
+    public RunSavedEvent(string slot, SaveRunReason reason)
+    {
+        Slot = slot;
+        Reason = reason;
+    }
+
+    public string Slot { get; }
+    public SaveRunReason Reason { get; }
+}
+
+public readonly struct RunLoadedEvent
+{
+    public RunLoadedEvent(string slot)
+    {
+        Slot = slot;
+    }
+
+    public string Slot { get; }
+}
+
+public readonly struct RunSaveDeletedEvent
+{
+    public RunSaveDeletedEvent(string slot)
+    {
+        Slot = slot;
+    }
+
+    public string Slot { get; }
+}
+
+public readonly struct RunReplayCompletedEvent
+{
+    public RunReplayCompletedEvent(int commandCount)
+    {
+        CommandCount = commandCount;
+    }
+
+    public int CommandCount { get; }
+}

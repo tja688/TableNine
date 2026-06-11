@@ -100,7 +100,8 @@ public enum PendingHelpCardActionKind
 {
     None,
     ThrowingKnifeTarget,
-    AttributeChoice
+    AttributeChoice,
+    BlessingShield
 }
 
 public enum RewardSource

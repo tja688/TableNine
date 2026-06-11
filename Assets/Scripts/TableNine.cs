@@ -24,6 +24,8 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterUtility<IConfigUtility>(new ScriptableConfigUtility());
         RegisterUtility<ISequenceUtility>(new ImmediateSequenceUtility());
         RegisterUtility<ICommandTraceUtility>(new CommandTraceUtility());
+        RegisterUtility<ICommandReplayUtility>(new CommandReplayUtility());
+        RegisterUtility<IDebugEventLogUtility>(new DebugEventLogUtility());
 
         RegisterModel<IRunModel>(new RunModel());
         RegisterModel<IPlayerModel>(new PlayerModel());
@@ -45,12 +47,16 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterSystem<IRewardSystem>(new RewardSystem());
         RegisterSystem<IRelicSystem>(new RelicSystem());
         RegisterSystem<IShopSystem>(new ShopSystem());
+        RegisterSystem<ISaveSystem>(new SaveSystem());
+        RegisterSystem<IDebugEventSystem>(new DebugEventSystem());
     }
 
     protected override void ExecuteCommand(ICommand command)
     {
         var trace = GetTraceUtilityOrNull();
+        var replay = GetReplayUtilityOrNull();
         trace?.Before(command);
+        replay?.Record(command);
 
         try
         {
@@ -67,7 +73,9 @@ public sealed class TableNine : Architecture<TableNine>
     protected override TResult ExecuteCommand<TResult>(ICommand<TResult> command)
     {
         var trace = GetTraceUtilityOrNull();
+        var replay = GetReplayUtilityOrNull();
         trace?.Before(command);
+        replay?.Record(command);
 
         try
         {
@@ -85,5 +93,10 @@ public sealed class TableNine : Architecture<TableNine>
     private ICommandTraceUtility GetTraceUtilityOrNull()
     {
         return GetUtility<ICommandTraceUtility>();
+    }
+
+    private ICommandReplayUtility GetReplayUtilityOrNull()
+    {
+        return GetUtility<ICommandReplayUtility>();
     }
 }
