@@ -16,11 +16,20 @@ public sealed class UIChoiceOverlayPanelData : UIPanelData
 
 public sealed class UIChoiceOverlayPanel : UIPanel, IController
 {
+    private const string ThreeOrTwoWindowName = "3or2for1ChoiseWindow";
+    private const string ShopWindowName = "ShopChoiseWindow";
+    private const string DeleteCardWindowName = "DeleteCardChoiseWindow";
+
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
     [SerializeField] private Button[] mChoiceButtons;
     [SerializeField] private Button mPassButton;
     [SerializeField] private TMP_Text mPassText;
+
+    private Transform mThreeOrTwoWindow;
+    private Transform mShopWindow;
+    private Transform mDeleteCardWindow;
+    private Transform mActiveSubWindow;
 
     private ChoiceOverlayMode mMode;
     private TableNineUIRequestPanelData mRequestData;
@@ -32,7 +41,7 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
 
     protected override void OnInit(IUIData uiData = null)
     {
-        AutoBind();
+        CacheSubWindows();
         mEventRegisters.Add(this.RegisterEvent<AttributeChoiceResolvedEvent>(_ => CloseSelf()));
     }
 
@@ -41,13 +50,21 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         mRequestData = uiData as TableNineUIRequestPanelData;
         var data = uiData as UIChoiceOverlayPanelData;
         mMode = data != null ? data.Mode : ChoiceOverlayMode.AttributeUpgrade;
+
+        ApplySubWindowVisibility(ResolveSubWindowKey());
+        AutoBind(mActiveSubWindow);
         BindButtons();
     }
 
     protected override void OnClose()
     {
         ClearButtonListeners();
+        HideAllSubWindows();
         mRequestData = null;
+        mActiveSubWindow = null;
+        mChoiceButtons = null;
+        mPassButton = null;
+        mPassText = null;
     }
 
     protected override void OnBeforeDestroy()
@@ -61,25 +78,92 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         base.OnBeforeDestroy();
     }
 
-    private void AutoBind()
+    private void CacheSubWindows()
     {
-        if (mChoiceButtons == null || mChoiceButtons.Length == 0)
-        {
-            var buttons = new List<Button>();
-            for (var i = 1; i <= 3; i++)
-            {
-                var button = FindDeep(transform, $"ChoiseButton{i}")?.GetComponent<Button>();
-                if (button != null)
-                {
-                    buttons.Add(button);
-                }
-            }
+        mThreeOrTwoWindow = transform.Find(ThreeOrTwoWindowName);
+        mShopWindow = transform.Find(ShopWindowName);
+        mDeleteCardWindow = transform.Find(DeleteCardWindowName);
+    }
 
-            mChoiceButtons = buttons.ToArray();
+    private string ResolveSubWindowKey()
+    {
+        if (mRequestData != null && !string.IsNullOrWhiteSpace(mRequestData.Key))
+        {
+            return mRequestData.Key;
         }
 
-        mPassButton = mPassButton != null ? mPassButton : FindDeep(transform, "PassButton")?.GetComponent<Button>();
-        mPassText = mPassText != null ? mPassText : FindDeep(transform, "PassText")?.GetComponent<TMP_Text>();
+        return TableNineUIKeys.AttributeChoice;
+    }
+
+    private void ApplySubWindowVisibility(string uiKey)
+    {
+        var showThreeOrTwo = uiKey == TableNineUIKeys.AttributeChoice
+            || uiKey == TableNineUIKeys.HelpReward
+            || uiKey == TableNineUIKeys.TutorSkillChoice;
+        var showShop = uiKey == TableNineUIKeys.ShopMain;
+        var showDelete = uiKey == TableNineUIKeys.DeleteHelpCardConfirm;
+
+        if (!showThreeOrTwo && !showShop && !showDelete)
+        {
+            showThreeOrTwo = true;
+        }
+
+        SetWindowActive(mThreeOrTwoWindow, showThreeOrTwo);
+        SetWindowActive(mShopWindow, showShop);
+        SetWindowActive(mDeleteCardWindow, showDelete);
+
+        if (showThreeOrTwo)
+        {
+            mActiveSubWindow = mThreeOrTwoWindow;
+        }
+        else if (showShop)
+        {
+            mActiveSubWindow = mShopWindow;
+        }
+        else if (showDelete)
+        {
+            mActiveSubWindow = mDeleteCardWindow;
+        }
+    }
+
+    private void HideAllSubWindows()
+    {
+        SetWindowActive(mThreeOrTwoWindow, false);
+        SetWindowActive(mShopWindow, false);
+        SetWindowActive(mDeleteCardWindow, false);
+    }
+
+    private static void SetWindowActive(Transform window, bool active)
+    {
+        if (window != null)
+        {
+            window.gameObject.SetActive(active);
+        }
+    }
+
+    private void AutoBind(Transform searchRoot)
+    {
+        if (searchRoot == null)
+        {
+            mChoiceButtons = System.Array.Empty<Button>();
+            mPassButton = null;
+            mPassText = null;
+            return;
+        }
+
+        var buttons = new List<Button>();
+        for (var i = 1; i <= 3; i++)
+        {
+            var button = FindDeep(searchRoot, $"ChoiseButton{i}")?.GetComponent<Button>();
+            if (button != null)
+            {
+                buttons.Add(button);
+            }
+        }
+
+        mChoiceButtons = buttons.ToArray();
+        mPassButton = FindDeep(searchRoot, "PassButton")?.GetComponent<Button>();
+        mPassText = FindDeep(searchRoot, "PassText")?.GetComponent<TMP_Text>();
     }
 
     private void BindButtons()

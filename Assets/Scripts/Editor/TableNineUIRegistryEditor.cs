@@ -11,12 +11,10 @@ using static TableNineUI.Editor.UIPanelMetadataCatalog;
 namespace TableNineUI.Editor
 {
     /// <summary>
-    /// TableNine UI 面板注册表 —— UI Toolkit 自定义编辑器窗口
-    /// 侧边栏选择 + 右侧详情/配置的主从布局。
+    /// TableNine UI 面板注册表 —— 暖棕复古控制台风格编辑器窗口。
     /// </summary>
     public class TableNineUIRegistryEditorWindow : EditorWindow
     {
-        private const string UssPath = "Assets/Scripts/Editor/Styles/TableNineUIRegistryEditorStyles.uss";
         private const string WindowTitle = "UI 面板管理";
 
         private const string PrefKeyPrefix = "TableNineUI.RegistryEditor.";
@@ -28,11 +26,11 @@ namespace TableNineUI.Editor
         private SerializedObject mSerializedObj;
 
         private VisualElement mRoot;
-        private VisualElement mMainSplit;
         private VisualElement mSidebarList;
-        private VisualElement mDetailPane;
-        private VisualElement mStatsBar;
+        private ScrollView mDetailScroll;
         private TextField mSearchField;
+
+        private readonly List<NavButtonEntry> mNavButtons = new List<NavButtonEntry>();
 
         private string mSelectedKey;
         private string mSearchText = "";
@@ -45,12 +43,50 @@ namespace TableNineUI.Editor
             Category.Confirm, Category.Detail
         };
 
+        // ═══════════════════════════════════════════
+        //  Theme — RGB 0~1
+        // ═══════════════════════════════════════════
+
+        private static class Theme
+        {
+            public static readonly Color RootBg = new Color(0.10f, 0.085f, 0.07f);
+            public static readonly Color ContentBg = new Color(0.09f, 0.075f, 0.06f);
+            public static readonly Color SidebarBg = new Color(0.12f, 0.095f, 0.08f);
+            public static readonly Color HeaderBg = new Color(0.13f, 0.10f, 0.08f);
+            public static readonly Color StatCardBg = new Color(0.16f, 0.12f, 0.09f);
+            public static readonly Color SectionCardBg = new Color(0.15f, 0.12f, 0.095f);
+
+            public static readonly Color AccentStrong = new Color(0.86f, 0.64f, 0.28f);
+            public static readonly Color AccentGoldValue = new Color(0.94f, 0.75f, 0.40f);
+            public static readonly Color AccentMid = new Color(0.83f, 0.62f, 0.26f);
+            public static readonly Color AccentWeak = new Color(0.56f, 0.40f, 0.18f);
+
+            public static readonly Color TextPrimary = new Color(0.95f, 0.89f, 0.79f);
+            public static readonly Color TextSecondary = new Color(0.79f, 0.73f, 0.67f);
+            public static readonly Color TextTertiary = new Color(0.78f, 0.72f, 0.68f);
+            public static readonly Color TextPath = new Color(0.73f, 0.70f, 0.66f);
+            public static readonly Color TextChecklist = new Color(0.83f, 0.78f, 0.72f);
+
+            public static readonly Color Divider = new Color(0.22f, 0.18f, 0.14f);
+
+            public static readonly Color NavNormalBg = new Color(0.18f, 0.14f, 0.11f);
+            public static readonly Color NavSelectedBg = new Color(0.31f, 0.22f, 0.12f);
+            public static readonly Color NavStripeNormal = new Color(0.20f, 0.16f, 0.13f);
+        }
+
+        private struct NavButtonEntry
+        {
+            public VisualElement Button;
+            public VisualElement Stripe;
+            public string Key;
+        }
+
         [MenuItem("TableNine/UI 面板管理 %&u")]
         public static void OpenWindow()
         {
             var window = GetWindow<TableNineUIRegistryEditorWindow>();
             window.titleContent = new GUIContent(WindowTitle, EditorGUIUtility.IconContent("d_RectTransform Icon").image);
-            window.minSize = new Vector2(720, 480);
+            window.minSize = new Vector2(1180, 760);
             window.Show();
             window.Focus();
         }
@@ -65,13 +101,8 @@ namespace TableNineUI.Editor
         private void CreateGUI()
         {
             mRoot = rootVisualElement;
-            mRoot.AddToClassList("registry-root");
-
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(UssPath);
-            if (styleSheet != null)
-                mRoot.styleSheets.Add(styleSheet);
-            else
-                ApplyInlineStyles(mRoot);
+            mRoot.style.flexGrow = 1;
+            mRoot.style.backgroundColor = Theme.RootBg;
 
             mSelectedKey = EditorPrefs.GetString(PrefSelectedKey, "");
             mSearchText = EditorPrefs.GetString(PrefSearchKey, "");
@@ -88,7 +119,7 @@ namespace TableNineUI.Editor
             }
             else
             {
-                ShowNotFoundInDetailPane();
+                RebuildDetailPane();
             }
         }
 
@@ -119,71 +150,357 @@ namespace TableNineUI.Editor
         }
 
         // ═══════════════════════════════════════════
+        //  Style Factories
+        // ═══════════════════════════════════════════
+
+        private static Label CreateTitleLabel(string text, int fontSize, bool bold, Color color)
+        {
+            var label = new Label(text);
+            label.style.fontSize = fontSize;
+            label.style.color = color;
+            label.style.whiteSpace = WhiteSpace.Normal;
+            if (bold)
+                label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            return label;
+        }
+
+        private static Label CreateDescriptionLabel(string text)
+        {
+            return CreateTitleLabel(text, 11, false, Theme.TextSecondary);
+        }
+
+        private static Label CreateChecklistLabel(string text)
+        {
+            var label = CreateTitleLabel("• " + text, 11, false, Theme.TextChecklist);
+            label.style.marginBottom = 6;
+            label.style.whiteSpace = WhiteSpace.Normal;
+            return label;
+        }
+
+        private static Label CreateTinyPathLabel(string text)
+        {
+            var label = CreateTitleLabel(text, 11, false, Theme.TextPath);
+            label.style.whiteSpace = WhiteSpace.Normal;
+            return label;
+        }
+
+        private static VisualElement WrapControl(string label, string description, VisualElement field)
+        {
+            var row = new VisualElement();
+            row.style.paddingTop = 8;
+            row.style.paddingBottom = 8;
+            row.style.marginBottom = 4;
+            row.style.borderBottomWidth = 1;
+            row.style.borderBottomColor = Theme.Divider;
+
+            row.Add(CreateTitleLabel(label, 13, true, Theme.TextPrimary));
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                var desc = CreateDescriptionLabel(description);
+                desc.style.marginTop = 3;
+                desc.style.marginBottom = 6;
+                row.Add(desc);
+            }
+
+            field.style.flexGrow = 1;
+            row.Add(field);
+            return row;
+        }
+
+        private VisualElement WrapProperty(string label, string description, SerializedProperty prop, bool readOnly = false)
+        {
+            var field = new PropertyField(prop, "");
+            field.Bind(mSerializedObj);
+            if (readOnly)
+                field.SetEnabled(false);
+            return WrapControl(label, description, field);
+        }
+
+        private VisualElement CreateStatCard(string title, string value, string description)
+        {
+            var card = new VisualElement();
+            card.style.flexDirection = FlexDirection.Row;
+            card.style.width = 250;
+            card.style.marginRight = 10;
+            card.style.marginBottom = 10;
+            card.style.backgroundColor = Theme.StatCardBg;
+            card.style.borderTopLeftRadius = card.style.borderTopRightRadius = 8;
+            card.style.borderBottomLeftRadius = card.style.borderBottomRightRadius = 8;
+            card.style.overflow = Overflow.Hidden;
+
+            var stripe = new VisualElement();
+            stripe.style.width = 3;
+            stripe.style.backgroundColor = Theme.AccentMid;
+            card.Add(stripe);
+
+            var body = new VisualElement();
+            body.style.flexGrow = 1;
+            body.style.paddingTop = 12;
+            body.style.paddingBottom = 10;
+            body.style.paddingLeft = 12;
+            body.style.paddingRight = 10;
+
+            body.Add(CreateTitleLabel(title, 12, true, Theme.TextPrimary));
+            var val = CreateTitleLabel(value, 20, true, Theme.AccentGoldValue);
+            val.style.marginTop = 4;
+            body.Add(val);
+            var desc = CreateDescriptionLabel(description);
+            desc.style.marginTop = 4;
+            body.Add(desc);
+
+            card.Add(body);
+            return card;
+        }
+
+        private VisualElement CreateStatsGrid(int total, int formal, int fallback, int missing)
+        {
+            var grid = new VisualElement();
+            grid.style.flexDirection = FlexDirection.Row;
+            grid.style.flexWrap = Wrap.Wrap;
+            grid.style.marginBottom = 16;
+
+            grid.Add(CreateStatCard("面板总计", total.ToString(), "注册表中的 UI 面板条目数"));
+            grid.Add(CreateStatCard("已接入", formal.ToString(), "已绑定正式 Prefab 的面板"));
+            grid.Add(CreateStatCard("Fallback", fallback.ToString(), "未绑 Prefab，使用原子回退"));
+            if (missing > 0)
+                grid.Add(CreateStatCard("未配置", missing.ToString(), "无 Prefab 且无有效回退策略"));
+
+            return grid;
+        }
+
+        private VisualElement CreateSectionCard(string title, string description, Action<VisualElement> buildContent)
+        {
+            var outer = new VisualElement();
+            outer.style.flexDirection = FlexDirection.Row;
+            outer.style.marginBottom = 12;
+            outer.style.backgroundColor = Theme.SectionCardBg;
+            outer.style.borderTopLeftRadius = outer.style.borderTopRightRadius = 8;
+            outer.style.borderBottomLeftRadius = outer.style.borderBottomRightRadius = 8;
+            outer.style.overflow = Overflow.Hidden;
+
+            var stripe = new VisualElement();
+            stripe.style.width = 3;
+            stripe.style.backgroundColor = Theme.AccentWeak;
+            outer.Add(stripe);
+
+            var inner = new VisualElement();
+            inner.style.flexGrow = 1;
+            inner.style.paddingTop = 8;
+            inner.style.paddingBottom = 10;
+            inner.style.paddingLeft = 8;
+            inner.style.paddingRight = 10;
+
+            var foldout = new Foldout { text = title, value = true };
+            foldout.style.unityFontStyleAndWeight = FontStyle.Bold;
+            foldout.style.fontSize = 13;
+            foldout.style.color = Theme.TextPrimary;
+            inner.Add(foldout);
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                var desc = CreateDescriptionLabel(description);
+                desc.style.marginLeft = 4;
+                desc.style.marginTop = 6;
+                desc.style.marginBottom = 8;
+                foldout.contentContainer.Add(desc);
+            }
+
+            var column = new VisualElement();
+            column.style.flexDirection = FlexDirection.Column;
+            buildContent?.Invoke(column);
+            foldout.contentContainer.Add(column);
+
+            inner.Add(foldout);
+            outer.Add(inner);
+            return outer;
+        }
+
+        private VisualElement CreateNavButton(string title, string description, string key, Action onClick)
+        {
+            var btn = new VisualElement();
+            btn.style.flexDirection = FlexDirection.Row;
+            btn.style.backgroundColor = Theme.NavNormalBg;
+            btn.style.borderTopLeftRadius = btn.style.borderTopRightRadius = 6;
+            btn.style.borderBottomLeftRadius = btn.style.borderBottomRightRadius = 6;
+            btn.style.marginBottom = 8;
+            btn.style.overflow = Overflow.Hidden;
+            btn.userData = key;
+
+            var stripe = new VisualElement();
+            stripe.style.width = 4;
+            stripe.style.backgroundColor = Theme.NavStripeNormal;
+            btn.Add(stripe);
+
+            var content = new VisualElement();
+            content.style.flexGrow = 1;
+            content.style.paddingTop = 10;
+            content.style.paddingBottom = 10;
+            content.style.paddingLeft = 10;
+            content.style.paddingRight = 10;
+            content.style.justifyContent = Justify.Center;
+
+            var titleLabel = CreateTitleLabel(title, 14, true, Theme.TextPrimary);
+            titleLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            content.Add(titleLabel);
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                var descLabel = CreateDescriptionLabel(description);
+                descLabel.style.marginTop = 4;
+                descLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                content.Add(descLabel);
+            }
+
+            btn.Add(content);
+            btn.RegisterCallback<ClickEvent>(_ => onClick?.Invoke());
+
+            mNavButtons.Add(new NavButtonEntry { Button = btn, Stripe = stripe, Key = key });
+            return btn;
+        }
+
+        private void UpdateNavigationStyles()
+        {
+            foreach (var entry in mNavButtons)
+            {
+                bool selected = entry.Key == mSelectedKey;
+                entry.Button.style.backgroundColor = selected ? Theme.NavSelectedBg : Theme.NavNormalBg;
+                entry.Stripe.style.backgroundColor = selected ? Theme.AccentStrong : Theme.NavStripeNormal;
+            }
+        }
+
+        private VisualElement CreateButtonRow(params Button[] buttons)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.flexWrap = Wrap.Wrap;
+            row.style.marginBottom = 12;
+
+            foreach (var btn in buttons)
+            {
+                btn.style.height = 28;
+                btn.style.marginRight = 8;
+                btn.style.marginBottom = 8;
+                row.Add(btn);
+            }
+
+            return row;
+        }
+
+        private VisualElement CreatePageHeader(string title, string description)
+        {
+            var block = new VisualElement();
+            block.style.marginBottom = 14;
+
+            var titleLabel = CreateTitleLabel(title, 24, true, new Color(0.95f, 0.90f, 0.80f));
+            block.Add(titleLabel);
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                var desc = CreateTitleLabel(description, 12, false, new Color(0.80f, 0.74f, 0.67f));
+                desc.style.marginTop = 6;
+                desc.style.marginBottom = 14;
+                desc.style.whiteSpace = WhiteSpace.Normal;
+                block.Add(desc);
+            }
+
+            return block;
+        }
+
+        private HelpBox CreateStatusHelpBox(string status)
+        {
+            HelpBoxMessageType type;
+            switch (status)
+            {
+                case "formal":
+                    type = HelpBoxMessageType.Info;
+                    break;
+                case "fallback":
+                    type = HelpBoxMessageType.Warning;
+                    break;
+                default:
+                    type = HelpBoxMessageType.Error;
+                    break;
+            }
+
+            return new HelpBox(GetStatusBadgeText(status) + " — " + GetStatusTooltip(status), type);
+        }
+
+        // ═══════════════════════════════════════════
         //  Shell UI
         // ═══════════════════════════════════════════
 
         private void BuildShellUI()
         {
             mRoot.Clear();
+            mNavButtons.Clear();
 
-            // 顶部栏
-            var topBar = new VisualElement();
-            topBar.AddToClassList("top-bar");
+            // 1) Header
+            var header = new VisualElement();
+            header.style.backgroundColor = Theme.HeaderBg;
+            header.style.paddingLeft = 16;
+            header.style.paddingRight = 16;
+            header.style.paddingTop = 14;
+            header.style.paddingBottom = 10;
+            header.style.borderBottomWidth = 1;
+            header.style.borderBottomColor = Theme.Divider;
 
-            var topLeft = new VisualElement();
-            topLeft.AddToClassList("top-bar-left");
-            var title = new Label("TableNine UI 面板注册表");
-            title.AddToClassList("top-bar-title");
-            topLeft.Add(title);
-            var subtitle = new Label("Gameplay 事件 → UI Key → Prefab / Fallback");
-            subtitle.AddToClassList("top-bar-subtitle");
-            topLeft.Add(subtitle);
-            topBar.Add(topLeft);
+            var mainTitle = CreateTitleLabel("TableNine UI 面板注册表", 22, true, Theme.TextPrimary);
+            header.Add(mainTitle);
 
-            mStatsBar = new VisualElement();
-            mStatsBar.AddToClassList("top-bar-stats");
-            topBar.Add(mStatsBar);
+            var subtitle = CreateTitleLabel(
+                "Gameplay 通过事件描述 UI 需求，本注册表将稳定的 UI Key 映射到正式 Prefab 和受控的 Fallback 策略。",
+                12, false, Theme.TextSecondary);
+            subtitle.style.marginTop = 6;
+            subtitle.style.whiteSpace = WhiteSpace.Normal;
+            header.Add(subtitle);
+            mRoot.Add(header);
 
-            var actions = new VisualElement();
-            actions.AddToClassList("top-bar-actions");
+            // 2) Toolbar
+            var toolbar = new Toolbar();
+            toolbar.style.height = 34;
+            toolbar.style.paddingLeft = 8;
+            toolbar.style.paddingRight = 8;
+            toolbar.style.backgroundColor = Theme.HeaderBg;
+            toolbar.style.borderBottomWidth = 1;
+            toolbar.style.borderBottomColor = Theme.Divider;
 
-            var syncBtn = new Button(OnSyncDefaults) { text = "同步默认值" };
-            syncBtn.AddToClassList("toolbar-btn");
-            syncBtn.AddToClassList("toolbar-btn--primary");
-            syncBtn.tooltip = "将推荐的面板默认配置合并到注册表（不会覆盖已有 Prefab 引用）";
-            actions.Add(syncBtn);
+            var syncBtn = new ToolbarButton(OnSyncDefaults) { text = "同步推荐默认值" };
+            syncBtn.tooltip = "将推荐的面板默认配置合并到注册表中（不会覆盖已有 Prefab 引用）";
+            toolbar.Add(syncBtn);
 
-            var refreshBtn = new Button(RefreshAll) { text = "刷新" };
-            refreshBtn.AddToClassList("toolbar-btn");
+            var refreshBtn = new ToolbarButton(RefreshAll) { text = "刷新" };
             refreshBtn.tooltip = "刷新编辑器显示";
-            actions.Add(refreshBtn);
+            toolbar.Add(refreshBtn);
 
-            var pingBtn = new Button(OnPingAsset) { text = "定位资产" };
-            pingBtn.AddToClassList("toolbar-btn");
+            var pingBtn = new ToolbarButton(OnPingAsset) { text = "定位资产" };
             pingBtn.tooltip = "在项目面板中高亮定位此注册表资产";
-            actions.Add(pingBtn);
+            toolbar.Add(pingBtn);
 
-            topBar.Add(actions);
-            mRoot.Add(topBar);
+            mRoot.Add(toolbar);
 
-            // 主从布局
-            mMainSplit = new VisualElement();
-            mMainSplit.AddToClassList("main-split");
-            mRoot.Add(mMainSplit);
+            // 3) Body — TwoPaneSplitView
+            var split = new TwoPaneSplitView(0, 250, TwoPaneSplitViewOrientation.Horizontal);
+            split.style.flexGrow = 1;
 
-            BuildSidebar();
-            BuildDetailPaneShell();
-        }
-
-        private void BuildSidebar()
-        {
-            var sidebar = new VisualElement();
-            sidebar.AddToClassList("sidebar");
+            // Left sidebar
+            var sidebarColumn = new VisualElement();
+            sidebarColumn.style.flexGrow = 1;
+            sidebarColumn.style.backgroundColor = Theme.SidebarBg;
+            sidebarColumn.style.borderRightWidth = 1;
+            sidebarColumn.style.borderRightColor = Theme.Divider;
 
             var searchWrap = new VisualElement();
-            searchWrap.AddToClassList("sidebar-search-wrap");
-            mSearchField = new TextField { value = mSearchText };
-            mSearchField.AddToClassList("sidebar-search");
+            searchWrap.style.paddingLeft = 10;
+            searchWrap.style.paddingRight = 10;
+            searchWrap.style.paddingTop = 10;
+            searchWrap.style.paddingBottom = 6;
+            searchWrap.style.borderBottomWidth = 1;
+            searchWrap.style.borderBottomColor = Theme.Divider;
+
+            mSearchField = new TextField("搜索") { value = mSearchText };
+            mSearchField.style.flexGrow = 1;
+            StyleSearchField(mSearchField);
             mSearchField.RegisterValueChangedCallback(evt =>
             {
                 mSearchText = evt.newValue ?? "";
@@ -191,35 +508,52 @@ namespace TableNineUI.Editor
                 RebuildSidebarList();
             });
             searchWrap.Add(mSearchField);
-            sidebar.Add(searchWrap);
+            sidebarColumn.Add(searchWrap);
 
             var sidebarScroll = new ScrollView(ScrollViewMode.Vertical);
-            sidebarScroll.AddToClassList("sidebar-scroll");
-            mSidebarList = sidebarScroll;
-            sidebar.Add(sidebarScroll);
+            sidebarScroll.style.flexGrow = 1;
+            mSidebarList = new VisualElement();
+            mSidebarList.style.paddingLeft = 10;
+            mSidebarList.style.paddingRight = 10;
+            mSidebarList.style.paddingTop = 8;
+            mSidebarList.style.paddingBottom = 8;
+            sidebarScroll.Add(mSidebarList);
+            sidebarColumn.Add(sidebarScroll);
 
             var footer = new VisualElement();
-            footer.AddToClassList("sidebar-footer");
+            footer.style.paddingLeft = 10;
+            footer.style.paddingRight = 10;
+            footer.style.paddingTop = 6;
+            footer.style.paddingBottom = 10;
+            footer.style.borderTopWidth = 1;
+            footer.style.borderTopColor = Theme.Divider;
 
-            var globalBtn = new VisualElement();
-            globalBtn.AddToClassList("sidebar-global-btn");
-            globalBtn.name = "global-fallback-btn";
-            globalBtn.Add(new Label("\u2699") { name = "icon" });
-            globalBtn.Q<Label>("icon").AddToClassList("sidebar-global-btn-icon");
-            globalBtn.Add(new Label("全局 Fallback 预制件") { name = "label" });
-            globalBtn.Q<Label>("label").AddToClassList("sidebar-global-btn-label");
-            globalBtn.RegisterCallback<ClickEvent>(_ => SelectGlobalFallback());
-            footer.Add(globalBtn);
+            footer.Add(CreateNavButton(
+                "全局 Fallback 预制件",
+                "组件化预制件模板引用",
+                GlobalFallbackKey,
+                SelectGlobalFallback));
+            sidebarColumn.Add(footer);
 
-            sidebar.Add(footer);
-            mMainSplit.Add(sidebar);
+            split.Add(sidebarColumn);
+
+            // Right content
+            mDetailScroll = new ScrollView(ScrollViewMode.Vertical);
+            mDetailScroll.style.flexGrow = 1;
+            mDetailScroll.style.backgroundColor = Theme.ContentBg;
+            mDetailScroll.contentContainer.style.paddingLeft = 18;
+            mDetailScroll.contentContainer.style.paddingRight = 18;
+            mDetailScroll.contentContainer.style.paddingTop = 14;
+            mDetailScroll.contentContainer.style.paddingBottom = 20;
+            split.Add(mDetailScroll);
+
+            mRoot.Add(split);
         }
 
-        private void BuildDetailPaneShell()
+        private static void StyleSearchField(TextField field)
         {
-            mDetailPane = new VisualElement();
-            mDetailPane.AddToClassList("detail-pane");
-            mMainSplit.Add(mDetailPane);
+            field.labelElement.style.color = Theme.TextTertiary;
+            field.labelElement.style.fontSize = 11;
         }
 
         // ═══════════════════════════════════════════
@@ -233,7 +567,8 @@ namespace TableNineUI.Editor
                 mRegistry = FindRegistryAsset();
                 if (mRegistry == null)
                 {
-                    ShowNotFoundInDetailPane();
+                    RebuildSidebarList();
+                    RebuildDetailPane();
                     return;
                 }
                 mSerializedObj = new SerializedObject(mRegistry);
@@ -241,7 +576,6 @@ namespace TableNineUI.Editor
 
             mSerializedObj.Update();
             CollectEntries();
-            UpdateStats();
             RebuildSidebarList();
             RebuildDetailPane();
         }
@@ -268,11 +602,8 @@ namespace TableNineUI.Editor
             }
         }
 
-        private void UpdateStats()
+        private (int total, int formal, int fallback, int missing) ComputeStats()
         {
-            if (mStatsBar == null) return;
-            mStatsBar.Clear();
-
             int formal = 0, fallback = 0, missing = 0;
             foreach (var info in mAllEntries)
             {
@@ -283,30 +614,7 @@ namespace TableNineUI.Editor
                     default: missing++; break;
                 }
             }
-
-            AddStatChip(mStatsBar, "总计", mAllEntries.Count.ToString(), "total");
-            AddStatChip(mStatsBar, "已接入", formal.ToString(), "formal");
-            AddStatChip(mStatsBar, "Fallback", fallback.ToString(), "fallback");
-            if (missing > 0)
-                AddStatChip(mStatsBar, "未配置", missing.ToString(), "missing");
-        }
-
-        private void AddStatChip(VisualElement parent, string label, string value, string modifier)
-        {
-            var chip = new VisualElement();
-            chip.AddToClassList("stat-chip");
-
-            var dot = new VisualElement();
-            dot.AddToClassList("stat-dot");
-            dot.AddToClassList($"stat-dot--{modifier}");
-            chip.Add(dot);
-
-            chip.Add(new Label(label) { name = "lbl" });
-            chip.Q<Label>("lbl").AddToClassList("stat-chip-label");
-            chip.Add(new Label(value) { name = "val" });
-            chip.Q<Label>("val").AddToClassList("stat-chip-value");
-
-            parent.Add(chip);
+            return (mAllEntries.Count, formal, fallback, missing);
         }
 
         // ═══════════════════════════════════════════
@@ -316,7 +624,15 @@ namespace TableNineUI.Editor
         private void RebuildSidebarList()
         {
             if (mSidebarList == null) return;
+
+            mNavButtons.RemoveAll(e => e.Key != GlobalFallbackKey);
             mSidebarList.Clear();
+
+            if (mRegistry == null || mAllEntries.Count == 0)
+            {
+                UpdateNavigationStyles();
+                return;
+            }
 
             var filter = (mSearchText ?? "").Trim().ToLowerInvariant();
             var grouped = new Dictionary<Category, List<PanelEntryInfo>>();
@@ -343,15 +659,12 @@ namespace TableNineUI.Editor
 
             if (!anyVisible)
             {
-                var empty = new Label(string.IsNullOrEmpty(filter) ? "暂无面板条目" : "无匹配结果");
-                empty.style.paddingLeft = empty.style.paddingRight = 12;
-                empty.style.paddingTop = empty.style.paddingBottom = 16;
-                empty.style.color = new Color(0.5f, 0.5f, 0.55f);
-                empty.style.fontSize = 11;
+                var empty = CreateDescriptionLabel(string.IsNullOrEmpty(filter) ? "暂无面板条目" : "无匹配结果");
+                empty.style.paddingTop = 12;
                 mSidebarList.Add(empty);
             }
 
-            UpdateSidebarSelectionHighlight();
+            UpdateNavigationStyles();
         }
 
         private bool MatchesFilter(PanelEntryInfo info, string filter)
@@ -366,51 +679,38 @@ namespace TableNineUI.Editor
         {
             if (!Categories.TryGetValue(cat, out var catMeta)) return;
 
-            var section = new VisualElement();
-            section.AddToClassList("sidebar-category");
-
-            var header = new VisualElement();
-            header.AddToClassList("sidebar-category-header");
-            header.Add(new Label(catMeta.Icon) { name = "icon" });
-            header.Q<Label>("icon").AddToClassList("sidebar-category-icon");
-            header.Add(new Label(catMeta.ChineseName.ToUpperInvariant()) { name = "name" });
-            header.Q<Label>("name").AddToClassList("sidebar-category-name");
-            header.Add(new Label(entries.Count.ToString()) { name = "count" });
-            header.Q<Label>("count").AddToClassList("sidebar-category-count");
-            section.Add(header);
+            var header = CreateTitleLabel(
+                $"{catMeta.Icon}  {catMeta.ChineseName.ToUpperInvariant()}  ({entries.Count})",
+                10, true, Theme.TextTertiary);
+            header.style.marginTop = 4;
+            header.style.marginBottom = 6;
+            header.style.marginLeft = 2;
+            mSidebarList.Add(header);
 
             foreach (var info in entries)
             {
-                var item = new VisualElement();
-                item.AddToClassList("sidebar-item");
-                item.userData = info.UIKey;
-
                 var status = GetPanelStatus(info.Property);
-                var statusDot = new VisualElement();
-                statusDot.AddToClassList("sidebar-item-status");
-                statusDot.AddToClassList($"sidebar-item-status--{status}");
-                item.Add(statusDot);
+                var statusText = status switch
+                {
+                    "formal" => "已接入",
+                    "fallback" => "Fallback",
+                    _ => "未配置"
+                };
 
-                var textWrap = new VisualElement();
-                textWrap.AddToClassList("sidebar-item-text");
-                textWrap.Add(new Label(info.Meta.ChineseName) { name = "name" });
-                textWrap.Q<Label>("name").AddToClassList("sidebar-item-name");
-                textWrap.Add(new Label(info.UIKey) { name = "key" });
-                textWrap.Q<Label>("key").AddToClassList("sidebar-item-key");
-                item.Add(textWrap);
-
-                item.RegisterCallback<ClickEvent>(_ => SelectPanel(info.UIKey));
-                section.Add(item);
+                var key = info.UIKey;
+                mSidebarList.Add(CreateNavButton(
+                    info.Meta.ChineseName,
+                    $"{info.UIKey}  ·  {statusText}",
+                    key,
+                    () => SelectPanel(key)));
             }
-
-            mSidebarList.Add(section);
         }
 
         private void SelectPanel(string uiKey)
         {
             mSelectedKey = uiKey;
             EditorPrefs.SetString(PrefSelectedKey, uiKey);
-            UpdateSidebarSelectionHighlight();
+            UpdateNavigationStyles();
             RebuildDetailPane();
         }
 
@@ -418,23 +718,8 @@ namespace TableNineUI.Editor
         {
             mSelectedKey = GlobalFallbackKey;
             EditorPrefs.SetString(PrefSelectedKey, GlobalFallbackKey);
-            UpdateSidebarSelectionHighlight();
+            UpdateNavigationStyles();
             RebuildDetailPane();
-        }
-
-        private void UpdateSidebarSelectionHighlight()
-        {
-            if (mSidebarList == null) return;
-
-            mSidebarList.Query(className: "sidebar-item").ForEach(item =>
-            {
-                var key = item.userData as string;
-                item.EnableInClassList("sidebar-item--selected", key == mSelectedKey);
-            });
-
-            var globalBtn = mMainSplit?.Q("global-fallback-btn");
-            if (globalBtn != null)
-                globalBtn.EnableInClassList("sidebar-global-btn--selected", mSelectedKey == GlobalFallbackKey);
         }
 
         private void EnsureValidSelection()
@@ -454,8 +739,8 @@ namespace TableNineUI.Editor
 
         private void RebuildDetailPane()
         {
-            if (mDetailPane == null) return;
-            mDetailPane.Clear();
+            if (mDetailScroll == null) return;
+            mDetailScroll.contentContainer.Clear();
 
             if (mRegistry == null || mSerializedObj == null)
             {
@@ -464,6 +749,9 @@ namespace TableNineUI.Editor
             }
 
             EnsureValidSelection();
+
+            var stats = ComputeStats();
+            mDetailScroll.Add(CreateStatsGrid(stats.total, stats.formal, stats.fallback, stats.missing));
 
             if (mSelectedKey == GlobalFallbackKey)
             {
@@ -489,210 +777,184 @@ namespace TableNineUI.Editor
 
         private void ShowEmptySelection()
         {
-            var empty = new VisualElement();
-            empty.AddToClassList("detail-empty");
-            empty.Add(new Label("\u25a1") { name = "icon" });
-            empty.Q<Label>("icon").AddToClassList("detail-empty-icon");
-            empty.Add(new Label("请从左侧选择一个面板") { name = "title" });
-            empty.Q<Label>("title").AddToClassList("detail-empty-title");
-            empty.Add(new Label("选择后可查看中文说明、设计备注和接入配置") { name = "hint" });
-            empty.Q<Label>("hint").AddToClassList("detail-empty-hint");
-            mDetailPane.Add(empty);
+            mDetailScroll.Add(CreatePageHeader(
+                "选择面板",
+                "从左侧导航选择一个 UI 面板，查看中文说明、设计备注与接入配置。"));
+
+            mDetailScroll.Add(new HelpBox(
+                "侧栏按分类收纳全部面板。新增面板只需在 UIPanelMetadataCatalog 字典追加一条元数据。",
+                HelpBoxMessageType.Info));
         }
 
         private void BuildPanelDetail(PanelEntryInfo info)
         {
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.AddToClassList("detail-scroll");
-
             var status = GetPanelStatus(info.Property);
             Categories.TryGetValue(info.Meta.Category, out var catMeta);
+            var categoryLine = catMeta != null ? $"分类：{catMeta.ChineseName}" : "";
 
-            // ── 头部 ──
-            var header = new VisualElement();
-            header.AddToClassList("detail-header");
+            mDetailScroll.Add(CreatePageHeader(
+                info.Meta.ChineseName,
+                info.Meta.ChineseDescription));
 
-            var headerTop = new VisualElement();
-            headerTop.AddToClassList("detail-header-top");
-
-            var headerMain = new VisualElement();
-            headerMain.AddToClassList("detail-header-main");
-            headerMain.Add(new Label(info.Meta.ChineseName) { name = "title" });
-            headerMain.Q<Label>("title").AddToClassList("detail-title");
-            headerMain.Add(new Label(info.UIKey) { name = "key" });
-            headerMain.Q<Label>("key").AddToClassList("detail-ui-key");
-            headerTop.Add(headerMain);
-
-            var badge = new Label(GetStatusBadgeText(status));
-            badge.AddToClassList("detail-badge");
-            badge.AddToClassList($"detail-badge--{status}");
-            badge.tooltip = GetStatusTooltip(status);
-            headerTop.Add(badge);
-            header.Add(headerTop);
-
-            if (catMeta != null)
+            mDetailScroll.Add(CreateTinyPathLabel(info.UIKey));
+            if (!string.IsNullOrEmpty(categoryLine))
             {
-                var catTag = new VisualElement();
-                catTag.AddToClassList("detail-category-tag");
-                catTag.Add(new Label(catMeta.Icon) { name = "icon" });
-                catTag.Q<Label>("icon").AddToClassList("detail-category-tag-icon");
-                catTag.Add(new Label(catMeta.ChineseName) { name = "text" });
-                catTag.Q<Label>("text").AddToClassList("detail-category-tag-text");
-                header.Add(catTag);
+                var catLabel = CreateDescriptionLabel(categoryLine);
+                catLabel.style.marginTop = 4;
+                catLabel.style.marginBottom = 12;
+                mDetailScroll.Add(catLabel);
             }
 
-            scroll.Add(header);
+            mDetailScroll.Add(CreateStatusHelpBox(status));
 
-            // ── 面板信息卡片 ──
-            scroll.Add(BuildInfoCard(info));
+            var spacer = new VisualElement();
+            spacer.style.height = 12;
+            mDetailScroll.Add(spacer);
 
-            // ── 接入配置卡片 ──
-            scroll.Add(BuildConfigCard(info));
+            mDetailScroll.Add(BuildInfoSection(info));
+            mDetailScroll.Add(BuildConfigSection(info));
+            mDetailScroll.Add(BuildFallbackSection(info));
 
-            // ── Fallback 配置卡片 ──
-            scroll.Add(BuildFallbackConfigCard(info));
-
-            // ── 备注卡片 ──
             var notesProp = info.Property.FindPropertyRelative("Notes");
             if (notesProp != null)
-                scroll.Add(BuildNotesCard(notesProp));
+                mDetailScroll.Add(BuildNotesSection(notesProp));
 
-            scroll.Bind(mSerializedObj);
-            mDetailPane.Add(scroll);
+            mDetailScroll.Bind(mSerializedObj);
         }
 
-        private VisualElement BuildInfoCard(PanelEntryInfo info)
+        private VisualElement BuildInfoSection(PanelEntryInfo info)
         {
-            var card = CreateCard("\u2139", "面板信息");
+            return CreateSectionCard(
+                "面板信息",
+                "来自 UIPanelMetadataCatalog 的设计说明与触发上下文。",
+                body =>
+                {
+                    if (!string.IsNullOrEmpty(info.Meta.TriggerEvent))
+                    {
+                        body.Add(WrapControl(
+                            "触发事件",
+                            "Gameplay 侧触发此面板的领域事件",
+                            CreateDescriptionLabel(info.Meta.TriggerEvent)));
+                    }
 
-            var desc = new Label(info.Meta.ChineseDescription);
-            desc.AddToClassList("detail-desc-block");
-            desc.style.whiteSpace = WhiteSpace.Normal;
-            card.body.Add(desc);
+                    if (!string.IsNullOrEmpty(info.Meta.ExpectedElements))
+                    {
+                        body.Add(WrapControl(
+                            "期望 UI 元素",
+                            "正式 Prefab 应包含的关键控件",
+                            CreateDescriptionLabel(info.Meta.ExpectedElements)));
+                    }
 
-            var grid = new VisualElement();
-            grid.AddToClassList("detail-meta-grid");
-
-            if (!string.IsNullOrEmpty(info.Meta.TriggerEvent))
-                grid.Add(CreateMetaRow("触发事件", info.Meta.TriggerEvent));
-            if (!string.IsNullOrEmpty(info.Meta.ExpectedElements))
-                grid.Add(CreateMetaRow("期望 UI 元素", info.Meta.ExpectedElements));
-            if (!string.IsNullOrEmpty(info.Meta.DesignNote))
-                grid.Add(CreateMetaRow("设计备注", info.Meta.DesignNote));
-
-            card.body.Add(grid);
-            return card.root;
+                    if (!string.IsNullOrEmpty(info.Meta.DesignNote))
+                    {
+                        body.Add(WrapControl(
+                            "设计备注",
+                            "来自 UI 设计文档的补充说明",
+                            CreateDescriptionLabel(info.Meta.DesignNote)));
+                    }
+                });
         }
 
-        private VisualElement BuildConfigCard(PanelEntryInfo info)
+        private VisualElement BuildConfigSection(PanelEntryInfo info)
         {
-            var card = CreateCard("\u2699", "接入配置");
-            var entryProp = info.Property;
+            return CreateSectionCard(
+                "接入配置",
+                "将 UI Key 映射到 UIKit 面板名与正式 Prefab。",
+                body =>
+                {
+                    var entryProp = info.Property;
 
-            var uiKeyProp = entryProp.FindPropertyRelative("UIKey");
-            if (uiKeyProp != null)
-            {
-                var field = new PropertyField(uiKeyProp, "UI Key");
-                field.SetEnabled(false);
-                field.AddToClassList("detail-field-value");
-                card.body.Add(WrapField(field));
-            }
+                    var uiKeyProp = entryProp.FindPropertyRelative("UIKey");
+                    if (uiKeyProp != null)
+                        body.Add(WrapProperty("UI Key", "稳定接入键，运行时按此查找", uiKeyProp, readOnly: true));
 
-            var uiTypeProp = entryProp.FindPropertyRelative("UIType");
-            if (uiTypeProp != null)
-            {
-                var typeEnum = (TableNineUIType)uiTypeProp.intValue;
-                card.body.Add(WrapFieldWithHint(
-                    new PropertyField(uiTypeProp, "UI 类型"),
-                    GetUITypeLabel(typeEnum)));
-            }
+                    var uiTypeProp = entryProp.FindPropertyRelative("UIType");
+                    if (uiTypeProp != null)
+                    {
+                        var typeEnum = (TableNineUIType)uiTypeProp.intValue;
+                        body.Add(WrapProperty("UI 类型", GetUITypeLabel(typeEnum), uiTypeProp));
+                    }
 
-            var panelNameProp = entryProp.FindPropertyRelative("PanelName");
-            if (panelNameProp != null)
-                card.body.Add(WrapField(new PropertyField(panelNameProp, "面板名")));
+                    var panelNameProp = entryProp.FindPropertyRelative("PanelName");
+                    if (panelNameProp != null)
+                        body.Add(WrapProperty("面板名", "UIKit Panel 类名", panelNameProp));
 
-            var prefabProp = entryProp.FindPropertyRelative("Prefab");
-            if (prefabProp != null)
-                card.body.Add(WrapField(new PropertyField(prefabProp, "正式 Prefab")));
+                    var prefabProp = entryProp.FindPropertyRelative("Prefab");
+                    if (prefabProp != null)
+                        body.Add(WrapProperty("正式 Prefab", "绑定后优先使用正式 UI", prefabProp));
 
-            var twoCol = new VisualElement();
-            twoCol.AddToClassList("detail-two-col");
+                    var levelProp = entryProp.FindPropertyRelative("Level");
+                    if (levelProp != null)
+                    {
+                        var levelEnum = (UILevel)levelProp.intValue;
+                        body.Add(WrapProperty("层级", GetUILevelLabel(levelEnum), levelProp));
+                    }
 
-            var levelProp = entryProp.FindPropertyRelative("Level");
-            if (levelProp != null)
-            {
-                var levelEnum = (UILevel)levelProp.intValue;
-                twoCol.Add(WrapFieldWithHint(
-                    new PropertyField(levelProp, "层级"),
-                    GetUILevelLabel(levelEnum)));
-            }
-
-            var openTypeProp = entryProp.FindPropertyRelative("OpenType");
-            if (openTypeProp != null)
-            {
-                var openEnum = (PanelOpenType)openTypeProp.intValue;
-                twoCol.Add(WrapFieldWithHint(
-                    new PropertyField(openTypeProp, "打开方式"),
-                    GetOpenTypeLabel(openEnum)));
-            }
-
-            card.body.Add(twoCol);
-            return card.root;
+                    var openTypeProp = entryProp.FindPropertyRelative("OpenType");
+                    if (openTypeProp != null)
+                    {
+                        var openEnum = (PanelOpenType)openTypeProp.intValue;
+                        body.Add(WrapProperty("打开方式", GetOpenTypeLabel(openEnum), openTypeProp));
+                    }
+                });
         }
 
-        private VisualElement BuildFallbackConfigCard(PanelEntryInfo info)
+        private VisualElement BuildFallbackSection(PanelEntryInfo info)
         {
-            var card = CreateCard("\u21bb", "Fallback 配置");
-            var entryProp = info.Property;
+            return CreateSectionCard(
+                "Fallback 配置",
+                "未绑定正式 Prefab 时的回退策略与交互阻断设置。",
+                body =>
+                {
+                    var entryProp = info.Property;
 
-            var fallbackStrategyProp = entryProp.FindPropertyRelative("FallbackStrategy");
-            if (fallbackStrategyProp != null)
-            {
-                var stratEnum = (TableNineUIFallbackStrategy)fallbackStrategyProp.intValue;
-                card.body.Add(WrapFieldWithHint(
-                    new PropertyField(fallbackStrategyProp, "回退策略"),
-                    GetFallbackStrategyDescription(stratEnum)));
-            }
+                    var fallbackStrategyProp = entryProp.FindPropertyRelative("FallbackStrategy");
+                    if (fallbackStrategyProp != null)
+                    {
+                        var stratEnum = (TableNineUIFallbackStrategy)fallbackStrategyProp.intValue;
+                        body.Add(WrapProperty(
+                            "回退策略",
+                            GetFallbackStrategyDescription(stratEnum),
+                            fallbackStrategyProp));
+                    }
 
-            var blocksProp = entryProp.FindPropertyRelative("BlocksGameplayInput");
-            if (blocksProp != null)
-            {
-                card.body.Add(WrapField(new PropertyField(blocksProp, "阻止操作")));
-                var blocksDesc = new Label(blocksProp.boolValue
-                    ? "阻止底层交互（全屏遮罩）"
-                    : "不阻止底层交互");
-                blocksDesc.AddToClassList("detail-field-hint");
-                card.body.Add(blocksDesc);
-            }
-
-            return card.root;
+                    var blocksProp = entryProp.FindPropertyRelative("BlocksGameplayInput");
+                    if (blocksProp != null)
+                    {
+                        body.Add(WrapProperty(
+                            "阻止操作",
+                            blocksProp.boolValue
+                                ? "阻止底层交互（全屏遮罩）"
+                                : "不阻止底层交互",
+                            blocksProp));
+                    }
+                });
         }
 
-        private VisualElement BuildNotesCard(SerializedProperty notesProp)
+        private VisualElement BuildNotesSection(SerializedProperty notesProp)
         {
-            var card = CreateCard("\u270E", "备注");
-            var field = new PropertyField(notesProp, "");
-            field.AddToClassList("detail-field-value");
-            card.body.Add(field);
-            return card.root;
+            return CreateSectionCard(
+                "备注",
+                "策划或程序补充说明，写入注册表资产。",
+                body =>
+                {
+                    body.Add(WrapProperty("备注内容", "", notesProp));
+                });
         }
 
         private void BuildGlobalFallbackDetail()
         {
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.AddToClassList("detail-scroll");
+            mDetailScroll.Add(CreatePageHeader(
+                "全局 Fallback 预制件",
+                "组件化预制件，供 Fallback 面板运行时实例化。为空时回退到纯代码生成。"));
 
-            var header = new VisualElement();
-            header.AddToClassList("global-fallback-header");
-            header.Add(new Label("全局 Fallback 预制件") { name = "title" });
-            header.Q<Label>("title").AddToClassList("global-fallback-title");
-            var desc = new Label("组件化预制件，供 Fallback 面板运行时实例化。为空时回退到纯代码生成。");
-            desc.AddToClassList("global-fallback-desc");
-            desc.style.whiteSpace = WhiteSpace.Normal;
-            header.Add(desc);
-            scroll.Add(header);
+            mDetailScroll.Add(new HelpBox(
+                "这些预制件被所有 Fallback 面板共享。建议保持风格统一，便于快速迭代。",
+                HelpBoxMessageType.Info));
 
-            var card = CreateCard("\u2699", "预制件引用");
+            var spacer = new VisualElement();
+            spacer.style.height = 12;
+            mDetailScroll.Add(spacer);
 
             string[] fields = { "mFallbackButtonPrefab", "mFallbackTextPrefab", "mFallbackIconPrefab", "mFallbackPanelPrefab", "mFallbackScrollViewPrefab" };
             string[] labels = { "按钮预制件", "文本预制件", "图标预制件", "面板预制件", "滚动视图预制件" };
@@ -704,96 +966,20 @@ namespace TableNineUI.Editor
                 "滚动列表模板（可选）"
             };
 
-            for (int i = 0; i < fields.Length; i++)
-            {
-                var prop = mSerializedObj.FindProperty(fields[i]);
-                if (prop == null) continue;
+            mDetailScroll.Add(CreateSectionCard(
+                "预制件引用",
+                "拖入对应 Prefab，运行时由 Fallback 系统实例化。",
+                body =>
+                {
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        var prop = mSerializedObj.FindProperty(fields[i]);
+                        if (prop == null) continue;
+                        body.Add(WrapProperty(labels[i], hints[i], prop));
+                    }
+                }));
 
-                var block = new VisualElement();
-                block.AddToClassList("fallback-field-block");
-
-                var field = new PropertyField(prop, labels[i]);
-                field.AddToClassList("detail-field-value");
-                block.Add(field);
-
-                var hint = new Label(hints[i]);
-                hint.AddToClassList("detail-field-hint");
-                block.Add(hint);
-
-                card.body.Add(block);
-            }
-
-            scroll.Add(card.root);
-            scroll.Bind(mSerializedObj);
-            mDetailPane.Add(scroll);
-        }
-
-        // ═══════════════════════════════════════════
-        //  UI Helpers
-        // ═══════════════════════════════════════════
-
-        private struct CardParts
-        {
-            public VisualElement root;
-            public VisualElement body;
-        }
-
-        private CardParts CreateCard(string icon, string title)
-        {
-            var root = new VisualElement();
-            root.AddToClassList("detail-card");
-
-            var header = new VisualElement();
-            header.AddToClassList("detail-card-header");
-            header.Add(new Label(icon) { name = "icon" });
-            header.Q<Label>("icon").AddToClassList("detail-card-icon");
-            header.Add(new Label(title) { name = "title" });
-            header.Q<Label>("title").AddToClassList("detail-card-title");
-            root.Add(header);
-
-            var body = new VisualElement();
-            body.AddToClassList("detail-card-body");
-            root.Add(body);
-
-            return new CardParts { root = root, body = body };
-        }
-
-        private VisualElement WrapField(PropertyField field)
-        {
-            field.Bind(mSerializedObj);
-            field.AddToClassList("detail-field-value");
-            var row = new VisualElement();
-            row.AddToClassList("detail-field-row");
-            row.Add(field);
-            return row;
-        }
-
-        private VisualElement WrapFieldWithHint(PropertyField field, string hint)
-        {
-            var wrap = new VisualElement();
-            wrap.AddToClassList("detail-field-group");
-            wrap.Add(WrapField(field));
-            if (!string.IsNullOrEmpty(hint))
-            {
-                var hintLabel = new Label(hint);
-                hintLabel.AddToClassList("detail-field-hint");
-                hintLabel.style.whiteSpace = WhiteSpace.Normal;
-                wrap.Add(hintLabel);
-            }
-            return wrap;
-        }
-
-        private VisualElement CreateMetaRow(string label, string value)
-        {
-            var row = new VisualElement();
-            row.AddToClassList("detail-meta-row");
-            row.Add(new Label(label) { name = "lbl" });
-            row.Q<Label>("lbl").AddToClassList("detail-meta-label");
-            var val = new Label(value);
-            val.AddToClassList("detail-meta-value");
-            val.style.whiteSpace = WhiteSpace.Normal;
-            row.Add(val);
-            return row;
+            mDetailScroll.Bind(mSerializedObj);
         }
 
         // ═══════════════════════════════════════════
@@ -850,9 +1036,9 @@ namespace TableNineUI.Editor
         {
             switch (status)
             {
-                case "formal": return "\u2714 已接入正式 Prefab";
-                case "fallback": return "\u25CB 使用 Fallback";
-                default: return "\u2716 未配置";
+                case "formal": return "已接入正式 Prefab";
+                case "fallback": return "使用 Fallback";
+                default: return "未配置";
             }
         }
 
@@ -868,26 +1054,21 @@ namespace TableNineUI.Editor
 
         private void ShowNotFoundInDetailPane()
         {
-            if (mDetailPane == null) return;
-            mDetailPane.Clear();
+            mDetailScroll.Add(CreatePageHeader(
+                "未找到注册表资产",
+                "请确认 Assets/ScriptableObjects/TableNineUIPanelRegistry.asset 存在。"));
 
-            var wrap = new VisualElement();
-            wrap.AddToClassList("not-found-wrap");
-
-            wrap.Add(new Label("未找到 TableNineUIPanelRegistry 资产") { name = "title" });
-            wrap.Q<Label>("title").AddToClassList("not-found-title");
-            wrap.Add(new Label("请确认 Assets/ScriptableObjects/TableNineUIPanelRegistry.asset 存在。") { name = "hint" });
-            wrap.Q<Label>("hint").AddToClassList("not-found-hint");
+            mDetailScroll.Add(new HelpBox(
+                "尚未创建 UI 面板注册表。点击下方按钮创建默认资产后继续配置。",
+                HelpBoxMessageType.Warning));
 
             var createBtn = new Button(() =>
             {
                 CreateRegistryAsset();
                 RefreshAll();
             }) { text = "创建注册表资产" };
-            createBtn.AddToClassList("not-found-btn");
-            wrap.Add(createBtn);
 
-            mDetailPane.Add(wrap);
+            mDetailScroll.Add(CreateButtonRow(createBtn));
         }
 
         private void CreateRegistryAsset()
@@ -902,12 +1083,6 @@ namespace TableNineUI.Editor
             mSerializedObj = new SerializedObject(registry);
         }
 
-        private void ApplyInlineStyles(VisualElement root)
-        {
-            root.style.backgroundColor = new Color(0.118f, 0.118f, 0.133f);
-            root.style.color = new Color(0.9f, 0.9f, 0.9f);
-        }
-
         private struct PanelEntryInfo
         {
             public int Index;
@@ -916,10 +1091,6 @@ namespace TableNineUI.Editor
             public PanelMeta Meta;
         }
     }
-
-    // ═══════════════════════════════════════════════════════
-    //  ScriptableObject Inspector 入口
-    // ═══════════════════════════════════════════════════════
 
 #if ODIN_INSPECTOR
     [Sirenix.OdinInspector.HideReferenceObjectPicker]
@@ -936,13 +1107,13 @@ namespace TableNineUI.Editor
             var title = new Label("TableNine UI 面板注册表");
             title.style.fontSize = 15;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
-            title.style.color = new Color(0.92f, 0.92f, 0.94f);
+            title.style.color = new Color(0.95f, 0.89f, 0.79f);
             title.style.marginBottom = 4;
             root.Add(title);
 
             var desc = new Label("打开可视化面板管理窗口：左侧选择面板，右侧查看说明与接入配置。");
             desc.style.fontSize = 11;
-            desc.style.color = new Color(0.65f, 0.65f, 0.7f);
+            desc.style.color = new Color(0.79f, 0.73f, 0.67f);
             desc.style.whiteSpace = WhiteSpace.Normal;
             desc.style.marginBottom = 12;
             root.Add(desc);
@@ -954,13 +1125,7 @@ namespace TableNineUI.Editor
             {
                 text = "打开 UI 面板管理窗口"
             };
-            openBtn.style.height = 32;
-            openBtn.style.fontSize = 12;
-            openBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
-            openBtn.style.backgroundColor = new Color(0.24f, 0.36f, 0.52f);
-            openBtn.style.color = Color.white;
-            openBtn.style.borderTopLeftRadius = openBtn.style.borderTopRightRadius = 4;
-            openBtn.style.borderBottomLeftRadius = openBtn.style.borderBottomRightRadius = 4;
+            openBtn.style.height = 28;
             openBtn.style.marginBottom = 12;
             root.Add(openBtn);
 
@@ -981,7 +1146,7 @@ namespace TableNineUI.Editor
 
                     var statsLabel = new Label($"共 {total} 个面板  ·  {formal} 个已接入  ·  {total - formal} 个 Fallback/未配置");
                     statsLabel.style.fontSize = 11;
-                    statsLabel.style.color = new Color(0.55f, 0.55f, 0.6f);
+                    statsLabel.style.color = new Color(0.73f, 0.70f, 0.66f);
                     root.Add(statsLabel);
                 }
             }
