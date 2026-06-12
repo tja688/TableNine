@@ -66,8 +66,8 @@ public static partial class DefaultGameConfigFactory
             }
         });
 
-        config.Skills.Add(new SkillDefinition { SkillId = SkillLightFootedId, DisplayName = "轻车熟路" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillFirstStrikeId, DisplayName = "先攻", GrantsFirstStrike = true });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillLightFootedId, DisplayName = "轻车熟路", Description = "每次关卡结束，进行一次白色帮助卡三选一。" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillFirstStrikeId, DisplayName = "先攻", Description = "战斗时优先出手。", GrantsFirstStrike = true });
         config.Skills.Add(new SkillDefinition { SkillId = SkillSpadeCubId, DisplayName = "黑桃幼崽" });
         config.Skills.Add(new SkillDefinition { SkillId = SkillHeartCubId, DisplayName = "红桃幼崽" });
         config.Skills.Add(new SkillDefinition { SkillId = SkillDiamondCubId, DisplayName = "方块幼崽" });

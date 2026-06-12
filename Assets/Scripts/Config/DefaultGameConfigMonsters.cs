@@ -80,12 +80,31 @@ public static partial class DefaultGameConfigFactory
 
     public static void AddLayer1MonstersAndSkills(GameConfigSet config)
     {
-        config.Skills.Add(new SkillDefinition { SkillId = SkillThornSkinId, DisplayName = "刺皮" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillHardSkinId, DisplayName = "硬皮" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillBattleHardenedId, DisplayName = "历战" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillArmoryId, DisplayName = "军械库" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillEvenHateId, DisplayName = "偶数仇恨" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillTowerChildId, DisplayName = "塔之子" });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillThornSkinId,
+            DisplayName = "刺皮",
+            Description = "每次被攻击，对攻击者造成等同于攻击者攻击力的伤害。",
+            HasRuntimeBinding = true,
+            Trigger = SkillTrigger.OnModifyDamage,
+            ConditionKey = "player_defender_monster_attacks",
+            EffectGraphId = "eg_skill_thorn_skin_reflect"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillHardSkinId,
+            DisplayName = "硬皮",
+            Description = "获得10点血量上限；每次清空关卡时恢复10点血量。",
+            HasRuntimeBinding = true,
+            Trigger = SkillTrigger.OnNodeClear,
+            ConditionKey = "always",
+            EffectGraphId = "eg_skill_hard_skin_node_clear_heal",
+            MaxHpOnAcquire = 10
+        });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillBattleHardenedId, DisplayName = "历战", Description = "每次与敌人战斗时，攻击+1；与新敌人战斗时复原历战加成。" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillArmoryId, DisplayName = "军械库", Description = "每次关卡结束，选择飞刀、爆弹、破击锤之一加入帮助卡组。" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillEvenHateId, DisplayName = "偶数仇恨", Description = "与名字带偶数的怪物战斗时，造成双倍伤害。" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillTowerChildId, DisplayName = "塔之子", Description = "每次关卡开始时，将一张倍增塔放入道具牌格。" });
 
         config.Cards.Add(new CardDefinition
         {

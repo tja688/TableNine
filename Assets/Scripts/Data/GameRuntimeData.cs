@@ -95,7 +95,8 @@ public enum CardPlacementSource
     OpeningHelp,
     OpeningDemon,
     OpeningBattle,
-    Refill
+    Refill,
+    BoardMove
 }
 
 public enum PendingHelpCardActionKind
@@ -331,7 +332,13 @@ public sealed class SkillDefinition
 {
     public string SkillId;
     public string DisplayName;
+    public string Description;
     public bool GrantsFirstStrike;
+    public bool HasRuntimeBinding;
+    public SkillTrigger Trigger;
+    public string ConditionKey;
+    public string EffectGraphId;
+    public int MaxHpOnAcquire;
 }
 
 [Serializable]
@@ -720,5 +727,4 @@ public sealed class ChestRewardCandidate
     public string DisplayName;
     public CardQuality Quality;
 }
-
 

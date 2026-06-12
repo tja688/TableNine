@@ -165,6 +165,7 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
         var collectionModel = this.GetModel<ICollectionModel>();
         var ring = BoardSlotUtility.ClockwiseRing;
         var previousSlots = new Dictionary<int, BoardSlotNo>();
+        var movedEvents = new List<CardMovedEvent>();
         var values = new CardUid?[ring.Length];
         for (var i = 0; i < ring.Length; i++)
         {
@@ -193,8 +194,13 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
                 previousSlots.TryGetValue(newValue.Value.Value, out var previousSlot) &&
                 previousSlot.Value != slot.Value)
             {
-                this.SendEvent(new CardMovedEvent(newValue.Value, slot, previousSlot, CardPlacementSource.Refill));
+                movedEvents.Add(new CardMovedEvent(newValue.Value, slot, previousSlot, CardPlacementSource.BoardMove, true));
             }
+        }
+
+        for (var i = 0; i < movedEvents.Count; i++)
+        {
+            this.SendEvent(movedEvents[i]);
         }
     }
 }

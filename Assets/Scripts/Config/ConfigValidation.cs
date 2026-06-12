@@ -27,6 +27,23 @@ public static class ConfigValidator
             {
                 errors.Add($"Duplicate or empty skillId: {skill.SkillId}");
             }
+
+            if (skill.HasRuntimeBinding)
+            {
+                if (string.IsNullOrWhiteSpace(skill.ConditionKey))
+                {
+                    errors.Add($"Skill {skill.SkillId} has runtime binding but missing ConditionKey.");
+                }
+
+                if (string.IsNullOrWhiteSpace(skill.EffectGraphId))
+                {
+                    errors.Add($"Skill {skill.SkillId} has runtime binding but missing EffectGraphId.");
+                }
+                else if (!SkillEffectRegistry.IsKnownEffectGraph(skill.EffectGraphId))
+                {
+                    errors.Add($"Skill {skill.SkillId} references unknown EffectGraphId: {skill.EffectGraphId}.");
+                }
+            }
         }
 
         for (var i = 0; i < config.Characters.Count; i++)

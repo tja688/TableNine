@@ -79,15 +79,8 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
             return;
         }
 
-        var bindings = SkillEffectRegistry.AllBindings;
-        for (var i = 0; i < bindings.Count; i++)
+        foreach (var binding in EnumerateBindings(trigger))
         {
-            var binding = bindings[i];
-            if (binding.Trigger != trigger)
-            {
-                continue;
-            }
-
             foreach (var owner in EnumerateOwners(binding, context))
             {
                 if (!EvaluateCondition(binding.ConditionKey, owner, context))
@@ -144,7 +137,8 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
             OwnerUid = moved.Uid,
             OwnerDefinitionId = runtime.DefinitionId,
             CardSlot = moved.NewSlot,
-            PreviousSlot = moved.PreviousSlot
+            PreviousSlot = moved.PreviousSlot,
+            IsBoardMovement = moved.IsBoardMovement
         };
         SendSkillCommand(new TriggerSkillSystemCommand(SkillTrigger.OnCardMoved, context));
     }
@@ -152,6 +146,39 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
     private void SendSkillCommand(ICommand command)
     {
         ((IBelongToArchitecture)this).GetArchitecture().SendCommand(command);
+    }
+
+    private IEnumerable<SkillEffectBinding> EnumerateBindings(SkillTrigger trigger)
+    {
+        var staticBindings = SkillEffectRegistry.AllBindings;
+        for (var i = 0; i < staticBindings.Count; i++)
+        {
+            if (staticBindings[i].Trigger == trigger)
+            {
+                yield return staticBindings[i];
+            }
+        }
+
+        var configModel = this.GetModel<IConfigModel>();
+        var skills = configModel.GetAllSkillDefinitions();
+        for (var i = 0; i < skills.Count; i++)
+        {
+            var skill = skills[i];
+            if (!skill.HasRuntimeBinding || skill.Trigger != trigger)
+            {
+                continue;
+            }
+
+            yield return new SkillEffectBinding
+            {
+                BindingId = $"player_skill_{skill.SkillId}_{skill.Trigger}",
+                OwnerKind = SkillOwnerKind.PlayerSkill,
+                OwnerDefinitionId = skill.SkillId,
+                Trigger = skill.Trigger,
+                ConditionKey = skill.ConditionKey,
+                EffectGraphId = skill.EffectGraphId
+            };
+        }
     }
 
     private IEnumerable<SkillOwnerInstance> EnumerateOwners(SkillEffectBinding binding, TriggerContext context)
@@ -285,7 +312,7 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
                        context.PrimaryDefender.Value.Equals(context.Combat.PlayerUid) &&
                        context.PrimaryAttacker.Value.Equals(context.Combat.MonsterUid);
             case "moved_to_adjacent_player":
-                if (!context.CardSlot.HasValue || !owner.Uid.HasValue)
+                if (!context.IsBoardMovement || !context.CardSlot.HasValue || !owner.Uid.HasValue)
                 {
                     return false;
                 }
@@ -303,7 +330,7 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
 
                 return true;
             case "moved_to_slot_3_killable":
-                if (!context.CardSlot.HasValue || context.CardSlot.Value.Value != 3)
+                if (!context.IsBoardMovement || !context.CardSlot.HasValue || context.CardSlot.Value.Value != 3)
                 {
                     return false;
                 }

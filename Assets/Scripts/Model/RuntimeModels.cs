@@ -446,6 +446,7 @@ public interface IConfigModel : IModel
     CardDefinition GetCardDefinition(string cardId);
     CharacterDefinition GetCharacterDefinition(string characterId);
     SkillDefinition GetSkillDefinition(string skillId);
+    IReadOnlyList<SkillDefinition> GetAllSkillDefinitions();
     MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer);
     IReadOnlyList<CardDefinition> GetAllHelpCardDefinitions();
     IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality);
@@ -542,6 +543,17 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     public SkillDefinition GetSkillDefinition(string skillId)
     {
         return mSkillsById[skillId];
+    }
+
+    public IReadOnlyList<SkillDefinition> GetAllSkillDefinitions()
+    {
+        var result = new List<SkillDefinition>(mSkillsById.Count);
+        foreach (var skill in mSkillsById.Values)
+        {
+            result.Add(skill);
+        }
+
+        return result;
     }
 
     public MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer)

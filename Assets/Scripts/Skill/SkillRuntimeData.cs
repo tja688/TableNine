@@ -38,6 +38,7 @@ public sealed class TriggerContext
     public string OwnerDefinitionId;
     public BoardSlotNo? CardSlot;
     public BoardSlotNo? PreviousSlot;
+    public bool IsBoardMovement;
     public CombatContext Combat;
     public CombatStep? CombatStep;
     public CardUid? PrimaryAttacker;
@@ -57,18 +58,25 @@ public sealed class SkillTriggerLog
 
 public readonly struct CardMovedEvent
 {
-    public CardMovedEvent(CardUid uid, BoardSlotNo newSlot, BoardSlotNo? previousSlot, CardPlacementSource source)
+    public CardMovedEvent(
+        CardUid uid,
+        BoardSlotNo newSlot,
+        BoardSlotNo? previousSlot,
+        CardPlacementSource source,
+        bool isBoardMovement = false)
     {
         Uid = uid;
         NewSlot = newSlot;
         PreviousSlot = previousSlot;
         Source = source;
+        IsBoardMovement = isBoardMovement;
     }
 
     public CardUid Uid { get; }
     public BoardSlotNo NewSlot { get; }
     public BoardSlotNo? PreviousSlot { get; }
     public CardPlacementSource Source { get; }
+    public bool IsBoardMovement { get; }
 }
 
 public readonly struct SkillTriggeredEvent

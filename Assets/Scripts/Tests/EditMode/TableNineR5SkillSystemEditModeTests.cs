@@ -19,7 +19,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
     }
 
     [Test]
-    public void Healing_Spring_Heals_When_Placed_Adjacent_To_Player()
+    public void Healing_Spring_Does_Not_Heal_When_Placed_Adjacent_To_Player()
     {
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
@@ -29,6 +29,23 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         var springUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId);
         PlaceHelpCardOnBoard(springUid, new BoardSlotNo(2));
+
+        Assert.That(player.CurrentHp, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void Healing_Spring_Heals_When_Rotated_Into_Adjacent_Player()
+    {
+        StartRun(12345);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var player = collectionModel.GetCard(playerModel.PlayerCardUid);
+        player.CurrentHp = 5;
+
+        var springUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId);
+        PlaceHelpCardOnBoard(springUid, new BoardSlotNo(1));
+
+        TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
 
         Assert.That(player.CurrentHp, Is.EqualTo(7));
     }
@@ -54,7 +71,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
     }
 
     [Test]
-    public void Boulder_Removes_Non_Elite_Monster_At_Slot_6_When_Moved_To_Slot_3()
+    public void Boulder_Does_Not_Remove_Monster_When_Placed_On_Slot_3()
     {
         StartRun(12345);
         var boardModel = TableNine.Interface.GetModel<IBoardModel>();
@@ -66,6 +83,27 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
         PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(3));
+
+        Assert.That(boardModel.GetCardAt(new BoardSlotNo(6)).Value, Is.EqualTo(monsterUid));
+        Assert.That(collectionModel.TryGetCard(monsterUid, out _), Is.True);
+        Assert.That(deckModel.HelpCardStates[boulderUid.Value].IsPermanentlyRemoved, Is.False);
+    }
+
+    [Test]
+    public void Boulder_Removes_Non_Elite_Monster_At_Slot_6_When_Rotated_To_Slot_3()
+    {
+        StartRun(12345);
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+
+        var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
+        collectionModel.GetCard(monsterUid).MonsterLevel = MonsterLevel.Level1;
+
+        var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
+        PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(2));
+
+        TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
 
         Assert.That(boardModel.GetCardAt(new BoardSlotNo(6)).HasValue, Is.False);
         Assert.That(collectionModel.TryGetCard(monsterUid, out _), Is.False);
@@ -80,13 +118,16 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
 
-        var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(6));
+        var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         collectionModel.GetCard(monsterUid).MonsterLevel = MonsterLevel.Elite;
 
         var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
-        PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(3));
+        PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(2));
+
+        TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
 
         Assert.That(boardModel.GetCardAt(new BoardSlotNo(6)).Value, Is.EqualTo(monsterUid));
+        Assert.That(collectionModel.TryGetCard(monsterUid, out _), Is.True);
         Assert.That(deckModel.HelpCardStates[boulderUid.Value].IsPermanentlyRemoved, Is.False);
     }
 
@@ -125,7 +166,8 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(42);
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        playerModel.AddSkill(DefaultGameConfigFactory.SkillThornSkinId);
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillThornSkinId));
+        Assert.That(playerModel.SkillIds.Contains(DefaultGameConfigFactory.SkillThornSkinId), Is.True);
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monster = TableNine.Interface.GetModel<ICollectionModel>().GetCard(monsterUid);
         monster.CurrentHp = 999;
@@ -139,6 +181,27 @@ public sealed class TableNineR5SkillSystemEditModeTests
         Assert.That(resolved.HasValue, Is.True);
         var counterGroup = resolved.Value.Context.CounterHitGroup;
         Assert.That(counterGroup.Exists(c => c.CauseId == CombatConstants.CauseThornSkin), Is.True);
+    }
+
+    [Test]
+    public void Tutor_Skill_Definitions_Expose_Runtime_Config_And_Description()
+    {
+        StartRun(42);
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+
+        var thornSkin = configModel.GetSkillDefinition(DefaultGameConfigFactory.SkillThornSkinId);
+        Assert.That(thornSkin.HasRuntimeBinding, Is.True);
+        Assert.That(thornSkin.Trigger, Is.EqualTo(SkillTrigger.OnModifyDamage));
+        Assert.That(thornSkin.ConditionKey, Is.EqualTo("player_defender_monster_attacks"));
+        Assert.That(thornSkin.EffectGraphId, Is.EqualTo("eg_skill_thorn_skin_reflect"));
+        Assert.That(thornSkin.Description, Is.Not.Empty);
+
+        var hardSkin = configModel.GetSkillDefinition(DefaultGameConfigFactory.SkillHardSkinId);
+        Assert.That(hardSkin.HasRuntimeBinding, Is.True);
+        Assert.That(hardSkin.Trigger, Is.EqualTo(SkillTrigger.OnNodeClear));
+        Assert.That(hardSkin.MaxHpOnAcquire, Is.EqualTo(10));
+        Assert.That(hardSkin.EffectGraphId, Is.EqualTo("eg_skill_hard_skin_node_clear_heal"));
+        Assert.That(hardSkin.Description, Is.Not.Empty);
     }
 
     [Test]
@@ -221,6 +284,28 @@ public sealed class TableNineR5SkillSystemEditModeTests
     }
 
     [Test]
+    public void ChooseTutorSkill_HardSkin_Increases_MaxHp_And_Heals_On_Node_Clear()
+    {
+        StartRun(1);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var player = collectionModel.GetCard(playerModel.PlayerCardUid);
+        var maxHpBefore = player.MaxHp;
+        var hpBefore = player.CurrentHp;
+
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillHardSkinId));
+
+        Assert.That(player.MaxHp, Is.EqualTo(maxHpBefore + 10));
+        Assert.That(player.CurrentHp, Is.EqualTo(hpBefore + 10));
+
+        player.CurrentHp = 5;
+        RemoveAllMonstersAndBattlePile();
+        TableNine.Interface.SendCommand(new CheckClearConditionCommand());
+
+        Assert.That(player.CurrentHp, Is.EqualTo(15));
+    }
+
+    [Test]
     public void Living_Flesh_Heals_When_Using_Help_Card()
     {
         StartRun(12345);
@@ -268,7 +353,8 @@ public sealed class TableNineR5SkillSystemEditModeTests
             OwnerUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId),
             OwnerDefinitionId = DefaultGameConfigFactory.HelpHealingSpringId,
             CardSlot = new BoardSlotNo(2),
-            PreviousSlot = null
+            PreviousSlot = null,
+            IsBoardMovement = true
         };
 
         TableNine.Interface.SendCommand(new DoubleSkillTriggerTestCommand(context));
@@ -363,6 +449,31 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         Assert.Fail("Could not find a monster to move.");
         return default;
+    }
+
+    private static void RemoveAllMonstersAndBattlePile()
+    {
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+
+        for (var i = 1; i <= 9; i++)
+        {
+            var slot = new BoardSlotNo(i);
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out var runtime) ||
+                runtime.CardType != CardType.Monster)
+            {
+                continue;
+            }
+
+            boardSystem.RemoveCardAt(slot);
+            collectionModel.RemoveCard(uid.Value);
+        }
+
+        deckModel.BattleDrawPile.Clear();
+        deckModel.DemonDeckQueue.Clear();
     }
 
     private static CardUid MoveAdjacentMonsterWithoutFirstStrikeToSlot2()

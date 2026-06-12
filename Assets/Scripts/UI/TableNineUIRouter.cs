@@ -179,7 +179,7 @@ public sealed class TableNineUIRouter : IController, IDisposable
             var skillId = evt.SkillIds[i];
             var capturedSkillId = skillId;
             var skill = configModel.GetSkillDefinition(skillId);
-            data.Choices.Add(TableNineUIChoiceData.Command(skillId, skill.DisplayName, "永久习得", string.Empty,
+            data.Choices.Add(TableNineUIChoiceData.Command(skillId, skill.DisplayName, DescribeSkill(skill), string.Empty,
                 controller => controller.SendCommand(new ChooseTutorSkillCommand(capturedSkillId))));
         }
 
@@ -302,6 +302,16 @@ public sealed class TableNineUIRouter : IController, IDisposable
         if (relic.StatMaxHpBonus != 0) parts.Add($"血 {Signed(relic.StatMaxHpBonus)}");
         if (!string.IsNullOrWhiteSpace(relic.TriggerDescription)) parts.Add(relic.TriggerDescription);
         return parts.Count > 0 ? string.Join(" / ", parts) : relic.Quality.ToString();
+    }
+
+    private static string DescribeSkill(SkillDefinition skill)
+    {
+        if (!string.IsNullOrWhiteSpace(skill.Description))
+        {
+            return skill.Description;
+        }
+
+        return "永久习得";
     }
 
     private static string Signed(int value)

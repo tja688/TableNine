@@ -17,8 +17,6 @@ public static class SkillEffectRegistry
         BindRelic(DefaultGameConfigFactory.RelicThornArmorId, SkillTrigger.OnModifyDamage, "first_hit_player_attacks_monster", "eg_relic_thorn_armor");
         BindRelic(DefaultGameConfigFactory.RelicLivingFleshId, SkillTrigger.OnHelpCardUsed, "always", "eg_relic_living_flesh_heal");
 
-        BindPlayerSkill(DefaultGameConfigFactory.SkillThornSkinId, SkillTrigger.OnModifyDamage, "player_defender_monster_attacks", "eg_skill_thorn_skin_reflect");
-
         BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnCardMoved, "moved_to_adjacent_player", "eg_passive_healing_spring_adjacent");
         BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnAfterCombat, "in_item_slot", "eg_passive_healing_spring_combat");
         BindHelpPassive(DefaultGameConfigFactory.HelpBoulderId, SkillTrigger.OnCardMoved, "moved_to_slot_3_killable", "eg_passive_boulder_kill");
@@ -35,6 +33,15 @@ public static class SkillEffectRegistry
         PassiveGraphs.Register("eg_passive_boulder_kill",
             PassiveGraphs.RemoveBoardSlotMonster(6),
             PassiveGraphs.ConsumeCaster());
+        PassiveGraphs.Register("eg_skill_hard_skin_node_clear_heal",
+            PassiveGraphs.Heal(10));
+    }
+
+    public static bool IsKnownEffectGraph(string graphId)
+    {
+        return graphId == "eg_relic_thorn_armor" ||
+               graphId == "eg_skill_thorn_skin_reflect" ||
+               PassiveGraphs.TryGetGraph(graphId, out _);
     }
 
     private static void BindRelic(string relicId, SkillTrigger trigger, string condition, string graphId)

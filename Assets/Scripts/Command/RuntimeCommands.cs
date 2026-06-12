@@ -1095,6 +1095,7 @@ public sealed class CheckClearConditionCommand : AbstractCommand
         {
             flowModel.SetPhase(FlowPhase.ClearReady);
             this.SendEvent(new LevelClearReadyEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
+            this.GetSystem<ISkillSystem>().Trigger(SkillTrigger.OnNodeClear, new TriggerContext(), this);
             this.SendCommand(new GenerateHelpRewardCommand());
         }
     }
@@ -1856,6 +1857,14 @@ public sealed class ChooseTutorSkillCommand : AbstractCommand
 
         var skillDef = configModel.GetSkillDefinition(SkillId);
         playerModel.AddSkill(SkillId);
+        if (skillDef.MaxHpOnAcquire > 0)
+        {
+            this.SendCommand(new ApplyStatChangeCommand(
+                playerModel.PlayerCardUid,
+                StatType.MaxHp,
+                skillDef.MaxHpOnAcquire,
+                SkillId));
+        }
 
         this.SendEvent(new TutorSkillChosenEvent(SkillId));
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
