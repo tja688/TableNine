@@ -41,7 +41,7 @@
 | R5 | SkillSystem + Relic Runtime | 技能/遗物触发队列，荆棘甲、凤凰羽毛、套装、刺皮等上线 | Debug 面板扩充 |
 | R6 | 奖励/房间/商店收束 | 通关后帮助奖励→房间按钮→节点结束，房间语义稳定 | UI 结构细化 |
 | R7 | 存档、重放、Debug | EasySave、状态 Hash、Command replay、Bug report 可用 | PlayMode 测试 |
-| R8 | 表现层接入 | CardView、DOTween、AudioKit、ResKit、Overlay、Yarn 接入边界稳定 | 美术/音频资源导入 |
+| R8 | 表现层接入 | CardView、DOTween、AudioKit、ResKit、Overlay、Text Animator 接入边界稳定 | 美术/音频资源导入 |
 | R9 | 全 playtest 验收 | 3 层 27 节点，核心卡/怪/技能/遗物、失败/胜利闭环 | 平衡与打磨 |
 
 推荐顺序：**R0 → R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9**。  
@@ -989,7 +989,7 @@ Hash 包含：
 
 ### 目标
 
-在规则稳定后，把美术像素图、DOTween 动效、音效/BGM、ResKit、Yarn 接到明确事件点上。
+在规则稳定后，把美术像素图、DOTween 动效、音效/BGM、ResKit、Text Animator 接到明确事件点上。
 
 ### 前置条件
 
@@ -1060,10 +1060,10 @@ Hash 包含：
 - PausePanel。
 - DebugPanel。
 
-### 任务 6：Yarn / NarrativeSystem
+### 任务 6：Text Animator / NarrativeSystem
 
-1. Yarn 触发只监听事件。
-2. Yarn 命令如果改状态，必须转发 QFramework Command。
+1. Text Animator 文本展示只监听事件。
+2. Text Animator 内联动作/回调如果改状态，必须转发 QFramework Command。
 3. 对话时加 `DialogueRunning` 锁。
 4. 首次商店、首次宝箱、首次精英、首次死亡预防可作为教程触发点。
 

@@ -3,7 +3,7 @@
 > 项目：TableNine / Unity 2022.3 LTS / Built-in Render Pipeline / 2D 卡牌 Roguelike / QFramework。  
 > 分支：`dev`  
 > 版本：2026-06-11 重构收束版。  
-> 目标：把当前 M1-M5 原型代码修正到新版 `Assets/Docs` 规则，并为后续 UI、动画、音频、Odin 效果资产、Yarn 叙事接入留下稳定接口。
+> 目标：把当前 M1-M5 原型代码修正到新版 `Assets/Docs` 规则，并为后续 UI、动画、音频、Odin 效果资产、Text Animator 文本动效接入留下稳定接口。
 
 ---
 
@@ -243,7 +243,7 @@ IDebugEventLogUtility
 IEffectAssetUtility       // Odin EffectGraph 读取
 IResourceUtility          // ResKit 资源加载
 IAudioUtility             // AudioKit 适配
-IYarnUtility              // Yarn Spinner 适配
+ITextAnimatorUtility      // Febucci Text Animator 适配
 
 // Models
 IRunModel
@@ -276,7 +276,7 @@ IDebugEventSystem
 INarrativeSystem
 ```
 
-`IOverlayModel/IOverlaySystem/INarrativeSystem/IYarnUtility/IResourceUtility/IAudioUtility` 可以在表现层阶段补齐；`ISkillSystem` 与 `IEffectSystem` 属于规则 P0/P1，不应推迟到美术接入之后。
+`IOverlayModel/IOverlaySystem/INarrativeSystem/ITextAnimatorUtility/IResourceUtility/IAudioUtility` 可以在表现层阶段补齐；`ISkillSystem` 与 `IEffectSystem` 属于规则 P0/P1，不应推迟到美术接入之后。
 
 ---
 
@@ -1099,7 +1099,7 @@ Debug 面板至少显示：
 3. P2：EffectSystem MVP，迁移帮助卡。
 4. P3：事件补全，UI/Anim 可稳定订阅。
 5. P4：EasySave、Replay、Debug 面板。
-6. P5：CardView、DOTween、AudioKit、ResKit、Yarn。
+6. P5：CardView、DOTween、AudioKit、ResKit、Text Animator。
 7. P6：全 playtest 内容验收。
 
 本架构以 `Plan.md` 的阶段任务为执行入口。若本文件和旧过程性报告冲突，以本文件和最新版 `Assets/Docs` 为准；若 `Assets/Docs/02-卡牌/卡组管理.md` 仍保留旧帮助卡复原语义，以 `帮助卡系统.md` 和 `层级系统.md` 的新版语义为准，并在策划侧修文档。

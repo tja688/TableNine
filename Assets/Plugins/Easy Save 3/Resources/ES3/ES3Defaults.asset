@@ -32,6 +32,7 @@ MonoBehaviour:
     assemblyNames:
     - Assembly-CSharp-firstpass
     - AudioKit
+    - EasySave3
     - MCPForUnity.Runtime
     - QFramework
     - QFramework.CoreKit
@@ -40,7 +41,6 @@ MonoBehaviour:
     - TableNine.Runtime
     - TableNine.Tests.PlayMode
     - UIKit
-    - YarnSpinner.Unity
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0
   autoUpdateReferences: 1
