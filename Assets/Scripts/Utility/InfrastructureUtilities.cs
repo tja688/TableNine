@@ -12,34 +12,64 @@ public interface IRandomUtility : IUtility
     float Value();
     void SetSeed(int seed);
     void Shuffle<T>(IList<T> list);
+    int ExportOperationIndex();
+    void ImportSeedAndOperationIndex(int seed, int operationIndex);
 }
 
 public sealed class UnityRandomUtility : IRandomUtility
 {
     private System.Random mRandom = new System.Random();
+    private int mSeed = 1;
+    private int mOperationIndex;
 
     public int Range(int minInclusive, int maxExclusive)
     {
+        ConsumeRandom();
         return mRandom.Next(minInclusive, maxExclusive);
     }
 
     public float Value()
     {
+        ConsumeRandom();
         return (float)mRandom.NextDouble();
     }
 
     public void SetSeed(int seed)
     {
+        mSeed = seed;
         mRandom = new System.Random(seed);
+        mOperationIndex = 0;
     }
 
     public void Shuffle<T>(IList<T> list)
     {
         for (var i = list.Count - 1; i > 0; i--)
         {
-            var swapIndex = Range(0, i + 1);
+            ConsumeRandom();
+            var swapIndex = mRandom.Next(0, i + 1);
             (list[i], list[swapIndex]) = (list[swapIndex], list[i]);
         }
+    }
+
+    public int ExportOperationIndex()
+    {
+        return mOperationIndex;
+    }
+
+    public void ImportSeedAndOperationIndex(int seed, int operationIndex)
+    {
+        SetSeed(seed);
+        for (var i = 0; i < operationIndex; i++)
+        {
+            mRandom.Next();
+        }
+
+        mOperationIndex = operationIndex;
+    }
+
+    private void ConsumeRandom()
+    {
+        mOperationIndex++;
     }
 }
 

@@ -29,9 +29,15 @@ public sealed class CommandReplayUtility : ICommandReplayUtility
             return;
         }
 
+        var commandType = command.GetType().Name;
+        if (!CommandReplayFactory.IsReplayable(commandType))
+        {
+            return;
+        }
+
         mEntries.Add(new CommandLogEntry
         {
-            CommandType = command.GetType().Name,
+            CommandType = commandType,
             PayloadJson = CommandPayloadSerializer.Serialize(command)
         });
     }
@@ -88,12 +94,41 @@ public static class CommandPayloadSerializer
             return slot.Value.ToString();
         }
 
+        if (value is Enum enumValue)
+        {
+            return enumValue.ToString();
+        }
+
         return value.ToString();
     }
 }
 
 public static class CommandReplayFactory
 {
+    private static readonly HashSet<string> ReplayableCommandTypes = new HashSet<string>
+    {
+        nameof(StartNewRunCommand),
+        nameof(ClickBoardSlotCommand),
+        nameof(ClickItemSlotCommand),
+        nameof(UseHelpCardCommand),
+        nameof(ResolveTargetingCommand),
+        nameof(ResolveAttributeChoiceCommand),
+        nameof(PickHelpCardRewardCommand),
+        nameof(SkipHelpRewardCommand),
+        nameof(ChooseRoomCommand),
+        nameof(PickRelicRewardCommand),
+        nameof(SkipChestRewardCommand),
+        nameof(BuyHelpCardCommand),
+        nameof(DeleteHelpCardForGoldCommand),
+        nameof(CloseShopCommand),
+        nameof(ChooseTutorSkillCommand)
+    };
+
+    public static bool IsReplayable(string commandType)
+    {
+        return !string.IsNullOrEmpty(commandType) && ReplayableCommandTypes.Contains(commandType);
+    }
+
     public static ICommand Create(CommandLogEntry entry)
     {
         if (entry == null || string.IsNullOrEmpty(entry.CommandType))
@@ -107,24 +142,35 @@ public static class CommandReplayFactory
             case nameof(StartNewRunCommand):
                 return new StartNewRunCommand(
                     GetString(payload, nameof(StartNewRunCommand.CharacterId), DefaultGameConfigFactory.CharacterImpId),
-                    GetNullableInt(payload, "SeedOverride"));
+                    GetNullableInt(payload, nameof(StartNewRunCommand.SeedOverride)));
             case nameof(ClickBoardSlotCommand):
                 return new ClickBoardSlotCommand(new BoardSlotNo(GetInt(payload, nameof(ClickBoardSlotCommand.Slot))));
+            case nameof(ClickItemSlotCommand):
+                return new ClickItemSlotCommand(GetInt(payload, nameof(ClickItemSlotCommand.ItemSlotIndex)));
             case nameof(UseHelpCardCommand):
                 return new UseHelpCardCommand(new CardUid(GetInt(payload, nameof(UseHelpCardCommand.HelpCardUid))));
-            case nameof(ProceedToNextNodeCommand):
-                return new ProceedToNextNodeCommand();
-            case nameof(ChooseRoomCommand):
-                return new ChooseRoomCommand(GetString(payload, nameof(ChooseRoomCommand.RoomId), string.Empty));
+            case nameof(ResolveTargetingCommand):
+                return new ResolveTargetingCommand(new BoardSlotNo(GetInt(payload, nameof(ResolveTargetingCommand.Slot))));
+            case nameof(ResolveAttributeChoiceCommand):
+                return new ResolveAttributeChoiceCommand(ParseEnum(payload, nameof(ResolveAttributeChoiceCommand.Choice), AttributeUpgradeChoice.Attack));
             case nameof(PickHelpCardRewardCommand):
                 return new PickHelpCardRewardCommand(GetString(payload, nameof(PickHelpCardRewardCommand.CardId), string.Empty));
             case nameof(SkipHelpRewardCommand):
                 return new SkipHelpRewardCommand();
-            case nameof(SaveRunCommand):
-            case nameof(LoadRunCommand):
-            case nameof(ReplayRunCommand):
-            case nameof(DebugPingCommand):
-                return null;
+            case nameof(ChooseRoomCommand):
+                return new ChooseRoomCommand(GetString(payload, nameof(ChooseRoomCommand.RoomId), string.Empty));
+            case nameof(PickRelicRewardCommand):
+                return new PickRelicRewardCommand(GetString(payload, nameof(PickRelicRewardCommand.RelicId), string.Empty));
+            case nameof(SkipChestRewardCommand):
+                return new SkipChestRewardCommand();
+            case nameof(BuyHelpCardCommand):
+                return new BuyHelpCardCommand(GetString(payload, nameof(BuyHelpCardCommand.CardId), string.Empty));
+            case nameof(DeleteHelpCardForGoldCommand):
+                return new DeleteHelpCardForGoldCommand(new CardUid(GetInt(payload, nameof(DeleteHelpCardForGoldCommand.HelpCardUid))));
+            case nameof(CloseShopCommand):
+                return new CloseShopCommand();
+            case nameof(ChooseTutorSkillCommand):
+                return new ChooseTutorSkillCommand(GetString(payload, nameof(ChooseTutorSkillCommand.SkillId), string.Empty));
             default:
                 return null;
         }
@@ -172,6 +218,17 @@ public static class CommandReplayFactory
         }
 
         return int.TryParse(value, out var parsed) ? parsed : (int?)null;
+    }
+
+    private static TEnum ParseEnum<TEnum>(Dictionary<string, string> payload, string key, TEnum fallback)
+        where TEnum : struct
+    {
+        if (!payload.TryGetValue(key, out var value) || string.IsNullOrEmpty(value))
+        {
+            return fallback;
+        }
+
+        return Enum.TryParse(value, out TEnum parsed) ? parsed : fallback;
     }
 }
 

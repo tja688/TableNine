@@ -645,6 +645,7 @@ public interface IFlowModel : IModel
     void RemoveLock(InputLockReason reason);
     bool HasLock(InputLockReason reason);
     void Reset();
+    void RestoreActiveLocks(System.Collections.Generic.IEnumerable<InputLockReason> locks);
 }
 
 public sealed class FlowModel : AbstractModel, IFlowModel
@@ -702,6 +703,20 @@ public sealed class FlowModel : AbstractModel, IFlowModel
     {
         mPhase.Value = FlowPhase.None;
         mActiveLocks.Clear();
+    }
+
+    public void RestoreActiveLocks(System.Collections.Generic.IEnumerable<InputLockReason> locks)
+    {
+        mActiveLocks.Clear();
+        if (locks == null)
+        {
+            return;
+        }
+
+        foreach (var reason in locks)
+        {
+            mActiveLocks.Add(reason);
+        }
     }
 }
 

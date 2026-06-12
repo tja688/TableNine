@@ -423,12 +423,16 @@ public readonly struct RunSaveDeletedEvent
 
 public readonly struct RunReplayCompletedEvent
 {
-    public RunReplayCompletedEvent(int commandCount)
+    public RunReplayCompletedEvent(int commandCount, string runHash = null, bool hashMatched = true)
     {
         CommandCount = commandCount;
+        RunHash = runHash;
+        HashMatched = hashMatched;
     }
 
     public int CommandCount { get; }
+    public string RunHash { get; }
+    public bool HashMatched { get; }
 }
 
 public readonly struct FlowPhaseChangedEvent

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using QFramework;
 using UnityEngine;
@@ -6,13 +7,15 @@ using UnityEngine.UI;
 /// <summary>
 /// 开发构建 Debug 面板：状态总览、存档/读档/重放与 QA 快捷操作。
 /// </summary>
-public sealed class UIDebugPanel : MonoBehaviour, IController
+public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
 {
     [SerializeField] private KeyCode mToggleKey = KeyCode.F3;
     [SerializeField] private Text mInfoText;
     [SerializeField] private GameObject mRoot;
 
     private float mRefreshTimer;
+    private string mLastReplayHash;
+    private bool mLastReplayHashMatched = true;
 
     private void Awake()
     {
@@ -24,6 +27,14 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
         {
             mRoot.SetActive(false);
         }
+#endif
+    }
+
+    private void OnEnable()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        this.RegisterEvent<RunReplayCompletedEvent>(OnReplayCompleted)
+            .UnRegisterWhenDisabled(gameObject);
 #endif
     }
 
@@ -68,8 +79,16 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
 
     public void OnClickReplay()
     {
+        var expectedHash = this.SendQuery(new GetRunSnapshotHashQuery());
         var replayUtility = this.GetUtility<ICommandReplayUtility>();
-        this.SendCommand(new ReplayRunCommand(replayUtility.Export()));
+        this.SendCommand(new ReplayRunCommand(replayUtility.Export(), expectedHash));
+    }
+
+    public void OnClickCopyBugReport()
+    {
+        var report = this.SendCommand(new CopyBugReportCommand());
+        GUIUtility.systemCopyBuffer = report;
+        this.SendEvent(new PopupRequestedEvent("Bug report 已复制到剪贴板。"));
     }
 
     public void OnClickKillAllMonsters()
@@ -92,6 +111,12 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
         this.SendCommand(new ProceedToNextNodeCommand());
     }
 
+    private void OnReplayCompleted(RunReplayCompletedEvent e)
+    {
+        mLastReplayHash = e.RunHash;
+        mLastReplayHashMatched = e.HashMatched;
+    }
+
     private void Refresh()
     {
         if (mInfoText == null)
@@ -104,15 +129,23 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
         var boardModel = this.GetModel<IBoardModel>();
         var deckModel = this.GetModel<IDeckModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
-        var trace = this.GetUtility<ICommandTraceUtility>();
+        var configModel = this.GetModel<IConfigModel>();
         var replay = this.GetUtility<ICommandReplayUtility>();
         var eventLog = this.GetUtility<IDebugEventLogUtility>();
+        var stats = this.SendQuery(new GetEffectivePlayerStatsQuery());
+        var player = collectionModel.GetCard(this.GetModel<IPlayerModel>().PlayerCardUid);
+        var boardHash = this.SendQuery(new GetBoardSnapshotHashQuery());
+        var runHash = this.SendQuery(new GetRunSnapshotHashQuery());
+        var monsterDetail = this.SendQuery(new GetMonsterRemainingDetailQuery());
 
-        var builder = new StringBuilder(2048);
+        var builder = new StringBuilder(4096);
         builder.AppendLine($"Seed: {runModel.Seed.Value}  Layer/Node: {runModel.Layer.Value}/{runModel.NodeInLayer.Value}");
         builder.AppendLine($"Phase: {flowModel.Phase.Value}  Locks: {FormatLocks(flowModel)}");
-        builder.AppendLine($"Command#: {trace.Records.Count}  ReplayEntries: {replay.Entries.Count}");
+        builder.AppendLine($"BoardHash: {boardHash}  RunHash: {runHash}");
+        builder.AppendLine($"Player: hp={player.CurrentHp}/{player.MaxHp} armor={player.CurrentArmor} atk={stats.Attack} def={stats.Defense} dr={stats.DamageReduction} gold={this.GetModel<IPlayerModel>().Gold.Value}");
         builder.AppendLine($"BattleDeck: {deckModel.BattleDrawPile.Count}  Next: {deckModel.NextBattleCardPreview.Value.DisplayName}");
+        builder.AppendLine($"MonsterCheck: {monsterDetail}");
+        builder.AppendLine($"Replay: entries={replay.Entries.Count} lastHash={mLastReplayHash} matched={mLastReplayHashMatched}");
         builder.AppendLine("Board:");
 
         for (var slot = 1; slot <= 9; slot++)
@@ -125,18 +158,55 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
             }
 
             var card = collectionModel.GetCard(uid.Value);
-            builder.AppendLine($"  [{slot}] {card.DefinitionId} hp={card.CurrentHp}/{card.MaxHp} atk={card.BaseAttack} def={card.BaseDefense}");
+            builder.AppendLine($"  [{slot}] {card.DefinitionId} uid={card.Uid.Value} hp={card.CurrentHp}/{card.MaxHp} armor={card.CurrentArmor} atk={card.BaseAttack} def={card.BaseDefense}");
         }
 
-        builder.AppendLine($"HelpDeck: {deckModel.OwnedHelpCards.Count} active={deckModel.CountActiveHelpCards()}");
-        builder.AppendLine("Recent Events:");
-        var events = eventLog.RecentEvents;
-        for (var i = Mathf.Max(0, events.Count - 8); i < events.Count; i++)
+        builder.AppendLine("HelpDeck:");
+        var tempRemoved = new StringBuilder();
+        var permRemoved = new StringBuilder();
+        for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
         {
-            builder.AppendLine(events[i]);
+            var uid = deckModel.OwnedHelpCards[i];
+            if (!deckModel.HelpCardStates.TryGetValue(uid.Value, out var state))
+            {
+                continue;
+            }
+
+            var restoreAfterNode = false;
+            if (configModel.TryGetCardDefinition(state.DefinitionId, out var definition))
+            {
+                restoreAfterNode = definition.RestoreAfterNode;
+            }
+
+            builder.AppendLine($"  uid={uid.Value} {state.DefinitionId} restore={restoreAfterNode} board={state.IsOnBoard} item={state.IsInItemSlot}");
+            if (state.IsTemporarilyRemoved)
+            {
+                tempRemoved.Append(state.DefinitionId).Append(',');
+            }
+
+            if (state.IsPermanentlyRemoved)
+            {
+                permRemoved.Append(state.DefinitionId).Append(',');
+            }
         }
+
+        builder.AppendLine($"TempRemoved: {(tempRemoved.Length > 0 ? tempRemoved.ToString() : "none")}");
+        builder.AppendLine($"PermRemoved: {(permRemoved.Length > 0 ? permRemoved.ToString() : "none")}");
+        builder.AppendLine("Recent Commands:");
+        AppendRecentLines(builder, replay.Entries, entry => $"{entry.CommandType} | {entry.PayloadJson}");
+        builder.AppendLine("Recent Events:");
+        AppendRecentLines(builder, eventLog.RecentEvents, line => line);
 
         mInfoText.text = builder.ToString();
+    }
+
+    private static void AppendRecentLines<T>(StringBuilder builder, IReadOnlyList<T> items, System.Func<T, string> formatter)
+    {
+        var start = items.Count > 50 ? items.Count - 50 : 0;
+        for (var i = start; i < items.Count; i++)
+        {
+            builder.AppendLine(formatter(items[i]));
+        }
     }
 
     private static string FormatLocks(IFlowModel flowModel)
@@ -166,4 +236,3 @@ public sealed class UIDebugPanel : MonoBehaviour, IController
         return TableNine.Interface;
     }
 }
-

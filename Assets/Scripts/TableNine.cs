@@ -9,9 +9,20 @@ public sealed class TableNine : Architecture<TableNine>
 
     private int mCommandDepth;
 
+    /// <summary>
+    /// EditMode 测试默认使用内存存档；运行态在 Init 前调用 ConfigureRuntimePersistence。
+    /// </summary>
+    public static bool UseMemorySaveUtility { get; private set; } = true;
+
+    public static void ConfigureRuntimePersistence()
+    {
+        UseMemorySaveUtility = false;
+    }
+
 #if UNITY_EDITOR || UNITY_INCLUDE_TESTS
     public static void ResetForTests()
     {
+        UseMemorySaveUtility = true;
         if (mArchitecture != null)
         {
             mArchitecture.Deinit();
@@ -22,7 +33,7 @@ public sealed class TableNine : Architecture<TableNine>
     protected override void Init()
     {
         RegisterUtility<IRandomUtility>(new UnityRandomUtility());
-        RegisterUtility<ISaveUtility>(new MemorySaveUtility());
+        RegisterUtility<ISaveUtility>(UseMemorySaveUtility ? new MemorySaveUtility() : new EasySaveUtility());
         RegisterUtility<IConfigUtility>(new ScriptableConfigUtility());
         RegisterUtility<ISequenceUtility>(new ImmediateSequenceUtility());
         RegisterUtility<ICommandTraceUtility>(new CommandTraceUtility());

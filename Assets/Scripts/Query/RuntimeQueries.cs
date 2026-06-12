@@ -68,3 +68,50 @@ public sealed class CanInteractBoardSlotQuery : AbstractQuery<InteractionResult>
         return new InteractionResult(false, InteractionKind.None, uid.Value, "Card is not interactable");
     }
 }
+
+public sealed class GetBoardSnapshotHashQuery : AbstractQuery<string>
+{
+    protected override string OnDo()
+    {
+        return RunSnapshotHashUtility.ComputeBoardHash(this.GetArchitecture());
+    }
+}
+
+public sealed class GetRunSnapshotHashQuery : AbstractQuery<string>
+{
+    protected override string OnDo()
+    {
+        return RunSnapshotHashUtility.ComputeRunHash(this.GetArchitecture());
+    }
+}
+
+public sealed class GetMonsterRemainingDetailQuery : AbstractQuery<string>
+{
+    protected override string OnDo()
+    {
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var deckSystem = this.GetSystem<IDeckSystem>();
+
+        var builder = new System.Text.StringBuilder(256);
+        builder.Append("board:");
+        for (var slot = 1; slot <= 9; slot++)
+        {
+            var uid = boardModel.GetCardAt(new BoardSlotNo(slot));
+            if (!uid.HasValue)
+            {
+                continue;
+            }
+
+            if (collectionModel.TryGetCard(uid.Value, out var runtime) && runtime.CardType == CardType.Monster)
+            {
+                builder.Append(slot).Append('=').Append(runtime.DefinitionId).Append(',');
+            }
+        }
+
+        builder.Append(" pile:").Append(deckModel.BattleDrawPile.Count);
+        builder.Append(" remaining=").Append(deckSystem.HasMonsterRemaining());
+        return builder.ToString();
+    }
+}

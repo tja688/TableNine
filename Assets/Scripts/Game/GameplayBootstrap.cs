@@ -25,6 +25,7 @@ public sealed class GameplayBootstrap : MonoBehaviour
         mBootstrapped = true;
 
         ResKit.Init();
+        TableNine.ConfigureRuntimePersistence();
         TableNine.InitArchitecture();
         SetupUIKit();
 
@@ -100,12 +101,57 @@ public sealed class GameplayBootstrap : MonoBehaviour
         text.color = Color.white;
         text.supportRichText = false;
 
+        var buttonBar = new GameObject("Buttons");
+        buttonBar.transform.SetParent(root.transform, false);
+        var buttonBarRect = buttonBar.AddComponent<RectTransform>();
+        buttonBarRect.anchorMin = new Vector2(0.02f, 0.02f);
+        buttonBarRect.anchorMax = new Vector2(0.98f, 0.12f);
+        buttonBarRect.offsetMin = Vector2.zero;
+        buttonBarRect.offsetMax = Vector2.zero;
+        var buttonLayout = buttonBar.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+        buttonLayout.spacing = 4f;
+        buttonLayout.childAlignment = TextAnchor.MiddleCenter;
+        buttonLayout.childControlWidth = true;
+        buttonLayout.childControlHeight = true;
+        buttonLayout.childForceExpandWidth = true;
+        buttonLayout.childForceExpandHeight = true;
+
         var panel = canvasObject.AddComponent<UIDebugPanel>();
+        CreateDebugButton(buttonBar.transform, "保存", panel.OnClickSave);
+        CreateDebugButton(buttonBar.transform, "读档", panel.OnClickLoad);
+        CreateDebugButton(buttonBar.transform, "重放", panel.OnClickReplay);
+        CreateDebugButton(buttonBar.transform, "Bug", panel.OnClickCopyBugReport);
+
         var panelField = typeof(UIDebugPanel).GetField("mRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         var textField = typeof(UIDebugPanel).GetField("mInfoText", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         panelField?.SetValue(panel, root);
         textField?.SetValue(panel, text);
 #endif
+    }
+
+    private static void CreateDebugButton(Transform parent, string label, UnityEngine.Events.UnityAction onClick)
+    {
+        var buttonObject = new GameObject(label);
+        buttonObject.transform.SetParent(parent, false);
+        var image = buttonObject.AddComponent<UnityEngine.UI.Image>();
+        image.color = new Color(0.2f, 0.2f, 0.2f, 0.85f);
+        var button = buttonObject.AddComponent<UnityEngine.UI.Button>();
+        button.targetGraphic = image;
+        button.onClick.AddListener(onClick);
+
+        var textObject = new GameObject("Label");
+        textObject.transform.SetParent(buttonObject.transform, false);
+        var textRect = textObject.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+        var text = textObject.AddComponent<UnityEngine.UI.Text>();
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.fontSize = 11;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.color = Color.white;
+        text.text = label;
     }
 
     private static void DisableSceneEventSystemBeforeUIKitRoot()

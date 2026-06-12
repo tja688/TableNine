@@ -7,7 +7,8 @@
     "UIKit",
     "Unity.ugui",
     "Unity.TextMeshPro",
-    "Sirenix.OdinInspector.Attributes"
+    "Sirenix.OdinInspector.Attributes",
+    "EasySave3"
   ],
   "optionalUnityReferences": [],
   "includePlatforms": [],

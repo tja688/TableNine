@@ -52,12 +52,14 @@ public sealed class ClearSaveCommand : AbstractCommand
 
 public sealed class ReplayRunCommand : AbstractCommand
 {
-    public ReplayRunCommand(RunReplayData replayData)
+    public ReplayRunCommand(RunReplayData replayData, string expectedRunHash = null)
     {
         ReplayData = replayData;
+        ExpectedRunHash = expectedRunHash;
     }
 
     public RunReplayData ReplayData { get; }
+    public string ExpectedRunHash { get; }
 
     protected override void OnExecute()
     {
@@ -85,7 +87,17 @@ public sealed class ReplayRunCommand : AbstractCommand
             }
         }
 
-        this.SendEvent(new RunReplayCompletedEvent(ReplayData.Entries.Count));
+        var actualHash = this.SendQuery(new GetRunSnapshotHashQuery());
+        var hashMatched = string.IsNullOrEmpty(ExpectedRunHash) || ExpectedRunHash == actualHash;
+        this.SendEvent(new RunReplayCompletedEvent(ReplayData.Entries.Count, actualHash, hashMatched));
+    }
+}
+
+public sealed class CopyBugReportCommand : AbstractCommand<string>
+{
+    protected override string OnExecute()
+    {
+        return BugReportBuilder.Build(TableNine.Interface);
     }
 }
 

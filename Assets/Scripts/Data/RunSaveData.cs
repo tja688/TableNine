@@ -15,10 +15,11 @@ public enum SaveRunReason
 [Serializable]
 public sealed class RunSaveData
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion = CurrentSchemaVersion;
     public int Seed;
+    public int RandomOperationIndex;
     public int Layer;
     public int NodeInLayer;
     public string CharacterId;
@@ -40,6 +41,12 @@ public sealed class RunSaveData
     public List<int> BattleDeckUids = new List<int>();
     public List<int> ItemSlotUids = new List<int>();
     public bool PendingTutorSkillChoice;
+    public bool RefillRunning;
+    public bool RefillPending;
+    public List<HelpCardStateSaveData> NodeStartSnapshotCards = new List<HelpCardStateSaveData>();
+    public PendingHelpCardActionSaveData PendingHelpCardAction = new PendingHelpCardActionSaveData();
+    public RewardContextSaveData RewardContext = new RewardContextSaveData();
+    public List<string> ActiveInputLocks = new List<string>();
     public string SaveReason;
     public long SavedAtUnixSeconds;
 }
@@ -68,10 +75,36 @@ public sealed class HelpCardStateSaveData
 {
     public int Uid;
     public string DefinitionId;
+    public bool RestoreAfterNode;
     public bool IsTemporarilyRemoved;
     public bool IsPermanentlyRemoved;
     public bool IsOnBoard;
     public bool IsInItemSlot;
+}
+
+[Serializable]
+public sealed class PendingHelpCardActionSaveData
+{
+    public int HelpCardUid;
+    public PendingHelpCardActionKind Kind;
+    public int TargetingDamage;
+    public string TargetingCauseId;
+    public string TargetingMode;
+    public bool SwapFirstTargetSelected;
+    public int SwapFirstTargetUid = -1;
+}
+
+[Serializable]
+public sealed class RewardContextSaveData
+{
+    public RewardSource CurrentRewardSource;
+    public FlowPhase RewardResumePhase;
+    public bool HasRewardResumePhase;
+    public List<string> HelpRewardCardIds = new List<string>();
+    public List<string> ChestRewardRelicIds = new List<string>();
+    public List<string> TutorSkillIds = new List<string>();
+    public List<string> ShopCardIds = new List<string>();
+    public List<string> RoomCandidateIds = new List<string>();
 }
 
 [Serializable]
