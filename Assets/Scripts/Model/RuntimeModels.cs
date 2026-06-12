@@ -361,6 +361,7 @@ public sealed class CollectionModel : AbstractModel, ICollectionModel
             CardType = CardType.Player,
             CurrentHp = definition.BaseHp,
             MaxHp = definition.BaseHp,
+            CurrentArmor = 0,
             BaseAttack = definition.BaseAttack,
             BaseDefense = definition.BaseDefense,
             SkillIds = new List<string>(definition.InitialSkillIds)
@@ -401,6 +402,7 @@ public sealed class CollectionModel : AbstractModel, ICollectionModel
             Suit = definition.Suit,
             CurrentHp = definition.BaseHp,
             MaxHp = definition.BaseHp,
+            CurrentArmor = 0,
             BaseAttack = definition.BaseAttack,
             BaseDefense = definition.BaseDefense,
             SkillIds = new List<string>(definition.SkillIds)
@@ -475,9 +477,15 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
 
         mValidationErrors.Clear();
         mValidationErrors.AddRange(ConfigValidator.Validate(config));
+        var warnings = ConfigValidator.CollectWarnings(config);
         for (var i = 0; i < mValidationErrors.Count; i++)
         {
             Debug.LogWarning($"[ConfigValidator] {mValidationErrors[i]}");
+        }
+
+        for (var i = 0; i < warnings.Count; i++)
+        {
+            Debug.LogWarning($"[ConfigValidator] {warnings[i]}");
         }
 
         mCardsById.Clear();
@@ -643,17 +651,34 @@ public sealed class FlowModel : AbstractModel, IFlowModel
 
     public void SetPhase(FlowPhase phase)
     {
+        if (mPhase.Value == phase)
+        {
+            return;
+        }
+
+        var previous = mPhase.Value;
         mPhase.Value = phase;
+        this.SendEvent(new FlowPhaseChangedEvent(previous, phase));
     }
 
     public void AddLock(InputLockReason reason)
     {
-        mActiveLocks.Add(reason);
+        if (!mActiveLocks.Add(reason))
+        {
+            return;
+        }
+
+        this.SendEvent(new InputLockChangedEvent(reason, true, mActiveLocks.Count > 0));
     }
 
     public void RemoveLock(InputLockReason reason)
     {
-        mActiveLocks.Remove(reason);
+        if (!mActiveLocks.Remove(reason))
+        {
+            return;
+        }
+
+        this.SendEvent(new InputLockChangedEvent(reason, false, mActiveLocks.Count > 0));
     }
 
     public bool HasLock(InputLockReason reason)

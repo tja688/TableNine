@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineBootstrapPlayModeTests
 {
     [UnitySetUp]

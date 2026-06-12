@@ -5,6 +5,7 @@ using QFramework;
 /// <summary>
 /// M5 全 playtest：27 节点配置、存档读档、重放、层间推进。
 /// </summary>
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineM5EditModeTests
 {
     [SetUp]
@@ -143,14 +144,16 @@ public sealed class TableNineM5EditModeTests
 
         deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.BlessingShield;
         var playerUid = playerModel.PlayerCardUid;
-        var hpBefore = collectionModel.GetCard(playerUid).CurrentHp;
+        var player = collectionModel.GetCard(playerUid);
+        var hpBefore = player.CurrentHp;
 
         TableNine.Interface.SendCommand(new ApplyDamageCommand(playerUid, 5));
-        Assert.That(collectionModel.GetCard(playerUid).CurrentHp, Is.EqualTo(hpBefore));
+        Assert.That(player.CurrentHp, Is.EqualTo(hpBefore));
         Assert.That(deckModel.PendingHelpCardAction.IsActive, Is.False);
 
+        player.CurrentArmor = 0;
         TableNine.Interface.SendCommand(new ApplyDamageCommand(playerUid, 3));
-        Assert.That(collectionModel.GetCard(playerUid).CurrentHp, Is.EqualTo(hpBefore - 3));
+        Assert.That(player.CurrentHp, Is.EqualTo(hpBefore - 3));
     }
 
     private static void AssertMandatoryMonster(int layer, int node, string expectedId)

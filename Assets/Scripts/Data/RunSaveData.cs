@@ -57,6 +57,7 @@ public sealed class CardRuntimeSaveData
     public int? ItemSlotIndex;
     public int CurrentHp;
     public int MaxHp;
+    public int CurrentArmor;
     public int BaseAttack;
     public int BaseDefense;
     public List<string> SkillIds = new List<string>();

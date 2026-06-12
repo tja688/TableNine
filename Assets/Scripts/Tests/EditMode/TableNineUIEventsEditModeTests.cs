@@ -3,6 +3,7 @@ using NUnit.Framework;
 using QFramework;
 using UnityEngine;
 
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineUIEventsEditModeTests
 {
     [SetUp]
@@ -67,35 +68,58 @@ public sealed class TableNineUIEventsEditModeTests
     }
 
     [Test]
-    public void ClearCondition_Requests_RoomChoice_UI()
+    public void ClearCondition_Requests_HelpReward_Before_Room()
     {
         StartRun(12345);
         RemoveAllMonsters();
         TableNine.Interface.GetModel<IDeckModel>().BattleDrawPile.Clear();
 
-        var roomRequests = new List<RoomChoiceRequestedEvent>();
-        var unRegister = TableNine.Interface.RegisterEvent<RoomChoiceRequestedEvent>(roomRequests.Add);
+        var helpEvents = new List<HelpRewardGeneratedEvent>();
+        var roomEvents = new List<RoomChoiceRequestedEvent>();
+        var helpRegister = TableNine.Interface.RegisterEvent<HelpRewardGeneratedEvent>(helpEvents.Add);
+        var roomRegister = TableNine.Interface.RegisterEvent<RoomChoiceRequestedEvent>(roomEvents.Add);
 
         TableNine.Interface.SendCommand(new CheckClearConditionCommand());
 
-        Assert.That(roomRequests.Count, Is.EqualTo(1));
-        Assert.That(roomRequests[0].RoomIds.Count, Is.EqualTo(4));
-        Assert.That(roomRequests[0].RoomIds, Contains.Item(DefaultGameConfigFactory.RoomGoldId));
-        Assert.That(roomRequests[0].RoomIds, Contains.Item(DefaultGameConfigFactory.RoomShopId));
+        Assert.That(helpEvents.Count, Is.EqualTo(1));
+        Assert.That(roomEvents.Count, Is.EqualTo(0));
+        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
 
-        unRegister.UnRegister();
+        helpRegister.UnRegister();
+        roomRegister.UnRegister();
     }
 
     [Test]
-    public void ChooseRoom_RewardFlow_Locks_Overlay()
+    public void HelpReward_Completion_Requests_RoomChoice()
+    {
+        StartRun(12345);
+        RemoveAllMonsters();
+        TableNine.Interface.GetModel<IDeckModel>().BattleDrawPile.Clear();
+        TableNine.Interface.SendCommand(new CheckClearConditionCommand());
+
+        var roomEvents = new List<RoomChoiceRequestedEvent>();
+        var roomRegister = TableNine.Interface.RegisterEvent<RoomChoiceRequestedEvent>(roomEvents.Add);
+
+        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
+
+        Assert.That(roomEvents.Count, Is.EqualTo(1));
+        Assert.That(roomEvents[0].RoomIds.Count, Is.EqualTo(RewardConstants.RoomCandidateCount));
+        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
+
+        roomRegister.UnRegister();
+    }
+
+    [Test]
+    public void ChooseRoom_Gold_Proceeds_To_Next_Node()
     {
         StartRun(12345);
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var runModel = TableNine.Interface.GetModel<IRunModel>();
 
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
 
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
-        Assert.That(flowModel.HasLock(InputLockReason.OverlayVisible), Is.True);
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2));
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
     }
 
     [Test]

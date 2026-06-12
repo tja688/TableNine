@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using QFramework;
 
 public sealed class StartNewRunCommand : AbstractCommand
@@ -160,6 +161,7 @@ public sealed class DealOpeningCardsCommand : AbstractCommand
         }
 
         deckSystem.UpdateNextBattlePreview();
+        this.GetSystem<IStatSystem>().FillArmorFromDefenseAtNodeStart();
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
 }
@@ -395,8 +397,9 @@ public sealed class StartCombatCommand : AbstractCommand
 
         if (playerActsFirst)
         {
-            var playerDamage = combatSystem.CalculateDamage(playerStats, monsterStats);
-            this.SendCommand(new ApplyDamageCommand(MonsterUid, playerDamage));
+            var playerDamageContext = combatSystem.BuildCombatDamage(
+                playerUid, MonsterUid, playerStats, monsterStats, "combat_player_first");
+            this.SendCommand(new ApplyDamageCommand(playerDamageContext));
             if (collectionModel.TryGetCard(MonsterUid, out monsterRuntime) && monsterRuntime.CurrentHp <= 0)
             {
                 this.SendCommand(new KillMonsterCommand(MonsterUid));
@@ -404,19 +407,22 @@ public sealed class StartCombatCommand : AbstractCommand
             else
             {
                 var updatedMonsterStats = this.SendQuery(new GetEffectiveMonsterStatsQuery(MonsterUid));
-                var monsterDamage = combatSystem.CalculateDamage(updatedMonsterStats, playerStats);
-                this.SendCommand(new ApplyDamageCommand(playerUid, monsterDamage));
+                var monsterDamageContext = combatSystem.BuildCombatDamage(
+                    MonsterUid, playerUid, updatedMonsterStats, playerStats, "combat_monster_counter");
+                this.SendCommand(new ApplyDamageCommand(monsterDamageContext));
             }
         }
         else
         {
-            var monsterDamage = combatSystem.CalculateDamage(monsterStats, playerStats);
-            this.SendCommand(new ApplyDamageCommand(playerUid, monsterDamage));
+            var monsterDamageContext = combatSystem.BuildCombatDamage(
+                MonsterUid, playerUid, monsterStats, playerStats, "combat_monster_first");
+            this.SendCommand(new ApplyDamageCommand(monsterDamageContext));
             var updatedPlayerStats = this.SendQuery(new GetEffectivePlayerStatsQuery());
             if (updatedPlayerStats.CurrentHp > 0)
             {
-                var playerDamage = combatSystem.CalculateDamage(updatedPlayerStats, monsterStats);
-                this.SendCommand(new ApplyDamageCommand(MonsterUid, playerDamage));
+                var playerDamageContext = combatSystem.BuildCombatDamage(
+                    playerUid, MonsterUid, updatedPlayerStats, monsterStats, "combat_player_counter");
+                this.SendCommand(new ApplyDamageCommand(playerDamageContext));
                 if (collectionModel.TryGetCard(MonsterUid, out monsterRuntime) && monsterRuntime.CurrentHp <= 0)
                 {
                     this.SendCommand(new KillMonsterCommand(MonsterUid));
@@ -442,12 +448,126 @@ public sealed class ApplyDamageCommand : AbstractCommand
 {
     public ApplyDamageCommand(CardUid targetUid, int damage)
     {
+        Context = DamageContext.FromLegacyIntDamage(targetUid, damage);
+    }
+
+    public ApplyDamageCommand(DamageContext context)
+    {
+        Context = context;
+    }
+
+    public DamageContext Context { get; }
+
+    protected override void OnExecute()
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(Context.Target, out var runtime))
+        {
+            return;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        if (Context.Preventable &&
+            runtime.CardType == CardType.Player &&
+            deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.BlessingShield &&
+            Context.DamageBeforeArmor > 0)
+        {
+            deckModel.PendingHelpCardAction.Clear();
+            Context.WasPrevented = true;
+            Context.HpDamage = 0;
+            Context.ArmorAbsorbed = 0;
+            this.SendEvent(new DamagePreventedEvent(Context.Target, DefaultGameConfigFactory.HelpBlessingId));
+            this.SendEvent(new DamageAppliedEvent(Context));
+            return;
+        }
+
+        ResolveDamageAmounts(runtime, Context);
+        if (Context.DamageBeforeArmor <= 0 && Context.HpDamage <= 0 && Context.ArmorAbsorbed <= 0)
+        {
+            return;
+        }
+
+        var oldArmor = runtime.CurrentArmor;
+        var oldHp = runtime.CurrentHp;
+        ApplyDamageToRuntime(runtime, Context);
+
+        if (!Context.IgnoreArmor && oldArmor != runtime.CurrentArmor)
+        {
+            this.SendEvent(new ArmorChangedEvent(Context.Target, oldArmor, runtime.CurrentArmor, Context.CauseId));
+        }
+
+        if (oldHp != runtime.CurrentHp)
+        {
+            this.SendEvent(new StatsDirtyEvent(Context.Target));
+        }
+
+        this.SendEvent(new DamageAppliedEvent(Context));
+    }
+
+    private static void ResolveDamageAmounts(CardRuntime runtime, DamageContext context)
+    {
+        if (context.DamageBeforeArmor <= 0 && context.RawAttack > 0)
+        {
+            context.DamageBeforeArmor = Math.Max(0, context.RawAttack - context.DamageReduction);
+        }
+
+        if (context.DamageBeforeArmor <= 0)
+        {
+            context.HpDamage = 0;
+            context.ArmorAbsorbed = 0;
+            return;
+        }
+
+        if (context.IgnoreArmor)
+        {
+            context.ArmorAbsorbed = 0;
+            context.HpDamage = context.DamageBeforeArmor;
+            return;
+        }
+
+        if (context.ArmorAbsorbed == 0 && context.HpDamage == 0)
+        {
+            context.ArmorAbsorbed = Math.Min(runtime.CurrentArmor, context.DamageBeforeArmor);
+            context.HpDamage = context.DamageBeforeArmor - context.ArmorAbsorbed;
+        }
+    }
+
+    private static void ApplyDamageToRuntime(CardRuntime runtime, DamageContext context)
+    {
+        if (!context.IgnoreArmor && context.ArmorAbsorbed > 0)
+        {
+            runtime.CurrentArmor -= context.ArmorAbsorbed;
+            if (runtime.CurrentArmor < 0)
+            {
+                runtime.CurrentArmor = 0;
+            }
+        }
+
+        if (context.HpDamage <= 0)
+        {
+            return;
+        }
+
+        runtime.CurrentHp -= context.HpDamage;
+        if (runtime.CurrentHp < 0)
+        {
+            runtime.CurrentHp = 0;
+        }
+    }
+}
+
+public sealed class SetArmorCommand : AbstractCommand
+{
+    public SetArmorCommand(CardUid targetUid, int armor, string causeId)
+    {
         TargetUid = targetUid;
-        Damage = damage;
+        Armor = armor;
+        CauseId = causeId;
     }
 
     public CardUid TargetUid { get; }
-    public int Damage { get; }
+    public int Armor { get; }
+    public string CauseId { get; }
 
     protected override void OnExecute()
     {
@@ -457,23 +577,99 @@ public sealed class ApplyDamageCommand : AbstractCommand
             return;
         }
 
-        var deckModel = this.GetModel<IDeckModel>();
-        if (runtime.CardType == CardType.Player &&
-            deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.BlessingShield &&
-            Damage > 0)
+        var oldArmor = runtime.CurrentArmor;
+        runtime.CurrentArmor = Armor < 0 ? 0 : Armor;
+        this.SendEvent(new ArmorChangedEvent(TargetUid, oldArmor, runtime.CurrentArmor, CauseId));
+        this.SendEvent(new StatsDirtyEvent(TargetUid));
+    }
+}
+
+public sealed class ChangeArmorCommand : AbstractCommand
+{
+    public ChangeArmorCommand(CardUid targetUid, int delta, string causeId)
+    {
+        TargetUid = targetUid;
+        Delta = delta;
+        CauseId = causeId;
+    }
+
+    public CardUid TargetUid { get; }
+    public int Delta { get; }
+    public string CauseId { get; }
+
+    protected override void OnExecute()
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(TargetUid, out var runtime))
         {
-            deckModel.PendingHelpCardAction.Clear();
-            this.SendEvent(new DamagePreventedEvent(TargetUid, DefaultGameConfigFactory.HelpBlessingId));
             return;
         }
 
-        runtime.CurrentHp -= Damage;
-        if (runtime.CurrentHp < 0)
+        var oldArmor = runtime.CurrentArmor;
+        var newArmor = oldArmor + Delta;
+        runtime.CurrentArmor = newArmor < 0 ? 0 : newArmor;
+        this.SendEvent(new ArmorChangedEvent(TargetUid, oldArmor, runtime.CurrentArmor, CauseId));
+        this.SendEvent(new StatsDirtyEvent(TargetUid));
+    }
+}
+
+public sealed class ApplyStatChangeCommand : AbstractCommand
+{
+    public ApplyStatChangeCommand(CardUid targetUid, StatType statType, int delta, string causeId)
+    {
+        TargetUid = targetUid;
+        StatType = statType;
+        Delta = delta;
+        CauseId = causeId;
+    }
+
+    public CardUid TargetUid { get; }
+    public StatType StatType { get; }
+    public int Delta { get; }
+    public string CauseId { get; }
+
+    protected override void OnExecute()
+    {
+        if (StatType == StatType.Armor)
         {
-            runtime.CurrentHp = 0;
+            this.SendCommand(new ChangeArmorCommand(TargetUid, Delta, CauseId));
+            return;
         }
 
-        this.SendEvent(new DamageAppliedEvent(TargetUid, Damage));
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(TargetUid, out var runtime))
+        {
+            return;
+        }
+
+        switch (StatType)
+        {
+            case StatType.Attack:
+                runtime.BaseAttack = ApplyNonNegativeDelta(runtime.BaseAttack, Delta);
+                break;
+            case StatType.Defense:
+                runtime.BaseDefense = ApplyNonNegativeDelta(runtime.BaseDefense, Delta);
+                if (Delta > 0)
+                {
+                    runtime.CurrentArmor = ApplyNonNegativeDelta(runtime.CurrentArmor, Delta);
+                }
+                break;
+            case StatType.MaxHp:
+                runtime.MaxHp = ApplyNonNegativeDelta(runtime.MaxHp, Delta);
+                runtime.CurrentHp = ApplyNonNegativeDelta(runtime.CurrentHp, Delta);
+                break;
+            case StatType.CurrentHp:
+                runtime.CurrentHp = ApplyNonNegativeDelta(runtime.CurrentHp, Delta);
+                break;
+        }
+
+        this.SendEvent(new StatsDirtyEvent(TargetUid));
+    }
+
+    private static int ApplyNonNegativeDelta(int current, int delta)
+    {
+        var next = current + delta;
+        return next < 0 ? 0 : next;
     }
 }
 
@@ -541,12 +737,9 @@ public sealed class CheckClearConditionCommand : AbstractCommand
         var runModel = this.GetModel<IRunModel>();
         if (!deckSystem.HasMonsterRemaining() && flowModel.Phase.Value != FlowPhase.ClearReady)
         {
-            var rewardSystem = this.GetSystem<IRewardSystem>();
-            var rewardModel = this.GetModel<IRewardModel>();
             flowModel.SetPhase(FlowPhase.ClearReady);
-            rewardSystem.GenerateRoomCandidates();
             this.SendEvent(new LevelClearReadyEvent(runModel.Layer.Value, runModel.NodeInLayer.Value));
-            this.SendEvent(new RoomChoiceRequestedEvent(rewardModel.RoomCandidateIds));
+            this.SendCommand(new GenerateHelpRewardCommand());
         }
     }
 }
@@ -587,7 +780,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 }
 
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgPotionHeal)));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
                 break;
             }
             case DefaultGameConfigFactory.HelpThrowingKnifeId:
@@ -615,7 +808,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
                 this.SendEvent(new ChestRewardGeneratedEvent(
                     this.GetModel<IRewardModel>().ChestRewardRelicIds));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, helpDefinition.IsPermanentRemoveOnUse));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
                 break;
             }
             case DefaultGameConfigFactory.HelpGoldCardId:
@@ -624,7 +817,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
                     DescriptionPanelTextKeys.MsgRoomGold,
                     50)));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, true));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
                 break;
             }
             case DefaultGameConfigFactory.HelpBlessingId:
@@ -632,7 +825,7 @@ public sealed class UseHelpCardCommand : AbstractCommand
                 deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
                 deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.BlessingShield;
                 this.SendEvent(new GameplayMessageEvent("庇佑已生效：下一次受到伤害为0。"));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, true));
+                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
                 break;
             }
             default:
@@ -672,7 +865,15 @@ public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
         var helpCardUid = deckModel.PendingHelpCardAction.HelpCardUid;
         deckModel.PendingHelpCardAction.Clear();
 
-        this.SendCommand(new ApplyDamageCommand(targetUid.Value, 6));
+        var knifeDamage = new DamageContext
+        {
+            Target = targetUid.Value,
+            CauseId = "help_throwing_knife",
+            Type = DamageType.HelpCard,
+            RawAttack = 6,
+            DamageBeforeArmor = 6
+        };
+        this.SendCommand(new ApplyDamageCommand(knifeDamage));
         var targetDied = collectionModel.TryGetCard(targetUid.Value, out targetRuntime) && targetRuntime.CurrentHp <= 0;
         if (targetDied)
         {
@@ -682,7 +883,7 @@ public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
             DescriptionPanelTextKeys.MsgThrowingKnifeHit,
             targetRuntime.DisplayName)));
-        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
+        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
 
         if (targetDied)
         {
@@ -721,16 +922,15 @@ public sealed class ResolveAttributeChoiceCommand : AbstractCommand
         switch (Choice)
         {
             case AttributeUpgradeChoice.Attack:
-                playerRuntime.BaseAttack += 1;
+                this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.Attack, 1, "help_attribute"));
                 message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrAttack);
                 break;
             case AttributeUpgradeChoice.Defense:
-                playerRuntime.BaseDefense += 1;
+                this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.Defense, 1, "help_attribute"));
                 message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrDefense);
                 break;
             case AttributeUpgradeChoice.MaxHp:
-                playerRuntime.MaxHp += 2;
-                playerRuntime.CurrentHp += 2;
+                this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.MaxHp, 2, "help_attribute"));
                 message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrMaxHp);
                 break;
         }
@@ -741,25 +941,26 @@ public sealed class ResolveAttributeChoiceCommand : AbstractCommand
 
         this.SendEvent(new GameplayMessageEvent(message));
         this.SendEvent(new AttributeChoiceResolvedEvent(helpCardUid, Choice));
-        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, true));
+        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
     }
 }
 
 public sealed class ConsumeHelpCardCommand : AbstractCommand
 {
-    public ConsumeHelpCardCommand(CardUid helpCardUid, bool permanentlyRemove)
+    public ConsumeHelpCardCommand(CardUid helpCardUid, HelpCardConsumeReason reason)
     {
         HelpCardUid = helpCardUid;
-        PermanentlyRemove = permanentlyRemove;
+        Reason = reason;
     }
 
     public CardUid HelpCardUid { get; }
-    public bool PermanentlyRemove { get; }
+    public HelpCardConsumeReason Reason { get; }
 
     protected override void OnExecute()
     {
         var deckModel = this.GetModel<IDeckModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
+        var configModel = this.GetModel<IConfigModel>();
         var boardSystem = this.GetSystem<IBoardSystem>();
         if (!collectionModel.TryGetCard(HelpCardUid, out var helpRuntime))
         {
@@ -786,10 +987,11 @@ public sealed class ConsumeHelpCardCommand : AbstractCommand
             return;
         }
 
+        var definition = configModel.GetCardDefinition(helpRuntime.DefinitionId);
         state.IsOnBoard = false;
         state.IsInItemSlot = false;
-        state.IsTemporarilyRemoved = !PermanentlyRemove;
-        state.IsPermanentlyRemoved = PermanentlyRemove;
+        state.IsTemporarilyRemoved = definition.RestoreAfterNode;
+        state.IsPermanentlyRemoved = !definition.RestoreAfterNode;
     }
 }
 
@@ -816,13 +1018,13 @@ public sealed class ChooseRoomCommand : AbstractCommand
         var collectionModel = this.GetModel<ICollectionModel>();
         var deckModel = this.GetModel<IDeckModel>();
 
-        // 1. Settle unused help cards (+10 gold each)
+        var rewardModel = this.GetModel<IRewardModel>();
+        flowModel.SetPhase(FlowPhase.RoomResolving);
+        rewardModel.CurrentRewardSource = RewardSource.Room;
+
         rewardSystem.SettleUnusedHelpCards();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
 
-        // 2. Restore help deck snapshot (temp removed cards come back, item slots cleared)
-        rewardSystem.RestoreHelpDeckSnapshot();
-
-        // 3. Get room definition and apply effect
         var roomDef = configModel.GetRoomDefinition(RoomId);
         this.SendEvent(new RoomChosenEvent(RoomId, roomDef.RoomType));
 
@@ -833,19 +1035,14 @@ public sealed class ChooseRoomCommand : AbstractCommand
                 this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
                     DescriptionPanelTextKeys.MsgRoomGold,
                     roomDef.RewardGold)));
-                flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
-                inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                rewardSystem.GenerateHelpRewardCandidates();
-                this.SendEvent(new HelpRewardGeneratedEvent(
-                    this.GetModel<IRewardModel>().HelpRewardCardIds));
+                this.SendCommand(new ProceedToNextNodeCommand());
                 break;
 
             case RoomType.Chest:
                 flowModel.SetPhase(FlowPhase.ChestRewardChoosing);
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
-                this.SendEvent(new ChestRewardGeneratedEvent(
-                    this.GetModel<IRewardModel>().ChestRewardRelicIds));
+                this.SendEvent(new ChestRewardGeneratedEvent(rewardModel.ChestRewardRelicIds));
                 break;
 
             case RoomType.Attribute:
@@ -863,21 +1060,34 @@ public sealed class ChooseRoomCommand : AbstractCommand
                         DescriptionPanelTextKeys.MsgRoomAttribute,
                         attrDef.DisplayName)));
                 }
-                flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
-                inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                rewardSystem.GenerateHelpRewardCandidates();
-                this.SendEvent(new HelpRewardGeneratedEvent(
-                    this.GetModel<IRewardModel>().HelpRewardCardIds));
+                this.SendCommand(new ProceedToNextNodeCommand());
                 break;
 
             case RoomType.Shop:
                 flowModel.SetPhase(FlowPhase.Shop);
                 inputLockSystem.Lock(InputLockReason.OverlayVisible);
                 this.GetSystem<IShopSystem>().GenerateShopCards();
-                this.SendEvent(new ShopOpenedEvent(
-                    this.GetModel<IRewardModel>().ShopCardIds));
+                this.SendEvent(new ShopOpenedEvent(rewardModel.ShopCardIds));
                 break;
         }
+    }
+}
+
+
+public sealed class EnterRoomChoosingCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var flowModel = this.GetModel<IFlowModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var rewardModel = this.GetModel<IRewardModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+        rewardModel.CurrentRewardSource = RewardSource.None;
+        flowModel.SetPhase(FlowPhase.RoomChoosing);
+        rewardSystem.GenerateRoomCandidates();
+        this.SendEvent(new RoomChoiceRequestedEvent(rewardModel.RoomCandidateIds));
     }
 }
 
@@ -936,8 +1146,7 @@ public sealed class PickHelpCardRewardCommand : AbstractCommand
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
             DescriptionPanelTextKeys.MsgHelpCardGained,
             definition.DisplayName)));
-        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
-        flowModel.SetPhase(FlowPhase.PlayerControl);
+        this.SendCommand(new EnterRoomChoosingCommand());
     }
 }
 
@@ -952,8 +1161,7 @@ public sealed class SkipHelpRewardCommand : AbstractCommand
         this.ChangeGold(playerModel, RewardConstants.SkipHelpRewardGold);
         this.SendEvent(new HelpRewardSkippedEvent(RewardConstants.SkipHelpRewardGold));
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgHelpRewardSkip)));
-        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
-        flowModel.SetPhase(FlowPhase.PlayerControl);
+        this.SendCommand(new EnterRoomChoosingCommand());
     }
 }
 
@@ -979,21 +1187,23 @@ public sealed class PickRelicRewardCommand : AbstractCommand
 
         this.SendEvent(new RelicRewardPickedEvent(RelicId));
 
-        if (this.GetModel<IRewardModel>().CurrentRewardSource == RewardSource.ChestCard)
+        var rewardModel = this.GetModel<IRewardModel>();
+        if (rewardModel.CurrentRewardSource == RewardSource.ChestCard)
         {
-            this.GetModel<IRewardModel>().CurrentRewardSource = RewardSource.None;
+            rewardModel.CurrentRewardSource = RewardSource.None;
             inputLockSystem.Unlock(InputLockReason.OverlayVisible);
             flowModel.SetPhase(FlowPhase.PlayerControl);
             this.SendCommand(new CheckClearConditionCommand());
             return;
         }
 
-        // After chest room reward, go to help reward
-        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
-        inputLockSystem.Lock(InputLockReason.OverlayVisible);
-        this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
-        this.SendEvent(new HelpRewardGeneratedEvent(
-            this.GetModel<IRewardModel>().HelpRewardCardIds));
+        if (rewardModel.CurrentRewardSource == RewardSource.Room)
+        {
+            rewardModel.CurrentRewardSource = RewardSource.None;
+            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+            this.SendCommand(new ProceedToNextNodeCommand());
+            return;
+        }
     }
 }
 
@@ -1009,21 +1219,23 @@ public sealed class SkipChestRewardCommand : AbstractCommand
         this.SendEvent(new ChestRewardSkippedEvent(RewardConstants.SkipChestRewardGold));
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgChestSkip)));
 
-        if (this.GetModel<IRewardModel>().CurrentRewardSource == RewardSource.ChestCard)
+        var rewardModel = this.GetModel<IRewardModel>();
+        if (rewardModel.CurrentRewardSource == RewardSource.ChestCard)
         {
-            this.GetModel<IRewardModel>().CurrentRewardSource = RewardSource.None;
+            rewardModel.CurrentRewardSource = RewardSource.None;
             inputLockSystem.Unlock(InputLockReason.OverlayVisible);
             flowModel.SetPhase(FlowPhase.PlayerControl);
             this.SendCommand(new CheckClearConditionCommand());
             return;
         }
 
-        // After chest room skip, go to help reward
-        flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
-        inputLockSystem.Lock(InputLockReason.OverlayVisible);
-        this.GetSystem<IRewardSystem>().GenerateHelpRewardCandidates();
-        this.SendEvent(new HelpRewardGeneratedEvent(
-            this.GetModel<IRewardModel>().HelpRewardCardIds));
+        if (rewardModel.CurrentRewardSource == RewardSource.Room)
+        {
+            rewardModel.CurrentRewardSource = RewardSource.None;
+            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+            this.SendCommand(new ProceedToNextNodeCommand());
+            return;
+        }
     }
 }
 
@@ -1141,7 +1353,14 @@ public sealed class CloseShopCommand : AbstractCommand
         var rewardSystem = this.GetSystem<IRewardSystem>();
         var rewardModel = this.GetModel<IRewardModel>();
 
-        // After shop, go to help reward
+        if (rewardModel.CurrentRewardSource == RewardSource.Room)
+        {
+            rewardModel.CurrentRewardSource = RewardSource.None;
+            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+            this.SendCommand(new ProceedToNextNodeCommand());
+            return;
+        }
+
         flowModel.SetPhase(FlowPhase.HelpRewardChoosing);
         inputLockSystem.Lock(InputLockReason.OverlayVisible);
         rewardSystem.GenerateHelpRewardCandidates();

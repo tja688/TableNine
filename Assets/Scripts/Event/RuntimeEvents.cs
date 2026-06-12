@@ -44,10 +44,19 @@ public readonly struct DamageAppliedEvent
     {
         TargetUid = targetUid;
         Damage = damage;
+        Context = null;
+    }
+
+    public DamageAppliedEvent(DamageContext context)
+    {
+        Context = context;
+        TargetUid = context.Target;
+        Damage = context.HpDamage;
     }
 
     public CardUid TargetUid { get; }
     public int Damage { get; }
+    public DamageContext Context { get; }
 }
 
 public readonly struct MonsterKilledEvent
@@ -376,4 +385,56 @@ public readonly struct RunReplayCompletedEvent
     }
 
     public int CommandCount { get; }
+}
+
+public readonly struct FlowPhaseChangedEvent
+{
+    public FlowPhaseChangedEvent(FlowPhase previousPhase, FlowPhase newPhase)
+    {
+        PreviousPhase = previousPhase;
+        NewPhase = newPhase;
+    }
+
+    public FlowPhase PreviousPhase { get; }
+    public FlowPhase NewPhase { get; }
+}
+
+public readonly struct InputLockChangedEvent
+{
+    public InputLockChangedEvent(InputLockReason reason, bool isLocked, bool anyLockActive)
+    {
+        Reason = reason;
+        IsLocked = isLocked;
+        AnyLockActive = anyLockActive;
+    }
+
+    public InputLockReason Reason { get; }
+    public bool IsLocked { get; }
+    public bool AnyLockActive { get; }
+}
+
+public readonly struct ArmorChangedEvent
+{
+    public ArmorChangedEvent(CardUid targetUid, int oldArmor, int newArmor, string causeId)
+    {
+        TargetUid = targetUid;
+        OldArmor = oldArmor;
+        NewArmor = newArmor;
+        CauseId = causeId;
+    }
+
+    public CardUid TargetUid { get; }
+    public int OldArmor { get; }
+    public int NewArmor { get; }
+    public string CauseId { get; }
+}
+
+public readonly struct StatsDirtyEvent
+{
+    public StatsDirtyEvent(CardUid targetUid)
+    {
+        TargetUid = targetUid;
+    }
+
+    public CardUid TargetUid { get; }
 }

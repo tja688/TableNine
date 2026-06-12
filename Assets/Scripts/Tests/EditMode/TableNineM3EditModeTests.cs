@@ -9,6 +9,7 @@ using QFramework;
 /// 覆盖：帮助卡快照恢复、未使用帮助卡金币结算、跳过选卡奖励、
 ///       容量/同名上限、商店购买/删除、遗物系统、节点推进。
 /// </summary>
+[Category(TableNineTestCategories.LegacyRuleTests)]
 public sealed class TableNineM3EditModeTests
 {
     [SetUp]
@@ -42,7 +43,7 @@ public sealed class TableNineM3EditModeTests
 
         // 触发快照恢复
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
-        rewardSystem.RestoreHelpDeckSnapshot();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
 
         // 临时移除的帮助卡应被恢复
         var state = deckModel.HelpCardStates[helpUid.Value];
@@ -67,7 +68,7 @@ public sealed class TableNineM3EditModeTests
 
         // 触发快照恢复
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
-        rewardSystem.RestoreHelpDeckSnapshot();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
 
         // 永久移除的帮助卡应从 OwnedHelpCards 和 HelpCardStates 中清除
         Assert.That(deckModel.HelpCardStates.ContainsKey(helpUid.Value), Is.False,
@@ -102,7 +103,7 @@ public sealed class TableNineM3EditModeTests
 
         // 触发快照恢复
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
-        rewardSystem.RestoreHelpDeckSnapshot();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
 
         // 新卡应保留
         Assert.That(deckModel.OwnedHelpCards.Contains(newRuntime.Uid), Is.True,
@@ -147,7 +148,7 @@ public sealed class TableNineM3EditModeTests
         var unReg = TableNine.Interface.RegisterEvent<HelpDeckRestoredEvent>(events.Add);
 
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
-        rewardSystem.RestoreHelpDeckSnapshot();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
 
         unReg.UnRegister();
 
@@ -286,7 +287,7 @@ public sealed class TableNineM3EditModeTests
         TableNine.Interface.SendCommand(new GenerateHelpRewardCommand());
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
 
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
         Assert.That(flowModel.HasLock(InputLockReason.OverlayVisible), Is.False, "跳过奖励应解锁 OverlayVisible");
     }
 
@@ -375,16 +376,15 @@ public sealed class TableNineM3EditModeTests
     }
 
     [Test]
-    public void ChooseRoom_Gold_Sets_HelpRewardChoosing_Phase()
+    [Category(TableNineTestCategories.LegacyRuleTests)]
+    public void ChooseRoom_Gold_No_Longer_Opens_HelpReward_Overlay()
     {
         StartRunAndClearNode();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
-        var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
 
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
 
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
-        Assert.That(rewardModel.HelpRewardCardIds.Count, Is.GreaterThan(0), "应生成帮助卡候选");
+        Assert.That(flowModel.Phase.Value, Is.Not.EqualTo(FlowPhase.HelpRewardChoosing));
     }
 
     [Test]
@@ -416,18 +416,19 @@ public sealed class TableNineM3EditModeTests
     }
 
     [Test]
-    public void ChooseRoom_Attribute_Injects_Card_And_Goes_To_HelpReward()
+    [Category(TableNineTestCategories.LegacyRuleTests)]
+    public void ChooseRoom_Attribute_Injects_Card_And_Proceeds()
     {
         StartRunAndClearNode();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var runModel = TableNine.Interface.GetModel<IRunModel>();
 
         var countBefore = deckModel.OwnedHelpCards.Count;
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomAttributeId));
 
         Assert.That(deckModel.OwnedHelpCards.Count, Is.EqualTo(countBefore + 1),
             "属性房应注入一张帮助卡");
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2));
     }
 
     [Test]
@@ -670,10 +671,12 @@ public sealed class TableNineM3EditModeTests
     {
         StartRunAndClearNode();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var runModel = TableNine.Interface.GetModel<IRunModel>();
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
 
         // 选宝箱房
+        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.ChestRewardChoosing));
         Assert.That(rewardModel.ChestRewardRelicIds.Count, Is.GreaterThan(0));
@@ -682,8 +685,7 @@ public sealed class TableNineM3EditModeTests
         TableNine.Interface.SendCommand(new PickRelicRewardCommand(relicId));
 
         Assert.That(relicSystem.HasRelic(relicId), Is.True, "应获得选取的遗物");
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing),
-            "选取遗物后应进入帮助卡选择阶段");
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2), "房间宝箱选遗物后应推进到下一节点");
     }
 
     [Test]
@@ -691,16 +693,17 @@ public sealed class TableNineM3EditModeTests
     {
         StartRunAndClearNode();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var runModel = TableNine.Interface.GetModel<IRunModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
+        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
 
         var goldBefore = playerModel.Gold.Value;
         TableNine.Interface.SendCommand(new SkipChestRewardCommand());
 
         Assert.That(playerModel.Gold.Value - goldBefore, Is.EqualTo(20), "跳过宝箱应获得 20 金币");
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing),
-            "跳过宝箱后应进入帮助卡选择阶段");
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2), "房间宝箱跳过后应推进到下一节点");
     }
 
     // ========================
@@ -779,7 +782,7 @@ public sealed class TableNineM3EditModeTests
     // ========================
 
     [Test]
-    public void GenerateRoomCandidates_Produces_4_Rooms()
+    public void GenerateRoomCandidates_Produces_Two_Rooms()
     {
         StartRun(42);
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
@@ -787,11 +790,7 @@ public sealed class TableNineM3EditModeTests
 
         rewardSystem.GenerateRoomCandidates();
 
-        Assert.That(rewardModel.RoomCandidateIds.Count, Is.EqualTo(4));
-        Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomGoldId));
-        Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomChestId));
-        Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomAttributeId));
-        Assert.That(rewardModel.RoomCandidateIds, Contains.Item(DefaultGameConfigFactory.RoomShopId));
+        Assert.That(rewardModel.RoomCandidateIds.Count, Is.EqualTo(RewardConstants.RoomCandidateCount));
     }
 
     // ========================
@@ -952,25 +951,21 @@ public sealed class TableNineM3EditModeTests
     }
 
     [Test]
-    public void EndToEnd_GoldRoom_SkipReward_ProceedToNextNode()
+    public void EndToEnd_Clear_HelpReward_Room_Proceeds_To_Next_Node()
     {
         StartRunAndClearNode();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var runModel = TableNine.Interface.GetModel<IRunModel>();
 
-        // 选金币房
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
 
-        // 跳过帮助卡奖励
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
 
         var nodeBefore = runModel.NodeInLayer.Value;
-
-        // 推进到下一节点
-        TableNine.Interface.SendCommand(new ProceedToNextNodeCommand());
-        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1), "节点应推进 +1");
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1), "选房间后应推进到下一节点");
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
     }
 
     [Test]

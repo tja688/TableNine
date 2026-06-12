@@ -176,7 +176,8 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = quality,
             Price = price,
-            IsPermanentRemoveOnUse = permanentRemove
+            IsPermanentRemoveOnUse = permanentRemove,
+            RestoreAfterNode = !permanentRemove
         };
     }
 

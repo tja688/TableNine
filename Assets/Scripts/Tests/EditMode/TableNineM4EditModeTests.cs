@@ -5,6 +5,7 @@ using QFramework;
 /// <summary>
 /// M4 一层可玩测试：9 节点恶魔卡组、精英/层主、击杀奖励注入、导师技能。
 /// </summary>
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineM4EditModeTests
 {
     [SetUp]

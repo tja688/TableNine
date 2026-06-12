@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using QFramework;
 
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineM1EditModeTests
 {
     [SetUp]
@@ -154,13 +155,14 @@ public sealed class TableNineM1EditModeTests
     }
 
     [Test]
-    public void Combat_Damage_Min_Zero()
+    [Category(TableNineTestCategories.LegacyRuleTests)]
+    public void Combat_Damage_Min_Zero_When_DamageReduction_High()
     {
         TableNine.InitArchitecture();
         var combatSystem = TableNine.Interface.GetSystem<ICombatSystem>();
         var damage = combatSystem.CalculateDamage(
             new EffectiveStats { Attack = 1, Defense = 0 },
-            new EffectiveStats { Attack = 0, Defense = 5 });
+            new EffectiveStats { Attack = 0, Defense = 5, DamageReduction = 5 });
 
         Assert.That(damage, Is.EqualTo(0));
     }
@@ -187,6 +189,7 @@ public sealed class TableNineM1EditModeTests
         var monsterRuntime = collectionModel.GetCard(adjacentMonsterUid);
         monsterRuntime.CurrentHp = 1;
         monsterRuntime.BaseDefense = 0;
+        monsterRuntime.CurrentArmor = 0;
 
         var goldBefore = playerModel.Gold.Value;
         var playerHpBefore = collectionModel.GetCard(playerModel.PlayerCardUid).CurrentHp;
@@ -230,7 +233,7 @@ public sealed class TableNineM1EditModeTests
 
         TableNine.Interface.SendCommand(new CheckClearConditionCommand());
 
-        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.ClearReady));
+        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.HelpRewardChoosing));
     }
 
     [Test]

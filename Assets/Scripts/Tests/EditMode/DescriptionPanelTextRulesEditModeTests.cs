@@ -1,5 +1,6 @@
 using NUnit.Framework;
 
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class DescriptionPanelTextRulesEditModeTests
 {
     [Test]

@@ -325,6 +325,7 @@ public interface ICombatSystem : ISystem
 {
     bool PlayerActsFirst(EffectiveStats playerStats, EffectiveStats monsterStats);
     int CalculateDamage(EffectiveStats attacker, EffectiveStats defender);
+    DamageContext BuildCombatDamage(CardUid source, CardUid target, EffectiveStats attacker, EffectiveStats defender, string causeId);
 }
 
 public sealed class CombatSystem : AbstractSystem, ICombatSystem
@@ -345,7 +346,22 @@ public sealed class CombatSystem : AbstractSystem, ICombatSystem
 
     public int CalculateDamage(EffectiveStats attacker, EffectiveStats defender)
     {
-        return Math.Max(0, attacker.Attack - defender.Defense);
+        return Math.Max(0, attacker.Attack - defender.DamageReduction);
+    }
+
+    public DamageContext BuildCombatDamage(CardUid source, CardUid target, EffectiveStats attacker, EffectiveStats defender, string causeId)
+    {
+        var damageBeforeArmor = Math.Max(0, attacker.Attack - defender.DamageReduction);
+        return new DamageContext
+        {
+            Source = source,
+            Target = target,
+            CauseId = causeId,
+            Type = DamageType.Combat,
+            RawAttack = attacker.Attack,
+            DamageReduction = defender.DamageReduction,
+            DamageBeforeArmor = damageBeforeArmor
+        };
     }
 }
 
@@ -357,6 +373,7 @@ public interface IStatSystem : ISystem
 {
     EffectiveStats GetEffectivePlayerStats();
     EffectiveStats GetEffectiveMonsterStats(CardUid monsterUid);
+    void FillArmorFromDefenseAtNodeStart();
 }
 
 public sealed class StatSystem : AbstractSystem, IStatSystem
@@ -395,8 +412,10 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         {
             CurrentHp = currentHp,
             MaxHp = maxHp,
+            CurrentArmor = playerRuntime.CurrentArmor,
             Attack = attack,
             Defense = defense,
+            DamageReduction = 0,
             HasFirstStrike = HasFirstStrike(playerRuntime, configModel)
         };
     }
@@ -442,8 +461,10 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         {
             CurrentHp = currentHp,
             MaxHp = maxHp,
+            CurrentArmor = monsterRuntime.CurrentArmor,
             Attack = attack,
             Defense = defense,
+            DamageReduction = 0,
             HasFirstStrike = HasFirstStrike(monsterRuntime, configModel)
         };
     }
@@ -481,6 +502,48 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         }
 
         return false;
+    }
+
+    public void FillArmorFromDefenseAtNodeStart()
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var boardModel = this.GetModel<IBoardModel>();
+
+        FillArmorFromDefense(playerModel.PlayerCardUid, GetEffectivePlayerStats());
+
+        for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
+        {
+            var slot = BoardSlotUtility.ClockwiseRing[i];
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue || uid.Value.Equals(playerModel.PlayerCardUid))
+            {
+                continue;
+            }
+
+            if (!collectionModel.TryGetCard(uid.Value, out var runtime) || runtime.CardType != CardType.Monster)
+            {
+                continue;
+            }
+
+            FillArmorFromDefense(uid.Value, GetEffectiveMonsterStats(uid.Value));
+        }
+    }
+
+    private void FillArmorFromDefense(CardUid uid, EffectiveStats stats)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var runtime = collectionModel.GetCard(uid);
+        var oldArmor = runtime.CurrentArmor;
+        var newArmor = stats.Defense < 0 ? 0 : stats.Defense;
+        if (oldArmor == newArmor)
+        {
+            return;
+        }
+
+        runtime.CurrentArmor = newArmor;
+        this.SendEvent(new ArmorChangedEvent(uid, oldArmor, newArmor, "node_start_defense"));
+        this.SendEvent(new StatsDirtyEvent(uid));
     }
 }
 
@@ -535,7 +598,7 @@ public interface IRewardSystem : ISystem
     void GenerateRoomCandidates();
     void GenerateTutorSkillCandidates();
     void SettleUnusedHelpCards();
-    void RestoreHelpDeckSnapshot();
+    void RestoreHelpDeckSnapshotByRestoreAfterNode();
     bool CanAddHelpCard(string cardId);
 }
 
@@ -582,11 +645,26 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
     public void GenerateRoomCandidates()
     {
         var rewardModel = this.GetModel<IRewardModel>();
+        var randomUtility = this.GetUtility<IRandomUtility>();
         rewardModel.ClearRoomCandidateIds();
-        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomGoldId);
-        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomChestId);
-        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomAttributeId);
-        rewardModel.AddRoomCandidateId(DefaultGameConfigFactory.RoomShopId);
+
+        var pool = new List<string>
+        {
+            DefaultGameConfigFactory.RoomGoldId,
+            DefaultGameConfigFactory.RoomChestId,
+            DefaultGameConfigFactory.RoomAttributeId,
+            DefaultGameConfigFactory.RoomShopId
+        };
+
+        var pickCount = pool.Count < RewardConstants.RoomCandidateCount
+            ? pool.Count
+            : RewardConstants.RoomCandidateCount;
+        for (var i = 0; i < pickCount; i++)
+        {
+            var index = randomUtility.Range(0, pool.Count);
+            rewardModel.AddRoomCandidateId(pool[index]);
+            pool.RemoveAt(index);
+        }
     }
 
     public void GenerateTutorSkillCandidates()
@@ -653,7 +731,7 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         this.SendEvent(new HelpCardsSettledEvent(unusedCount, goldGained));
     }
 
-    public void RestoreHelpDeckSnapshot()
+    public void RestoreHelpDeckSnapshotByRestoreAfterNode()
     {
         var deckModel = this.GetModel<IDeckModel>();
         var collectionModel = this.GetModel<ICollectionModel>();

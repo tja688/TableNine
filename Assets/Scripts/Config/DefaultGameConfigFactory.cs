@@ -116,7 +116,9 @@ public static partial class DefaultGameConfigFactory
             DisplayName = "金币卡",
             CardType = CardType.Help,
             Quality = CardQuality.White,
-            Price = 30
+            Price = 30,
+            IsPermanentRemoveOnUse = true,
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -124,7 +126,9 @@ public static partial class DefaultGameConfigFactory
             DisplayName = "宝箱卡",
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
-            Price = 100
+            Price = 100,
+            IsPermanentRemoveOnUse = true,
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -300,6 +304,7 @@ public static partial class DefaultGameConfigFactory
             RoomType = RoomType.Shop
         });
 
+        CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
         return config;
     }
 }

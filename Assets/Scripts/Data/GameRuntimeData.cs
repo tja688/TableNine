@@ -61,11 +61,13 @@ public enum FlowPhase
     BoardRefilling,
     ClearReady,
     RoomChoosing,
+    RoomResolving,
     HelpRewardChoosing,
     ChestRewardChoosing,
     TutorSkillChoosing,
     Shop,
     GameOver,
+    NodeEnding,
     LayerComplete,
     Victory
 }
@@ -126,6 +128,54 @@ public enum AttributeUpgradeChoice
     Attack,
     Defense,
     MaxHp
+}
+
+public enum DamageType
+{
+    Combat,
+    HelpCard,
+    Reflect,
+    Relic,
+    Skill,
+    Room,
+    Debug
+}
+
+public enum RemoveReason
+{
+    None,
+    Combat,
+    HelpCard,
+    Effect,
+    Refill,
+    Debug
+}
+
+public enum BoardMoveReason
+{
+    None,
+    HelpCard,
+    Refill,
+    Combat,
+    Debug
+}
+
+public enum HelpCardConsumeReason
+{
+    None,
+    Used,
+    Sold,
+    Discarded,
+    Debug
+}
+
+public enum StatType
+{
+    Attack,
+    Defense,
+    MaxHp,
+    CurrentHp,
+    Armor
 }
 
 [Serializable]
@@ -269,6 +319,7 @@ public sealed class CardDefinition
     public int BaseAttack;
     public int BaseDefense;
     public bool IsPermanentRemoveOnUse;
+    public bool RestoreAfterNode;
     public List<string> SkillIds = new List<string>();
 }
 
@@ -319,6 +370,7 @@ public sealed class GameConfigDatabase : ScriptableObject
         config.MonsterDeckRules.AddRange(MonsterDeckRules);
         config.Relics.AddRange(Relics);
         config.Rooms.AddRange(Rooms);
+        CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
         return config;
     }
 }
@@ -345,6 +397,7 @@ public sealed class CardRuntime
     public int? ItemSlotIndex;
     public int CurrentHp;
     public int MaxHp;
+    public int CurrentArmor;
     public int BaseAttack;
     public int BaseDefense;
     public List<string> SkillIds = new List<string>();
@@ -430,9 +483,42 @@ public struct EffectiveStats
 {
     public int CurrentHp;
     public int MaxHp;
+    public int CurrentArmor;
     public int Attack;
     public int Defense;
+    public int DamageReduction;
     public bool HasFirstStrike;
+}
+
+public sealed class DamageContext
+{
+    public CardUid? Source;
+    public CardUid Target;
+    public string CauseId;
+    public DamageType Type;
+    public int RawAttack;
+    public int DamageReduction;
+    public int DamageBeforeArmor;
+    public int ArmorAbsorbed;
+    public int HpDamage;
+    public bool IgnoreArmor;
+    public bool Preventable = true;
+    public bool WasPrevented;
+    public bool WasFatalBeforePrevention;
+    public List<string> Tags = new List<string>();
+
+    public static DamageContext FromLegacyIntDamage(CardUid targetUid, int damage, DamageType type = DamageType.Debug)
+    {
+        var beforeArmor = damage < 0 ? 0 : damage;
+        return new DamageContext
+        {
+            Target = targetUid,
+            CauseId = "legacy_int_damage",
+            Type = type,
+            RawAttack = beforeArmor,
+            DamageBeforeArmor = beforeArmor
+        };
+    }
 }
 
 public struct InteractionResult
@@ -555,6 +641,7 @@ public static class RewardConstants
     public const int MaxRelicSlots = 12;
     public const int ShopDisplayCount = 6;
     public const int HelpRewardCandidateCount = 3;
+    public const int RoomCandidateCount = 2;
     public const int ChestRewardCandidateCount = 3;
 
     public static readonly float[] HelpRewardQualityWeights = { 65f, 30f, 5f, 0f };

@@ -174,4 +174,30 @@ public static class ConfigValidator
 
         return errors;
     }
+
+    public static List<string> CollectWarnings(GameConfigSet config)
+    {
+        var warnings = new List<string>();
+
+        for (var i = 0; i < config.Cards.Count; i++)
+        {
+            var card = config.Cards[i];
+            if (card.CardType != CardType.Help)
+            {
+                continue;
+            }
+
+            if (card.IsPermanentRemoveOnUse)
+            {
+                warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse is deprecated; configure RestoreAfterNode instead.");
+            }
+
+            if (card.IsPermanentRemoveOnUse != !card.RestoreAfterNode)
+            {
+                warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse conflicts with RestoreAfterNode.");
+            }
+        }
+
+        return warnings;
+    }
 }

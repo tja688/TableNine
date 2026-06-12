@@ -273,6 +273,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             ItemSlotIndex = runtime.ItemSlotIndex,
             CurrentHp = runtime.CurrentHp,
             MaxHp = runtime.MaxHp,
+            CurrentArmor = runtime.CurrentArmor,
             BaseAttack = runtime.BaseAttack,
             BaseDefense = runtime.BaseDefense,
             SkillIds = new List<string>(runtime.SkillIds)
@@ -293,6 +294,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             ItemSlotIndex = save.ItemSlotIndex,
             CurrentHp = save.CurrentHp,
             MaxHp = save.MaxHp,
+            CurrentArmor = save.CurrentArmor,
             BaseAttack = save.BaseAttack,
             BaseDefense = save.BaseDefense,
             SkillIds = new List<string>(save.SkillIds)

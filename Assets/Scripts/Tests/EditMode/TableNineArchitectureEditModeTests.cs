@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using QFramework;
 
+[Category(TableNineTestCategories.RegressionTests)]
 public sealed class TableNineArchitectureEditModeTests
 {
     [SetUp]
