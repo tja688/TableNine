@@ -8,25 +8,16 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     private readonly Dictionary<int, GameplayCardVisual> mItemCardViews = new Dictionary<int, GameplayCardVisual>();
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
-    [SerializeField] private bool mEnableLegacyGreyboxPresentation;
+    [SerializeField] private bool mEnableLegacyGreyboxPresentation = true;
     [SerializeField] private Transform mBoardRoot;
     [SerializeField] private Transform mItemRoot;
     [SerializeField] private GameObject mCardTemplate;
 
+    private CardViewPresenter mCardViewPresenter;
+
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
-    }
-
-    private void Awake()
-    {
-        if (mEnableLegacyGreyboxPresentation)
-        {
-            return;
-        }
-
-        HideLegacySceneRoots();
-        enabled = false;
     }
 
     private void Start()
@@ -36,6 +27,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             TableNine.InitArchitecture();
         }
 
+        mCardViewPresenter = new CardViewPresenter();
         CacheSceneReferences();
         BuildSlotInputs();
         BuildCardVisuals();
@@ -53,34 +45,24 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         mEventRegisters.Clear();
     }
 
-    private void LateUpdate()
-    {
-        if (!TableNine.IsInitialized)
-        {
-            return;
-        }
-
-        RefreshAllCardViews();
-    }
-
     private void CacheSceneReferences()
     {
-        if (mBoardRoot == null)
+        if (mEnableLegacyGreyboxPresentation && mBoardRoot == null)
         {
             mBoardRoot = GameObject.Find("NineGrid CardSlots")?.transform;
         }
 
-        if (mItemRoot == null)
+        if (mEnableLegacyGreyboxPresentation && mItemRoot == null)
         {
             mItemRoot = GameObject.Find("Item CardSlots")?.transform;
         }
 
-        if (mCardTemplate == null)
+        if (mEnableLegacyGreyboxPresentation && mCardTemplate == null)
         {
             mCardTemplate = GameObject.Find("NineGrid CardSlots/CardExample");
         }
 
-        if (mCardTemplate == null)
+        if (mEnableLegacyGreyboxPresentation && mCardTemplate == null)
         {
             mCardTemplate = GameObject.Find("CardExample");
         }
@@ -115,6 +97,14 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 slotObject.gameObject.AddComponent<BoxCollider2D>();
             }
 
+            var slotView = slotObject.gameObject.GetComponent<BoardSlotView>();
+            if (slotView == null)
+            {
+                slotView = slotObject.gameObject.AddComponent<BoardSlotView>();
+            }
+
+            slotView.InitializeBoardSlot(slot);
+
             var clickProxy = slotObject.gameObject.GetComponent<BoardSlotClickProxy>();
             if (clickProxy == null)
             {
@@ -136,6 +126,14 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             {
                 slotObject.gameObject.AddComponent<BoxCollider2D>();
             }
+
+            var slotView = slotObject.gameObject.GetComponent<BoardSlotView>();
+            if (slotView == null)
+            {
+                slotView = slotObject.gameObject.AddComponent<BoardSlotView>();
+            }
+
+            slotView.InitializeItemSlot(slot);
 
             var clickProxy = slotObject.gameObject.GetComponent<ItemSlotClickProxy>();
             if (clickProxy == null)
@@ -162,7 +160,9 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 continue;
             }
 
-            mBoardCardViews[slot] = CreateCardVisual($"BoardCardView{slot}", slotObject.position, mBoardRoot, 1f);
+            var cardView = CreateCardVisual($"BoardCardView{slot}", slotObject.position, mBoardRoot, 1f);
+            mBoardCardViews[slot] = cardView;
+            slotObject.GetComponent<BoardSlotView>()?.SetCardView(cardView);
         }
 
         for (var slot = 0; slot < 5; slot++)
@@ -173,17 +173,27 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 continue;
             }
 
-            mItemCardViews[slot] = CreateCardVisual($"ItemCardView{slot + 1}", slotObject.position, mItemRoot, 0.85f);
+            var cardView = CreateCardVisual($"ItemCardView{slot + 1}", slotObject.position, mItemRoot, 0.85f);
+            mItemCardViews[slot] = cardView;
+            slotObject.GetComponent<BoardSlotView>()?.SetCardView(cardView);
         }
     }
 
     private void RegisterGameplayEvents()
     {
-        mEventRegisters.Add(this.RegisterEvent<BoardSlotChangedEvent>(_ => RefreshBoardCardViews()));
-        mEventRegisters.Add(this.RegisterEvent<ItemSlotChangedEvent>(_ => RefreshItemCardViews()));
-        mEventRegisters.Add(this.RegisterEvent<DamageAppliedEvent>(_ => RefreshAllCardViews()));
-        mEventRegisters.Add(this.RegisterEvent<MonsterKilledEvent>(_ => RefreshAllCardViews()));
-        mEventRegisters.Add(this.RegisterEvent<BattleDeckChangedEvent>(_ => RefreshAllCardViews()));
+        mEventRegisters.Add(this.RegisterEvent<CardPlacedEvent>(e => RefreshBoardSlot(e.Slot)));
+        mEventRegisters.Add(this.RegisterEvent<CardMovedEvent>(RefreshForCardMove));
+        mEventRegisters.Add(this.RegisterEvent<CardRemovedEvent>(e => RefreshBoardSlot(e.Slot)));
+        mEventRegisters.Add(this.RegisterEvent<BoardRotatedEvent>(RefreshForBoardRotation));
+        mEventRegisters.Add(this.RegisterEvent<BoardSlotChangedEvent>(e => RefreshBoardSlot(e.Slot)));
+        mEventRegisters.Add(this.RegisterEvent<ItemSlotChangedEvent>(e => RefreshItemSlot(e.ItemSlotIndex)));
+        mEventRegisters.Add(this.RegisterEvent<DamageAppliedEvent>(e => RefreshCardByUid(e.TargetUid)));
+        mEventRegisters.Add(this.RegisterEvent<ArmorChangedEvent>(e => RefreshCardByUid(e.TargetUid)));
+        mEventRegisters.Add(this.RegisterEvent<HealAppliedEvent>(e => RefreshCardByUid(e.TargetUid)));
+        mEventRegisters.Add(this.RegisterEvent<StatsDirtyEvent>(e => RefreshCardByUid(e.TargetUid)));
+        mEventRegisters.Add(this.RegisterEvent<BattleDeckChangedEvent>(_ => RefreshBoardCardViews()));
+        mEventRegisters.Add(this.RegisterEvent<GameplayMessageEvent>(_ => RefreshAllCardViews()));
+        mEventRegisters.Add(this.RegisterEvent<FlowPhaseChangedEvent>(_ => RefreshAllCardViews()));
     }
 
     private void RefreshAllCardViews()
@@ -218,10 +228,36 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 continue;
             }
 
-            var data = CardViewDataFactory.Create(this, uid.Value);
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-            view.Show(FormatCardText(data, false, isPending), data.Tint);
+            mCardViewPresenter.Refresh(view, uid.Value, false, isPending);
         }
+    }
+
+    private void RefreshBoardSlot(BoardSlotNo slot)
+    {
+        if (!mBoardCardViews.TryGetValue(slot.Value, out var view))
+        {
+            return;
+        }
+
+        if (!TableNine.IsInitialized || !this.GetModel<IRunModel>().IsRunActive.Value)
+        {
+            view.Hide();
+            return;
+        }
+
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var uid = boardModel.GetCardAt(slot);
+        if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out _))
+        {
+            view.Hide();
+            return;
+        }
+
+        var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
+        mCardViewPresenter.Refresh(view, uid.Value, false, isPending);
     }
 
     private void RefreshItemCardViews()
@@ -249,16 +285,77 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 continue;
             }
 
-            var data = CardViewDataFactory.Create(this, uid.Value);
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-            view.Show(FormatCardText(data, true, isPending), data.Tint);
+            mCardViewPresenter.Refresh(view, uid.Value, true, isPending);
         }
     }
 
-    private static string FormatCardText(CardViewData data, bool itemSlot, bool pending)
+    private void RefreshItemSlot(int itemSlotIndex)
     {
-        var text = CardViewDataFactory.FormatWorldCard(data, itemSlot);
-        return pending ? $"{text}\n等待操作" : text;
+        if (!mItemCardViews.TryGetValue(itemSlotIndex, out var view))
+        {
+            return;
+        }
+
+        if (!TableNine.IsInitialized || !this.GetModel<IRunModel>().IsRunActive.Value)
+        {
+            view.Hide();
+            return;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var uid = deckModel.ItemSlots[itemSlotIndex];
+        if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out _))
+        {
+            view.Hide();
+            return;
+        }
+
+        var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
+        mCardViewPresenter.Refresh(view, uid.Value, true, isPending);
+    }
+
+    private void RefreshCardByUid(CardUid uid)
+    {
+        if (!TableNine.IsInitialized)
+        {
+            return;
+        }
+
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(uid, out var runtime))
+        {
+            return;
+        }
+
+        if (runtime.BoardSlot.HasValue)
+        {
+            RefreshBoardSlot(runtime.BoardSlot.Value);
+        }
+
+        if (runtime.ItemSlotIndex.HasValue)
+        {
+            RefreshItemSlot(runtime.ItemSlotIndex.Value);
+        }
+    }
+
+    private void RefreshForCardMove(CardMovedEvent evt)
+    {
+        if (evt.PreviousSlot.HasValue)
+        {
+            RefreshBoardSlot(evt.PreviousSlot.Value);
+        }
+
+        RefreshBoardSlot(evt.NewSlot);
+    }
+
+    private void RefreshForBoardRotation(BoardRotatedEvent evt)
+    {
+        for (var i = 0; i < evt.MovedCards.Count; i++)
+        {
+            RefreshForCardMove(evt.MovedCards[i]);
+        }
     }
 
     private GameplayCardVisual CreateCardVisual(string objectName, Vector3 worldPosition, Transform parent, float scaleMultiplier)
@@ -321,19 +418,6 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         return null;
     }
 
-    private void HideLegacySceneRoots()
-    {
-        HideObject(mBoardRoot != null ? mBoardRoot.gameObject : GameObject.Find("NineGrid CardSlots"));
-        HideObject(mCardTemplate != null ? mCardTemplate : GameObject.Find("CardExample"));
-    }
-
-    private static void HideObject(GameObject target)
-    {
-        if (target != null)
-        {
-            target.SetActive(false);
-        }
-    }
 }
 
 // Compatibility shim for the existing scene component. New scenes should use GameplayWorldPresenter.
@@ -341,54 +425,8 @@ public sealed class GameplaySceneController : GameplayWorldPresenter
 {
 }
 
-public sealed class GameplayCardVisual : MonoBehaviour
+public sealed class GameplayCardVisual : CardView
 {
-    private SpriteRenderer mSpriteRenderer;
-    private TextMesh mTextMesh;
-
-    public void Initialize()
-    {
-        mSpriteRenderer = GetComponent<SpriteRenderer>();
-        mTextMesh = GetComponentInChildren<TextMesh>();
-        if (mTextMesh == null)
-        {
-            var textObject = new GameObject("CardText", typeof(TextMesh));
-            textObject.transform.SetParent(transform, false);
-            textObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
-            mTextMesh = textObject.GetComponent<TextMesh>();
-        }
-
-        mTextMesh.anchor = TextAnchor.MiddleCenter;
-        mTextMesh.alignment = TextAlignment.Center;
-        mTextMesh.fontSize = 40;
-        mTextMesh.characterSize = 0.08f;
-        mTextMesh.color = new Color(0.14f, 0.14f, 0.14f);
-
-        var renderer = mTextMesh.GetComponent<MeshRenderer>();
-        if (renderer != null && mSpriteRenderer != null)
-        {
-            renderer.sortingOrder = mSpriteRenderer.sortingOrder + 1;
-        }
-    }
-
-    public void Show(string cardText, Color cardColor)
-    {
-        gameObject.SetActive(true);
-        if (mSpriteRenderer != null)
-        {
-            mSpriteRenderer.color = cardColor;
-        }
-
-        if (mTextMesh != null)
-        {
-            mTextMesh.text = cardText;
-        }
-    }
-
-    public void Hide()
-    {
-        gameObject.SetActive(false);
-    }
 }
 
 public sealed class BoardSlotClickProxy : MonoBehaviour, IController
@@ -407,6 +445,11 @@ public sealed class BoardSlotClickProxy : MonoBehaviour, IController
 
     private void OnMouseUpAsButton()
     {
+        if (TableNine.IsInitialized)
+        {
+            this.GetUtility<IAudioUtility>().Play(TableNineAudioIds.Click);
+        }
+
         this.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(mSlotNo)));
     }
 }
@@ -427,6 +470,11 @@ public sealed class ItemSlotClickProxy : MonoBehaviour, IController
 
     private void OnMouseUpAsButton()
     {
+        if (TableNine.IsInitialized)
+        {
+            this.GetUtility<IAudioUtility>().Play(TableNineAudioIds.Click);
+        }
+
         this.SendCommand(new ClickItemSlotCommand(mItemSlotIndex));
     }
 }

@@ -14,6 +14,34 @@ public readonly struct CardPlacedEvent
     public CardPlacementSource Source { get; }
 }
 
+public readonly struct CardRemovedEvent
+{
+    public CardRemovedEvent(CardUid uid, BoardSlotNo slot, RemoveReason reason)
+    {
+        Uid = uid;
+        Slot = slot;
+        Reason = reason;
+    }
+
+    public CardUid Uid { get; }
+    public BoardSlotNo Slot { get; }
+    public RemoveReason Reason { get; }
+}
+
+public readonly struct BoardRotatedEvent
+{
+    public BoardRotatedEvent(bool clockwise, BoardMoveReason reason, IReadOnlyList<CardMovedEvent> movedCards)
+    {
+        Clockwise = clockwise;
+        Reason = reason;
+        MovedCards = movedCards;
+    }
+
+    public bool Clockwise { get; }
+    public BoardMoveReason Reason { get; }
+    public IReadOnlyList<CardMovedEvent> MovedCards { get; }
+}
+
 public readonly struct BoardSlotChangedEvent
 {
     public BoardSlotChangedEvent(BoardSlotNo slot, CardUid? uid)
@@ -103,6 +131,24 @@ public readonly struct DamageAppliedEvent
     public DamageContext Context { get; }
 }
 
+public readonly struct HealAppliedEvent
+{
+    public HealAppliedEvent(CardUid targetUid, int oldHp, int newHp, int amount, string causeId)
+    {
+        TargetUid = targetUid;
+        OldHp = oldHp;
+        NewHp = newHp;
+        Amount = amount;
+        CauseId = causeId;
+    }
+
+    public CardUid TargetUid { get; }
+    public int OldHp { get; }
+    public int NewHp { get; }
+    public int Amount { get; }
+    public string CauseId { get; }
+}
+
 public readonly struct MonsterKilledEvent
 {
     public MonsterKilledEvent(CardUid monsterUid, string definitionId)
@@ -135,6 +181,102 @@ public readonly struct GameplayMessageEvent
     }
 
     public string Message { get; }
+}
+
+public readonly struct DialogueRequestedEvent
+{
+    public DialogueRequestedEvent(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
+}
+
+public readonly struct DialogueCompletedEvent
+{
+    public DialogueCompletedEvent(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
+}
+
+public readonly struct PresentationSequenceRequestedEvent
+{
+    public PresentationSequenceRequestedEvent(
+        PresentationSequenceType sequenceType,
+        SequenceCompletionAction completionAction,
+        bool playerDiedDuringCombat)
+    {
+        SequenceType = sequenceType;
+        CompletionAction = completionAction;
+        PlayerDiedDuringCombat = playerDiedDuringCombat;
+    }
+
+    public PresentationSequenceType SequenceType { get; }
+    public SequenceCompletionAction CompletionAction { get; }
+    public bool PlayerDiedDuringCombat { get; }
+}
+
+public readonly struct PresentationSequenceCompletedEvent
+{
+    public PresentationSequenceCompletedEvent(
+        PresentationSequenceType sequenceType,
+        SequenceCompletionAction completionAction,
+        bool playerDiedDuringCombat)
+    {
+        SequenceType = sequenceType;
+        CompletionAction = completionAction;
+        PlayerDiedDuringCombat = playerDiedDuringCombat;
+    }
+
+    public PresentationSequenceType SequenceType { get; }
+    public SequenceCompletionAction CompletionAction { get; }
+    public bool PlayerDiedDuringCombat { get; }
+}
+
+public readonly struct EffectResolvedEvent
+{
+    public EffectResolvedEvent(string effectGraphId, EffectSource source, CardUid? caster, IReadOnlyList<CardUid> targets, IReadOnlyList<string> tags)
+    {
+        EffectGraphId = effectGraphId;
+        Source = source;
+        Caster = caster;
+        Targets = targets;
+        Tags = tags;
+    }
+
+    public string EffectGraphId { get; }
+    public EffectSource Source { get; }
+    public CardUid? Caster { get; }
+    public IReadOnlyList<CardUid> Targets { get; }
+    public IReadOnlyList<string> Tags { get; }
+}
+
+public readonly struct OverlayOpenedEvent
+{
+    public OverlayOpenedEvent(string uiKey, bool blocksGameplayInput, bool usesFallback)
+    {
+        UiKey = uiKey;
+        BlocksGameplayInput = blocksGameplayInput;
+        UsesFallback = usesFallback;
+    }
+
+    public string UiKey { get; }
+    public bool BlocksGameplayInput { get; }
+    public bool UsesFallback { get; }
+}
+
+public readonly struct OverlayClosedEvent
+{
+    public OverlayClosedEvent(string uiKey)
+    {
+        UiKey = uiKey;
+    }
+
+    public string UiKey { get; }
 }
 
 public readonly struct HelpRewardGeneratedEvent

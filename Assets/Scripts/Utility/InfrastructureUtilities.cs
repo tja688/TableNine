@@ -113,16 +113,251 @@ public sealed class ScriptableConfigUtility : IConfigUtility
     }
 }
 
+public interface IResourceUtility : IUtility
+{
+    Sprite LoadCardSprite(string cardId);
+    GameObject LoadCardPrefab(string cardId);
+    GameObject LoadEffectPrefab(string effectId);
+    AudioClip LoadAudioClip(string audioId);
+    GameObject LoadOverlayPrefab(string overlayId);
+}
+
+public sealed class RuntimeResourceUtility : IResourceUtility
+{
+    public Sprite LoadCardSprite(string cardId)
+    {
+        return LoadFirst<Sprite>(
+            $"TableNine/Cards/{cardId}",
+            $"Cards/{cardId}",
+            "TableNine/Cards/placeholder_card",
+            "Cards/placeholder_card");
+    }
+
+    public GameObject LoadCardPrefab(string cardId)
+    {
+        return LoadFirst<GameObject>(
+            $"TableNine/CardPrefabs/{cardId}",
+            $"CardPrefabs/{cardId}",
+            "TableNine/CardPrefabs/placeholder_card",
+            "CardPrefabs/placeholder_card");
+    }
+
+    public GameObject LoadEffectPrefab(string effectId)
+    {
+        return LoadFirst<GameObject>(
+            $"TableNine/Effects/{effectId}",
+            $"Effects/{effectId}");
+    }
+
+    public AudioClip LoadAudioClip(string audioId)
+    {
+        return LoadFirst<AudioClip>(
+            $"TableNine/Audio/{audioId}",
+            $"Audio/{audioId}");
+    }
+
+    public GameObject LoadOverlayPrefab(string overlayId)
+    {
+        return LoadFirst<GameObject>(
+            $"TableNine/Overlays/{overlayId}",
+            $"Overlays/{overlayId}");
+    }
+
+    private static T LoadFirst<T>(params string[] resourcePaths) where T : Object
+    {
+        for (var i = 0; i < resourcePaths.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(resourcePaths[i]))
+            {
+                continue;
+            }
+
+            var loaded = Resources.Load<T>(resourcePaths[i]);
+            if (loaded != null)
+            {
+                return loaded;
+            }
+        }
+
+        return null;
+    }
+}
+
+public static class TableNineAudioIds
+{
+    public const string Click = "click";
+    public const string Deal = "card_deal";
+    public const string Move = "card_move";
+    public const string Rotate = "board_rotate";
+    public const string Hit = "attack_hit";
+    public const string ArmorAbsorb = "armor_absorb";
+    public const string Heal = "heal";
+    public const string MonsterKilled = "monster_killed";
+    public const string Reward = "reward_select";
+    public const string ShopBuy = "shop_buy";
+    public const string Victory = "victory";
+    public const string GameOver = "game_over";
+}
+
+public interface IAudioUtility : IUtility
+{
+    bool Muted { get; set; }
+    string LastAudioId { get; }
+    string LastBgmId { get; }
+    void Play(string audioId);
+    void PlayBgm(string audioId, bool loop = true);
+    void StopBgm();
+}
+
+public sealed class NullAudioUtility : IAudioUtility
+{
+    public bool Muted { get; set; }
+    public string LastAudioId { get; private set; }
+    public string LastBgmId { get; private set; }
+
+    public void Play(string audioId)
+    {
+        if (!Muted)
+        {
+            LastAudioId = audioId;
+        }
+    }
+
+    public void PlayBgm(string audioId, bool loop = true)
+    {
+        if (!Muted)
+        {
+            LastBgmId = audioId;
+        }
+    }
+
+    public void StopBgm()
+    {
+        LastBgmId = null;
+    }
+}
+
+public sealed class ResourceAudioUtility : IAudioUtility
+{
+    private AudioSource mSfxSource;
+    private AudioSource mBgmSource;
+
+    public bool Muted { get; set; }
+    public string LastAudioId { get; private set; }
+    public string LastBgmId { get; private set; }
+
+    public void Play(string audioId)
+    {
+        if (Muted || string.IsNullOrWhiteSpace(audioId))
+        {
+            return;
+        }
+
+        LastAudioId = audioId;
+        var clip = LoadAudioClip(audioId);
+        if (clip == null || !Application.isPlaying)
+        {
+            return;
+        }
+
+        EnsureSources();
+        mSfxSource.PlayOneShot(clip);
+    }
+
+    public void PlayBgm(string audioId, bool loop = true)
+    {
+        if (Muted || string.IsNullOrWhiteSpace(audioId))
+        {
+            return;
+        }
+
+        LastBgmId = audioId;
+        var clip = LoadAudioClip(audioId);
+        if (clip == null || !Application.isPlaying)
+        {
+            return;
+        }
+
+        EnsureSources();
+        mBgmSource.loop = loop;
+        if (mBgmSource.clip == clip && mBgmSource.isPlaying)
+        {
+            return;
+        }
+
+        mBgmSource.clip = clip;
+        mBgmSource.Play();
+    }
+
+    public void StopBgm()
+    {
+        LastBgmId = null;
+        if (mBgmSource != null)
+        {
+            mBgmSource.Stop();
+            mBgmSource.clip = null;
+        }
+    }
+
+    private static AudioClip LoadAudioClip(string audioId)
+    {
+        return Resources.Load<AudioClip>($"TableNine/Audio/{audioId}") ??
+               Resources.Load<AudioClip>($"Audio/{audioId}");
+    }
+
+    private void EnsureSources()
+    {
+        if (mSfxSource != null && mBgmSource != null)
+        {
+            return;
+        }
+
+        var host = GameObject.Find("TableNineAudioRuntime");
+        if (host == null)
+        {
+            host = new GameObject("TableNineAudioRuntime");
+            Object.DontDestroyOnLoad(host);
+        }
+
+        if (mSfxSource == null)
+        {
+            mSfxSource = host.AddComponent<AudioSource>();
+        }
+
+        if (mBgmSource == null)
+        {
+            mBgmSource = host.AddComponent<AudioSource>();
+        }
+    }
+}
+
+public interface ITextAnimatorUtility : IUtility
+{
+    string LastText { get; }
+    void Show(string text, Action onComplete = null);
+}
+
+public sealed class NullTextAnimatorUtility : ITextAnimatorUtility
+{
+    public string LastText { get; private set; }
+
+    public void Show(string text, Action onComplete = null)
+    {
+        LastText = text;
+        onComplete?.Invoke();
+    }
+}
+
 public interface ISequenceUtility : IUtility
 {
-    void Run(Action action);
+    void Play(PresentationSequenceType sequenceType, Action onComplete);
 }
 
 public sealed class ImmediateSequenceUtility : ISequenceUtility
 {
-    public void Run(Action action)
+    public void Play(PresentationSequenceType sequenceType, Action onComplete)
     {
-        action?.Invoke();
+        onComplete?.Invoke();
     }
 }
 

@@ -270,7 +270,7 @@ public sealed class PickHelpCardToItemSlotCommand : AbstractCommand
         var runtime = collectionModel.GetCard(HelpCardUid);
         if (runtime.BoardSlot.HasValue)
         {
-            boardSystem.RemoveCardAt(runtime.BoardSlot.Value);
+            boardSystem.RemoveCardAt(runtime.BoardSlot.Value, RemoveReason.HelpCard);
         }
 
         deckModel.ItemSlots[itemSlotIndex] = HelpCardUid;
@@ -312,8 +312,7 @@ public sealed class RequestRefillBoardCommand : AbstractCommand
         deckModel.RefillPending = false;
         inputLockSystem.Lock(InputLockReason.BoardRefillRunning);
         flowModel.SetPhase(FlowPhase.BoardRefilling);
-
-        this.GetUtility<ISequenceUtility>().Run(() => this.SendCommand(new RefillBoardCommand()));
+        this.SendCommand(new RefillBoardCommand());
     }
 }
 
@@ -325,8 +324,7 @@ public sealed class RefillBoardCommand : AbstractCommand
         var deckModel = this.GetModel<IDeckModel>();
         var boardSystem = this.GetSystem<IBoardSystem>();
         var deckSystem = this.GetSystem<IDeckSystem>();
-        var inputLockSystem = this.GetSystem<IInputLockSystem>();
-        var flowModel = this.GetModel<IFlowModel>();
+        var placedCards = false;
 
         do
         {
@@ -336,6 +334,7 @@ public sealed class RefillBoardCommand : AbstractCommand
             {
                 var uid = deckModel.BattleDrawPile.Dequeue();
                 boardSystem.PlaceCard(uid, emptySlots[i], CardPlacementSource.Refill);
+                placedCards = true;
             }
         }
         while (deckModel.RefillPending && boardModel.GetEmptySlots().Count > 0 && deckModel.BattleDrawPile.Count > 0);
@@ -343,25 +342,15 @@ public sealed class RefillBoardCommand : AbstractCommand
         deckModel.RefillRunning = false;
         deckModel.RefillPending = false;
         deckSystem.UpdateNextBattlePreview();
-        inputLockSystem.Unlock(InputLockReason.BoardRefillRunning);
-
-        if (deckModel.PendingTutorSkillChoice)
+        if (placedCards)
         {
-            deckModel.PendingTutorSkillChoice = false;
-            var rewardSystem = this.GetSystem<IRewardSystem>();
-            var rewardModel = this.GetModel<IRewardModel>();
-            rewardSystem.GenerateTutorSkillCandidates();
-            if (rewardModel.TutorSkillIds.Count > 0)
-            {
-                flowModel.SetPhase(FlowPhase.TutorSkillChoosing);
-                inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                this.SendEvent(new TutorSkillChoiceRequestedEvent(rewardModel.TutorSkillIds));
-                return;
-            }
+            this.SendCommand(new PlayPresentationSequenceCommand(
+                PresentationSequenceType.BoardRefill,
+                SequenceCompletionAction.ResumeAfterBoardRefill));
+            return;
         }
 
-        flowModel.SetPhase(FlowPhase.PlayerControl);
-        this.SendCommand(new CheckClearConditionCommand());
+        this.SendCommand(new CompleteBoardRefillCommand());
     }
 }
 
@@ -391,16 +380,10 @@ public sealed class StartCombatCommand : AbstractCommand
         var context = combatSystem.BuildCombatContext(MonsterUid);
         this.SendEvent(new CombatStartedEvent(context.PlayerUid, context.MonsterUid));
         this.SendCommand(new ResolveCombatCommand(context));
-
-        inputLockSystem.Unlock(InputLockReason.CombatResolving);
-
-        if (context.Result.PlayerDied)
-        {
-            this.SendCommand(new GameOverCommand("player_hp_zero"));
-            return;
-        }
-
-        this.SendCommand(new CommitPlayerActionCommand());
+        this.SendCommand(new PlayPresentationSequenceCommand(
+            PresentationSequenceType.CombatResolution,
+            SequenceCompletionAction.ResumeAfterCombat,
+            context.Result.PlayerDied));
     }
 }
 
@@ -776,6 +759,178 @@ public sealed class GameOverCommand : AbstractCommand
     }
 }
 
+public sealed class StartDialogueCommand : AbstractCommand
+{
+    public StartDialogueCommand(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
+
+    protected override void OnExecute()
+    {
+        if (string.IsNullOrWhiteSpace(Message))
+        {
+            return;
+        }
+
+        this.GetSystem<IInputLockSystem>().Lock(InputLockReason.DialogueRunning);
+        this.SendEvent(new DialogueRequestedEvent(Message));
+        this.GetUtility<ITextAnimatorUtility>().Show(
+            Message,
+            () => this.SendCommand(new FinishDialogueCommand(Message)));
+    }
+}
+
+public sealed class FinishDialogueCommand : AbstractCommand
+{
+    public FinishDialogueCommand(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
+
+    protected override void OnExecute()
+    {
+        this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.DialogueRunning);
+        this.SendEvent(new DialogueCompletedEvent(Message));
+    }
+}
+
+public sealed class PlayPresentationSequenceCommand : AbstractCommand
+{
+    public PlayPresentationSequenceCommand(
+        PresentationSequenceType sequenceType,
+        SequenceCompletionAction completionAction,
+        bool playerDiedDuringCombat = false)
+    {
+        SequenceType = sequenceType;
+        CompletionAction = completionAction;
+        PlayerDiedDuringCombat = playerDiedDuringCombat;
+    }
+
+    public PresentationSequenceType SequenceType { get; }
+    public SequenceCompletionAction CompletionAction { get; }
+    public bool PlayerDiedDuringCombat { get; }
+
+    protected override void OnExecute()
+    {
+        this.GetSystem<IInputLockSystem>().Lock(InputLockReason.SequenceRunning);
+        this.SendEvent(new PresentationSequenceRequestedEvent(
+            SequenceType,
+            CompletionAction,
+            PlayerDiedDuringCombat));
+        this.GetUtility<ISequenceUtility>().Play(
+            SequenceType,
+            () => this.SendCommand(new FinishSequenceCommand(
+                SequenceType,
+                CompletionAction,
+                PlayerDiedDuringCombat)));
+    }
+}
+
+public sealed class FinishSequenceCommand : AbstractCommand
+{
+    public FinishSequenceCommand(
+        PresentationSequenceType sequenceType,
+        SequenceCompletionAction completionAction,
+        bool playerDiedDuringCombat = false)
+    {
+        SequenceType = sequenceType;
+        CompletionAction = completionAction;
+        PlayerDiedDuringCombat = playerDiedDuringCombat;
+    }
+
+    public PresentationSequenceType SequenceType { get; }
+    public SequenceCompletionAction CompletionAction { get; }
+    public bool PlayerDiedDuringCombat { get; }
+
+    protected override void OnExecute()
+    {
+        this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.SequenceRunning);
+        this.SendEvent(new PresentationSequenceCompletedEvent(
+            SequenceType,
+            CompletionAction,
+            PlayerDiedDuringCombat));
+
+        switch (CompletionAction)
+        {
+            case SequenceCompletionAction.ResumeAfterCombat:
+                this.SendCommand(new CompleteCombatPresentationCommand(PlayerDiedDuringCombat));
+                break;
+            case SequenceCompletionAction.ResumeAfterBoardRotation:
+                this.SendCommand(new CompleteBoardRotationCommand());
+                break;
+            case SequenceCompletionAction.ResumeAfterBoardRefill:
+                this.SendCommand(new CompleteBoardRefillCommand());
+                break;
+        }
+    }
+}
+
+public sealed class CompleteCombatPresentationCommand : AbstractCommand
+{
+    public CompleteCombatPresentationCommand(bool playerDiedDuringCombat)
+    {
+        PlayerDiedDuringCombat = playerDiedDuringCombat;
+    }
+
+    public bool PlayerDiedDuringCombat { get; }
+
+    protected override void OnExecute()
+    {
+        this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.CombatResolving);
+        if (PlayerDiedDuringCombat)
+        {
+            this.SendCommand(new GameOverCommand("player_hp_zero"));
+            return;
+        }
+
+        this.SendCommand(new CommitPlayerActionCommand());
+    }
+}
+
+public sealed class CompleteBoardRotationCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.BoardMoving);
+        this.SendCommand(new RequestRefillBoardCommand());
+    }
+}
+
+public sealed class CompleteBoardRefillCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        var rewardModel = this.GetModel<IRewardModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        var flowModel = this.GetModel<IFlowModel>();
+
+        inputLockSystem.Unlock(InputLockReason.BoardRefillRunning);
+
+        if (deckModel.PendingTutorSkillChoice)
+        {
+            deckModel.PendingTutorSkillChoice = false;
+            rewardSystem.GenerateTutorSkillCandidates();
+            if (rewardModel.TutorSkillIds.Count > 0)
+            {
+                flowModel.SetPhase(FlowPhase.TutorSkillChoosing);
+                inputLockSystem.Lock(InputLockReason.OverlayVisible);
+                this.SendEvent(new TutorSkillChoiceRequestedEvent(rewardModel.TutorSkillIds));
+                return;
+            }
+        }
+
+        flowModel.SetPhase(FlowPhase.PlayerControl);
+        this.SendCommand(new CheckClearConditionCommand());
+    }
+}
+
 public sealed class CommitPlayerActionCommand : AbstractCommand
 {
     protected override void OnExecute()
@@ -786,8 +941,12 @@ public sealed class CommitPlayerActionCommand : AbstractCommand
         var phase = flowModel.Phase.Value;
         if (phase == FlowPhase.PlayerControl || phase == FlowPhase.CombatResolving)
         {
-            this.GetSystem<IBoardSystem>().RotateClockwise();
-            this.SendCommand(new RequestRefillBoardCommand());
+            this.GetSystem<IInputLockSystem>().Lock(InputLockReason.BoardMoving);
+            flowModel.SetPhase(FlowPhase.BoardMoving);
+            this.GetSystem<IBoardSystem>().RotateClockwise(BoardMoveReason.PlayerAction);
+            this.SendCommand(new PlayPresentationSequenceCommand(
+                PresentationSequenceType.BoardRotation,
+                SequenceCompletionAction.ResumeAfterBoardRotation));
             return;
         }
 
@@ -1054,7 +1213,7 @@ public sealed class KillMonsterCommand : AbstractCommand
 
         if (monsterRuntime.BoardSlot.HasValue)
         {
-            boardSystem.RemoveCardAt(monsterRuntime.BoardSlot.Value);
+            boardSystem.RemoveCardAt(monsterRuntime.BoardSlot.Value, RemoveReason.Combat);
         }
 
         this.ChangeGold(playerModel, RewardConstants.MonsterKillGold);
@@ -1156,6 +1315,12 @@ public sealed class ResolveEffectGraphCommand : AbstractCommand
     protected override void OnExecute()
     {
         this.GetSystem<IEffectSystem>().ResolveEffectGraph(EffectGraphId, Context, this);
+        this.SendEvent(new EffectResolvedEvent(
+            EffectGraphId,
+            Context != null ? Context.Source : EffectSource.HelpCard,
+            Context?.Caster,
+            Context != null ? new List<CardUid>(Context.Targets) : new List<CardUid>(),
+            Context != null ? new List<string>(Context.Tags) : new List<string>()));
     }
 }
 
@@ -1393,7 +1558,7 @@ public sealed class ConsumeHelpCardCommand : AbstractCommand
 
         if (helpRuntime.BoardSlot.HasValue)
         {
-            boardSystem.RemoveCardAt(helpRuntime.BoardSlot.Value);
+            boardSystem.RemoveCardAt(helpRuntime.BoardSlot.Value, RemoveReason.HelpCard);
         }
 
         if (helpRuntime.ItemSlotIndex.HasValue)

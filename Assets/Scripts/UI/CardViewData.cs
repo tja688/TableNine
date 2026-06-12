@@ -5,15 +5,20 @@ using UnityEngine;
 public sealed class CardViewData
 {
     public CardUid Uid;
+    public string DefinitionId;
     public string DisplayName;
     public CardType Type;
     public CardQuality Quality;
     public int CurrentHp;
     public int MaxHp;
+    public int CurrentArmor;
     public int Attack;
     public int Defense;
+    public int DamageReduction;
     public bool HasFirstStrike;
     public string Description;
+    public string SpriteId;
+    public List<string> StatusIconIds = new List<string>();
     public Color Tint;
 }
 
@@ -42,24 +47,31 @@ public static class CardViewDataFactory
 
     public static string FormatWorldCard(CardViewData data, bool itemSlot)
     {
+        return FormatWorldCard(data, itemSlot, false);
+    }
+
+    public static string FormatWorldCard(CardViewData data, bool itemSlot, bool pending)
+    {
         if (data == null)
         {
             return string.Empty;
         }
 
+        var pendingText = pending ? "\n等待操作" : string.Empty;
         switch (data.Type)
         {
             case CardType.Player:
-                return $"玩家\nHP {data.CurrentHp}/{data.MaxHp}\nATK {data.Attack} DEF {data.Defense}";
+                return $"玩家\nHP {data.CurrentHp}/{data.MaxHp} ARM {data.CurrentArmor}\nATK {data.Attack} DEF {data.Defense}{pendingText}";
             case CardType.Monster:
                 var firstStrike = data.HasFirstStrike ? "\n先攻" : string.Empty;
-                return $"{data.DisplayName}\nHP {data.CurrentHp}/{data.MaxHp}\nATK {data.Attack} DEF {data.Defense}{firstStrike}";
+                var damageReduction = data.DamageReduction > 0 ? $" DR {data.DamageReduction}" : string.Empty;
+                return $"{data.DisplayName}\nHP {data.CurrentHp}/{data.MaxHp} ARM {data.CurrentArmor}\nATK {data.Attack} DEF {data.Defense}{damageReduction}{firstStrike}{pendingText}";
             case CardType.Help:
                 return itemSlot
-                    ? $"{data.DisplayName}\n道具槽\n点击使用"
-                    : $"{data.DisplayName}\n帮助卡\n点击拾取";
+                    ? $"{data.DisplayName}\n道具槽\n点击使用{pendingText}"
+                    : $"{data.DisplayName}\n帮助卡\n点击拾取{pendingText}";
             default:
-                return data.DisplayName;
+                return $"{data.DisplayName}{pendingText}";
         }
     }
 
@@ -69,14 +81,19 @@ public static class CardViewDataFactory
         return new CardViewData
         {
             Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId,
             DisplayName = runtime.DisplayName,
             Type = runtime.CardType,
             Quality = CardQuality.Initial,
             CurrentHp = stats.CurrentHp,
             MaxHp = stats.MaxHp,
+            CurrentArmor = stats.CurrentArmor,
             Attack = stats.Attack,
             Defense = stats.Defense,
+            DamageReduction = stats.DamageReduction,
             HasFirstStrike = stats.HasFirstStrike,
+            SpriteId = runtime.DefinitionId,
+            StatusIconIds = CollectPlayerStatusIcons(controller, runtime),
             Tint = new Color(0.55f, 0.85f, 0.55f)
         };
     }
@@ -87,14 +104,19 @@ public static class CardViewDataFactory
         return new CardViewData
         {
             Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId,
             DisplayName = runtime.DisplayName,
             Type = runtime.CardType,
             Quality = CardQuality.Initial,
             CurrentHp = stats.CurrentHp,
             MaxHp = stats.MaxHp,
+            CurrentArmor = stats.CurrentArmor,
             Attack = stats.Attack,
             Defense = stats.Defense,
+            DamageReduction = stats.DamageReduction,
             HasFirstStrike = stats.HasFirstStrike,
+            SpriteId = runtime.DefinitionId,
+            StatusIconIds = new List<string>(runtime.SkillIds),
             Tint = new Color(0.92f, 0.62f, 0.62f)
         };
     }
@@ -105,10 +127,13 @@ public static class CardViewDataFactory
         return new CardViewData
         {
             Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId,
             DisplayName = runtime.DisplayName,
             Type = runtime.CardType,
             Quality = definition != null ? definition.Quality : CardQuality.White,
             Description = definition != null ? definition.DisplayName : runtime.DisplayName,
+            SpriteId = runtime.DefinitionId,
+            StatusIconIds = definition != null ? new List<string>(definition.SkillIds) : new List<string>(),
             Tint = ResolveHelpColor(definition != null ? definition.Quality : CardQuality.White)
         };
     }
@@ -118,10 +143,36 @@ public static class CardViewDataFactory
         return new CardViewData
         {
             Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId,
             DisplayName = runtime.DisplayName,
             Type = runtime.CardType,
+            SpriteId = runtime.DefinitionId,
+            StatusIconIds = new List<string>(runtime.SkillIds),
             Tint = new Color(0.9f, 0.9f, 0.9f)
         };
+    }
+
+    private static List<string> CollectPlayerStatusIcons(IController controller, CardRuntime runtime)
+    {
+        var icons = new List<string>(runtime.SkillIds);
+        var playerModel = controller.GetModel<IPlayerModel>();
+        for (var i = 0; i < playerModel.SkillIds.Count; i++)
+        {
+            if (!icons.Contains(playerModel.SkillIds[i]))
+            {
+                icons.Add(playerModel.SkillIds[i]);
+            }
+        }
+
+        for (var i = 0; i < playerModel.Relics.Count; i++)
+        {
+            if (!playerModel.Relics[i].IsConsumed)
+            {
+                icons.Add(playerModel.Relics[i].RelicId);
+            }
+        }
+
+        return icons;
     }
 
     private static Color ResolveHelpColor(CardQuality quality)

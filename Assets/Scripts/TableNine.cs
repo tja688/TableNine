@@ -35,6 +35,9 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterUtility<IRandomUtility>(new UnityRandomUtility());
         RegisterUtility<ISaveUtility>(UseMemorySaveUtility ? new MemorySaveUtility() : new EasySaveUtility());
         RegisterUtility<IConfigUtility>(new ScriptableConfigUtility());
+        RegisterUtility<IResourceUtility>(new RuntimeResourceUtility());
+        RegisterUtility<IAudioUtility>(new ResourceAudioUtility());
+        RegisterUtility<ITextAnimatorUtility>(new NullTextAnimatorUtility());
         RegisterUtility<ISequenceUtility>(new ImmediateSequenceUtility());
         RegisterUtility<ICommandTraceUtility>(new CommandTraceUtility());
         RegisterUtility<ICommandReplayUtility>(new CommandReplayUtility());
@@ -63,6 +66,7 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterSystem<IShopSystem>(new ShopSystem());
         RegisterSystem<ISaveSystem>(new SaveSystem());
         RegisterSystem<IDebugEventSystem>(new DebugEventSystem());
+        RegisterSystem<INarrativeSystem>(new NarrativeSystem());
     }
 
     protected override void ExecuteCommand(ICommand command)

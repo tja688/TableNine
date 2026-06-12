@@ -24,6 +24,7 @@ public sealed class ApplyEffectHealCommand : AbstractCommand
             return;
         }
 
+        var oldHp = runtime.CurrentHp;
         if (FullHeal)
         {
             runtime.CurrentHp = runtime.MaxHp;
@@ -41,7 +42,17 @@ public sealed class ApplyEffectHealCommand : AbstractCommand
             return;
         }
 
-        this.SendEvent(new StatsDirtyEvent(TargetUid));
+        if (runtime.CurrentHp != oldHp)
+        {
+            this.SendEvent(new HealAppliedEvent(
+                TargetUid,
+                oldHp,
+                runtime.CurrentHp,
+                runtime.CurrentHp - oldHp,
+                string.IsNullOrEmpty(MessageKey) ? "effect_heal" : MessageKey));
+            this.SendEvent(new StatsDirtyEvent(TargetUid));
+        }
+
         if (!string.IsNullOrEmpty(MessageKey))
         {
             this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(MessageKey)));
@@ -190,17 +201,24 @@ public sealed class RotateBoardRingCommand : AbstractCommand
 
     protected override void OnExecute()
     {
+        var flowModel = this.GetModel<IFlowModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var boardSystem = this.GetSystem<IBoardSystem>();
+        inputLockSystem.Lock(InputLockReason.BoardMoving);
+        flowModel.SetPhase(FlowPhase.BoardMoving);
+
         if (Mode == "rotate_counterclockwise")
         {
-            boardSystem.RotateCounterclockwise();
+            boardSystem.RotateCounterclockwise(BoardMoveReason.HelpCard);
         }
         else if (Mode == "rotate_clockwise")
         {
-            boardSystem.RotateClockwise();
+            boardSystem.RotateClockwise(BoardMoveReason.HelpCard);
         }
 
-        this.SendCommand(new RequestRefillBoardCommand());
+        this.SendCommand(new PlayPresentationSequenceCommand(
+            PresentationSequenceType.BoardRotation,
+            SequenceCompletionAction.ResumeAfterBoardRotation));
     }
 }
 
@@ -230,8 +248,8 @@ public sealed class SwapBoardCardsCommand : AbstractCommand
 
         var firstSlot = firstRuntime.BoardSlot.Value;
         var secondSlot = secondRuntime.BoardSlot.Value;
-        boardSystem.RemoveCardAt(firstSlot);
-        boardSystem.RemoveCardAt(secondSlot);
+        boardSystem.RemoveCardAt(firstSlot, RemoveReason.Effect);
+        boardSystem.RemoveCardAt(secondSlot, RemoveReason.Effect);
         boardSystem.PlaceCard(First, secondSlot, CardPlacementSource.Refill);
         boardSystem.PlaceCard(Second, firstSlot, CardPlacementSource.Refill);
         this.SendEvent(new BoardSlotChangedEvent(firstSlot, boardModel.GetCardAt(firstSlot)));
@@ -259,7 +277,7 @@ public sealed class RemoveBoardCardsCommand : AbstractCommand
                 continue;
             }
 
-            boardSystem.RemoveCardAt(runtime.BoardSlot.Value);
+            boardSystem.RemoveCardAt(runtime.BoardSlot.Value, RemoveReason.Effect);
             collectionModel.RemoveCard(Targets[i]);
         }
     }

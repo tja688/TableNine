@@ -58,6 +58,7 @@ public enum FlowPhase
     OpeningDeal,
     PlayerControl,
     CombatResolving,
+    BoardMoving,
     BoardRefilling,
     ClearReady,
     RoomChoosing,
@@ -77,9 +78,27 @@ public enum InputLockReason
     BoardRefillRunning,
     CombatResolving,
     BoardMoving,
+    SequenceRunning,
+    DialogueRunning,
     OverlayVisible,
     RewardOverlay,
     ShopOverlay
+}
+
+public enum PresentationSequenceType
+{
+    None,
+    CombatResolution,
+    BoardRotation,
+    BoardRefill
+}
+
+public enum SequenceCompletionAction
+{
+    None,
+    ResumeAfterCombat,
+    ResumeAfterBoardRotation,
+    ResumeAfterBoardRefill
 }
 
 public enum InteractionKind
@@ -156,6 +175,7 @@ public enum RemoveReason
 public enum BoardMoveReason
 {
     None,
+    PlayerAction,
     HelpCard,
     Refill,
     Combat,
@@ -729,4 +749,3 @@ public sealed class ChestRewardCandidate
     public string DisplayName;
     public CardQuality Quality;
 }
-

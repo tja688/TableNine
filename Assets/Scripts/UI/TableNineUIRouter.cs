@@ -315,6 +315,7 @@ public static class TableNineUIRuntime
         data.UIType = entry.UIType;
         data.FallbackStrategy = entry.FallbackStrategy;
         data.BlocksGameplayInput = entry.BlocksGameplayInput;
+        SendOverlayOpened(data.Key, data.BlocksGameplayInput, !entry.HasFormalPrefab);
 
         // 注入 Fallback 组件化预制件引用
         if (registry != null)
@@ -350,6 +351,7 @@ public static class TableNineUIRuntime
 
     public static void Close(TableNineUIPanelRegistry registry, string uiKey)
     {
+        SendOverlayClosed(uiKey);
 #if UNITY_EDITOR
         TableNineUIRuntimeTestRecorder.RecordClose(uiKey);
         if (TableNineUIRuntimeTestRecorder.SkipActualPanelOpen)
@@ -415,5 +417,21 @@ public static class TableNineUIRuntime
         }
 
         return new string(chars);
+    }
+
+    private static void SendOverlayOpened(string uiKey, bool blocksGameplayInput, bool usesFallback)
+    {
+        if (TableNine.IsInitialized)
+        {
+            TableNine.Interface.SendEvent(new OverlayOpenedEvent(uiKey, blocksGameplayInput, usesFallback));
+        }
+    }
+
+    private static void SendOverlayClosed(string uiKey)
+    {
+        if (TableNine.IsInitialized)
+        {
+            TableNine.Interface.SendEvent(new OverlayClosedEvent(uiKey));
+        }
     }
 }

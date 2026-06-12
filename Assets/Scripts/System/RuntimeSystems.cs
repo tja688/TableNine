@@ -61,9 +61,9 @@ public interface IBoardSystem : ISystem
     bool IsOrthogonalAdjacentToPlayer(BoardSlotNo slot);
     IReadOnlyList<BoardSlotNo> GetEmptySlots();
     void PlaceCard(CardUid uid, BoardSlotNo slot, CardPlacementSource source);
-    CardUid? RemoveCardAt(BoardSlotNo slot);
-    void RotateClockwise();
-    void RotateCounterclockwise();
+    CardUid? RemoveCardAt(BoardSlotNo slot, RemoveReason reason = RemoveReason.None);
+    void RotateClockwise(BoardMoveReason reason = BoardMoveReason.None);
+    void RotateCounterclockwise(BoardMoveReason reason = BoardMoveReason.None);
 }
 
 public sealed class BoardSystem : AbstractSystem, IBoardSystem
@@ -125,7 +125,7 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
         this.SendEvent(new CardMovedEvent(uid, slot, null, source));
     }
 
-    public CardUid? RemoveCardAt(BoardSlotNo slot)
+    public CardUid? RemoveCardAt(BoardSlotNo slot, RemoveReason reason = RemoveReason.None)
     {
         var boardModel = this.GetModel<IBoardModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
@@ -146,20 +146,21 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
         }
 
         this.SendEvent(new BoardSlotChangedEvent(slot, null));
+        this.SendEvent(new CardRemovedEvent(existingUid.Value, slot, reason));
         return existingUid;
     }
 
-    public void RotateClockwise()
+    public void RotateClockwise(BoardMoveReason reason = BoardMoveReason.None)
     {
-        RotateRing(stepOffset: -1);
+        RotateRing(stepOffset: -1, clockwise: true, reason: reason);
     }
 
-    public void RotateCounterclockwise()
+    public void RotateCounterclockwise(BoardMoveReason reason = BoardMoveReason.None)
     {
-        RotateRing(stepOffset: 1);
+        RotateRing(stepOffset: 1, clockwise: false, reason: reason);
     }
 
-    private void RotateRing(int stepOffset)
+    private void RotateRing(int stepOffset, bool clockwise, BoardMoveReason reason)
     {
         var boardModel = this.GetModel<IBoardModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
@@ -202,6 +203,8 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
         {
             this.SendEvent(movedEvents[i]);
         }
+
+        this.SendEvent(new BoardRotatedEvent(clockwise, reason, movedEvents));
     }
 }
 
@@ -1354,7 +1357,7 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
         if (runtime.BoardSlot.HasValue)
         {
             var boardSystem = this.GetSystem<IBoardSystem>();
-            boardSystem.RemoveCardAt(runtime.BoardSlot.Value);
+            boardSystem.RemoveCardAt(runtime.BoardSlot.Value, RemoveReason.HelpCard);
         }
 
         if (runtime.ItemSlotIndex.HasValue)

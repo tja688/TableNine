@@ -416,18 +416,22 @@ public sealed class TableNineM3EditModeTests
     }
 
     [Test]
-    [Category(TableNineTestCategories.LegacyRuleTests)]
-    public void ChooseRoom_Attribute_Injects_Card_And_Proceeds()
+    public void ChooseRoom_Attribute_Increases_MaxHp_And_Proceeds()
     {
         StartRunAndClearNode();
-        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var runModel = TableNine.Interface.GetModel<IRunModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
 
-        var countBefore = deckModel.OwnedHelpCards.Count;
+        playerRuntime.CurrentHp = 1;
+        var maxHpBefore = playerRuntime.MaxHp;
         TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomAttributeId));
 
-        Assert.That(deckModel.OwnedHelpCards.Count, Is.EqualTo(countBefore + 1),
-            "属性房应注入一张帮助卡");
+        Assert.That(playerRuntime.MaxHp, Is.EqualTo(maxHpBefore + RewardConstants.AttributeRoomMaxHpBonus),
+            "属性房应提高生命上限");
+        Assert.That(playerRuntime.CurrentHp, Is.EqualTo(playerRuntime.MaxHp),
+            "属性房应回满生命");
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2));
     }
 
