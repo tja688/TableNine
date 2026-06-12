@@ -41,25 +41,42 @@ public sealed class TableNineR1DataMigrationEditModeTests
             CardType = CardType.Help,
             IsPermanentRemoveOnUse = true
         };
-        var temporary = new CardDefinition
+        var legacyRestore = new CardDefinition
         {
-            CardId = "help_restore",
+            CardId = "help_legacy_restore",
             CardType = CardType.Help,
             IsPermanentRemoveOnUse = false
         };
+        var newPermanent = new CardDefinition
+        {
+            CardId = "help_new_permanent",
+            CardType = CardType.Help,
+            RestoreAfterNode = false,
+            RestoreAfterNodeAuthoritative = true
+        };
+        var restore = new CardDefinition
+        {
+            CardId = "help_restore",
+            CardType = CardType.Help,
+            RestoreAfterNode = true,
+            RestoreAfterNodeAuthoritative = true
+        };
 
         CardDefinitionMigration.MigrateHelpCardSemantics(permanent);
-        CardDefinitionMigration.MigrateHelpCardSemantics(temporary);
+        CardDefinitionMigration.MigrateHelpCardSemantics(legacyRestore);
+        CardDefinitionMigration.MigrateHelpCardSemantics(newPermanent);
+        CardDefinitionMigration.MigrateHelpCardSemantics(restore);
 
         Assert.That(permanent.RestoreAfterNode, Is.False);
-        Assert.That(temporary.RestoreAfterNode, Is.True);
+        Assert.That(legacyRestore.RestoreAfterNode, Is.True);
+        Assert.That(newPermanent.RestoreAfterNode, Is.False);
+        Assert.That(restore.RestoreAfterNode, Is.True);
     }
 
     [Test]
     public void Default_Config_Help_Cards_Have_RestoreAfterNode_False()
     {
         var config = DefaultGameConfigFactory.Create();
-        CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
 
         for (var i = 0; i < config.Cards.Count; i++)
         {
@@ -71,6 +88,16 @@ public sealed class TableNineR1DataMigrationEditModeTests
 
             Assert.That(card.RestoreAfterNode, Is.False, $"Help card {card.CardId} should default to permanent remove");
         }
+    }
+
+    [Test]
+    public void Default_Config_Has_No_Deprecated_Help_Card_Warnings()
+    {
+        var config = DefaultGameConfigFactory.Create();
+        var warnings = ConfigValidator.CollectWarnings(config);
+
+        Assert.That(warnings.Exists(w => w.Contains("IsPermanentRemoveOnUse")), Is.False,
+            "Default config should not rely on deprecated IsPermanentRemoveOnUse");
     }
 
     [Test]

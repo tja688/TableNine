@@ -38,6 +38,50 @@ public readonly struct BattleDeckChangedEvent
     public CardPreview Preview { get; }
 }
 
+public readonly struct CombatStartedEvent
+{
+    public CombatStartedEvent(CardUid playerUid, CardUid monsterUid)
+    {
+        PlayerUid = playerUid;
+        MonsterUid = monsterUid;
+    }
+
+    public CardUid PlayerUid { get; }
+    public CardUid MonsterUid { get; }
+}
+
+public readonly struct CombatBeforeResolvedEvent
+{
+    public CombatBeforeResolvedEvent(CombatContext context)
+    {
+        Context = context;
+    }
+
+    public CombatContext Context { get; }
+}
+
+public readonly struct CombatResolvedEvent
+{
+    public CombatResolvedEvent(CombatContext context)
+    {
+        Context = context;
+    }
+
+    public CombatContext Context { get; }
+}
+
+public readonly struct CombatAfterResolvedEvent
+{
+    public CombatAfterResolvedEvent(CombatContext context)
+    {
+        Context = context;
+    }
+
+    public CombatContext Context { get; }
+}
+
+public readonly struct PlayerActionCommittedEvent { }
+
 public readonly struct DamageAppliedEvent
 {
     public DamageAppliedEvent(CardUid targetUid, int damage)

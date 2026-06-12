@@ -323,15 +323,70 @@ public sealed class DeckSystem : AbstractSystem, IDeckSystem
 
 public interface ICombatSystem : ISystem
 {
+    bool CanStartCombat(CardUid monsterUid, out string reason);
+    CombatContext BuildCombatContext(CardUid monsterUid);
+    void PopulateCombatStats(CombatContext context);
     bool PlayerActsFirst(EffectiveStats playerStats, EffectiveStats monsterStats);
     int CalculateDamage(EffectiveStats attacker, EffectiveStats defender);
     DamageContext BuildCombatDamage(CardUid source, CardUid target, EffectiveStats attacker, EffectiveStats defender, string causeId);
+    IReadOnlyList<DamageContext> BuildParallelDamageGroup(
+        CombatContext context,
+        CombatStep step,
+        CardUid primaryAttacker,
+        CardUid primaryDefender,
+        EffectiveStats attackerStats,
+        EffectiveStats defenderStats);
 }
 
 public sealed class CombatSystem : AbstractSystem, ICombatSystem
 {
     protected override void OnInit()
     {
+    }
+
+    public bool CanStartCombat(CardUid monsterUid, out string reason)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(monsterUid, out var runtime) || runtime.CardType != CardType.Monster)
+        {
+            reason = "Target is not a monster";
+            return false;
+        }
+
+        if (!runtime.BoardSlot.HasValue)
+        {
+            reason = "Monster is not on the board";
+            return false;
+        }
+
+        if (!this.GetSystem<IBoardSystem>().IsOrthogonalAdjacentToPlayer(runtime.BoardSlot.Value))
+        {
+            reason = "Monster is not orthogonally adjacent to the player";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
+    }
+
+    public CombatContext BuildCombatContext(CardUid monsterUid)
+    {
+        var playerModel = this.GetModel<IPlayerModel>();
+        return new CombatContext
+        {
+            PlayerUid = playerModel.PlayerCardUid,
+            MonsterUid = monsterUid
+        };
+    }
+
+    public void PopulateCombatStats(CombatContext context)
+    {
+        var statSystem = this.GetSystem<IStatSystem>();
+        var playerStats = statSystem.GetEffectivePlayerStats();
+        var monsterStats = statSystem.GetEffectiveMonsterStats(context.MonsterUid);
+        context.PlayerStats = playerStats;
+        context.MonsterStats = monsterStats;
+        context.PlayerActsFirst = PlayerActsFirst(playerStats, monsterStats);
     }
 
     public bool PlayerActsFirst(EffectiveStats playerStats, EffectiveStats monsterStats)
@@ -362,6 +417,70 @@ public sealed class CombatSystem : AbstractSystem, ICombatSystem
             DamageReduction = defender.DamageReduction,
             DamageBeforeArmor = damageBeforeArmor
         };
+    }
+
+    public IReadOnlyList<DamageContext> BuildParallelDamageGroup(
+        CombatContext context,
+        CombatStep step,
+        CardUid primaryAttacker,
+        CardUid primaryDefender,
+        EffectiveStats attackerStats,
+        EffectiveStats defenderStats)
+    {
+        var extras = new List<DamageContext>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var relicSystem = this.GetSystem<IRelicSystem>();
+
+        if (step == CombatStep.FirstHit &&
+            primaryAttacker.Equals(context.PlayerUid) &&
+            primaryDefender.Equals(context.MonsterUid) &&
+            relicSystem.HasRelic(DefaultGameConfigFactory.RelicThornArmorId))
+        {
+            extras.Add(new DamageContext
+            {
+                Source = context.PlayerUid,
+                Target = context.MonsterUid,
+                CauseId = CombatConstants.CauseThornArmor,
+                Type = DamageType.Relic,
+                RawAttack = CombatConstants.ThornArmorDamage,
+                DamageBeforeArmor = CombatConstants.ThornArmorDamage,
+                IgnoreArmor = true,
+                Preventable = false
+            });
+        }
+
+        if (primaryDefender.Equals(context.PlayerUid) && HasThornSkinSkill(playerModel))
+        {
+            var reflectAttack = Math.Max(0, attackerStats.Attack);
+            if (reflectAttack > 0)
+            {
+                var reflectAttackerStats = new EffectiveStats { Attack = reflectAttack };
+                var reflectDefenderStats = primaryAttacker.Equals(context.MonsterUid)
+                    ? context.MonsterStats
+                    : context.PlayerStats;
+                extras.Add(BuildCombatDamage(
+                    context.PlayerUid,
+                    primaryAttacker,
+                    reflectAttackerStats,
+                    reflectDefenderStats,
+                    CombatConstants.CauseThornSkin));
+            }
+        }
+
+        return extras;
+    }
+
+    private static bool HasThornSkinSkill(IPlayerModel playerModel)
+    {
+        for (var i = 0; i < playerModel.SkillIds.Count; i++)
+        {
+            if (playerModel.SkillIds[i] == DefaultGameConfigFactory.SkillThornSkinId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

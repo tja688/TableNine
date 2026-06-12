@@ -80,7 +80,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 30,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -89,7 +89,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 20,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -98,7 +98,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 100,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -107,7 +107,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 100,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
 
         config.Cards.Add(new CardDefinition
@@ -117,7 +117,6 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 30,
-            IsPermanentRemoveOnUse = true,
             RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
@@ -127,7 +126,6 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 100,
-            IsPermanentRemoveOnUse = true,
             RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
@@ -137,7 +135,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Gold,
             Price = 200,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -146,7 +144,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 15,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
 
         config.Cards.Add(new CardDefinition
@@ -304,7 +302,7 @@ public static partial class DefaultGameConfigFactory
             RoomType = RoomType.Shop
         });
 
-        CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
+        CardDefinitionMigration.MarkAuthoritativeRestoreAfterNode(config.Cards);
         return config;
     }
 }

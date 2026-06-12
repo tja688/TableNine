@@ -320,6 +320,7 @@ public sealed class CardDefinition
     public int BaseDefense;
     public bool IsPermanentRemoveOnUse;
     public bool RestoreAfterNode;
+    public bool RestoreAfterNodeAuthoritative;
     public List<string> SkillIds = new List<string>();
 }
 
@@ -488,6 +489,43 @@ public struct EffectiveStats
     public int Defense;
     public int DamageReduction;
     public bool HasFirstStrike;
+}
+
+public enum CombatStep
+{
+    FirstHit,
+    CounterHit
+}
+
+public sealed class CombatResult
+{
+    public bool MonsterKilled;
+    public bool PlayerDied;
+    public bool PlayerDeathPrevented;
+}
+
+public sealed class CombatContext
+{
+    public CardUid PlayerUid;
+    public CardUid MonsterUid;
+    public EffectiveStats PlayerStats;
+    public EffectiveStats MonsterStats;
+    public bool PlayerActsFirst;
+    public List<DamageContext> FirstHitGroup = new List<DamageContext>();
+    public List<DamageContext> CounterHitGroup = new List<DamageContext>();
+    public CombatResult Result = new CombatResult();
+}
+
+public static class CombatConstants
+{
+    public const int ThornArmorDamage = 2;
+
+    public const string CauseCombatPlayerFirst = "combat_player_first";
+    public const string CauseCombatPlayerCounter = "combat_player_counter";
+    public const string CauseCombatMonsterFirst = "combat_monster_first";
+    public const string CauseCombatMonsterCounter = "combat_monster_counter";
+    public const string CauseThornArmor = "relic_thorn_armor";
+    public const string CauseThornSkin = "skill_thorn_skin";
 }
 
 public sealed class DamageContext

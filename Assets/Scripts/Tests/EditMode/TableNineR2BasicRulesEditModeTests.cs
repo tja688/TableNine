@@ -60,11 +60,25 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var defenseBefore = player.BaseDefense;
         var armorBefore = player.CurrentArmor;
 
+        ArmorChangedEvent? armorEvent = null;
+        StatsDirtyEvent? dirtyEvent = null;
+        var unRegisterArmor = TableNine.Interface.RegisterEvent<ArmorChangedEvent>(e => armorEvent = e);
+        var unRegisterDirty = TableNine.Interface.RegisterEvent<StatsDirtyEvent>(e => dirtyEvent = e);
+
         TableNine.Interface.SendCommand(new ApplyStatChangeCommand(
             playerModel.PlayerCardUid, StatType.Defense, 1, "test_defense_up"));
 
+        unRegisterArmor.UnRegister();
+        unRegisterDirty.UnRegister();
+
         Assert.That(player.BaseDefense, Is.EqualTo(defenseBefore + 1));
         Assert.That(player.CurrentArmor, Is.EqualTo(armorBefore + 1));
+        Assert.That(armorEvent.HasValue, Is.True);
+        Assert.That(armorEvent.Value.OldArmor, Is.EqualTo(armorBefore));
+        Assert.That(armorEvent.Value.NewArmor, Is.EqualTo(armorBefore + 1));
+        Assert.That(armorEvent.Value.CauseId, Is.EqualTo("test_defense_up"));
+        Assert.That(dirtyEvent.HasValue, Is.True);
+        Assert.That(dirtyEvent.Value.TargetUid, Is.EqualTo(playerModel.PlayerCardUid));
     }
 
     [Test]
@@ -79,10 +93,29 @@ public sealed class TableNineR2BasicRulesEditModeTests
         player.CurrentArmor = 10;
         var hpBefore = player.CurrentHp;
 
+        ArmorChangedEvent? armorEvent = null;
+        StatsDirtyEvent? dirtyEvent = null;
+        DamageAppliedEvent? damageEvent = null;
+        var unRegisterArmor = TableNine.Interface.RegisterEvent<ArmorChangedEvent>(e => armorEvent = e);
+        var unRegisterDirty = TableNine.Interface.RegisterEvent<StatsDirtyEvent>(e => dirtyEvent = e);
+        var unRegisterDamage = TableNine.Interface.RegisterEvent<DamageAppliedEvent>(e => damageEvent = e);
+
         TableNine.Interface.SendCommand(new ApplyDamageCommand(playerModel.PlayerCardUid, 3));
+
+        unRegisterArmor.UnRegister();
+        unRegisterDirty.UnRegister();
+        unRegisterDamage.UnRegister();
 
         Assert.That(player.CurrentArmor, Is.EqualTo(7));
         Assert.That(player.CurrentHp, Is.EqualTo(hpBefore));
+        Assert.That(armorEvent.HasValue, Is.True);
+        Assert.That(armorEvent.Value.OldArmor, Is.EqualTo(10));
+        Assert.That(armorEvent.Value.NewArmor, Is.EqualTo(7));
+        Assert.That(dirtyEvent.HasValue, Is.True);
+        Assert.That(dirtyEvent.Value.TargetUid, Is.EqualTo(playerModel.PlayerCardUid));
+        Assert.That(damageEvent.HasValue, Is.True);
+        Assert.That(damageEvent.Value.Context.ArmorAbsorbed, Is.EqualTo(3));
+        Assert.That(damageEvent.Value.Context.HpDamage, Is.EqualTo(0));
     }
 
     [Test]

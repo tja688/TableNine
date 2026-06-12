@@ -94,7 +94,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Gold,
             Price = 150,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
         config.Cards.Add(new CardDefinition
         {
@@ -103,7 +103,7 @@ public static partial class DefaultGameConfigFactory
             CardType = CardType.Help,
             Quality = CardQuality.Red,
             Price = 400,
-            IsPermanentRemoveOnUse = true
+            RestoreAfterNode = false
         });
 
         AddMonster(config, MonsterSpade3Id, "黑桃3", MonsterLevel.Level2, Suit.Spade, 3, 9, 3, 1);

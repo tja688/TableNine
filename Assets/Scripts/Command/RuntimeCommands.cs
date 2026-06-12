@@ -196,17 +196,14 @@ public sealed class ClickBoardSlotCommand : AbstractCommand
             return;
         }
 
-        var boardSystem = this.GetSystem<IBoardSystem>();
         switch (interaction.Kind)
         {
             case InteractionKind.EmptySlot:
-                boardSystem.RotateClockwise();
-                this.SendCommand(new RequestRefillBoardCommand());
+                this.SendCommand(new CommitPlayerActionCommand());
                 break;
             case InteractionKind.HelpCard:
                 this.SendCommand(new PickHelpCardToItemSlotCommand(interaction.TargetUid));
-                boardSystem.RotateClockwise();
-                this.SendCommand(new RequestRefillBoardCommand());
+                this.SendCommand(new CommitPlayerActionCommand());
                 break;
             case InteractionKind.MonsterCard:
                 this.SendCommand(new StartCombatCommand(interaction.TargetUid));
@@ -375,72 +372,446 @@ public sealed class StartCombatCommand : AbstractCommand
 
     protected override void OnExecute()
     {
-        var collectionModel = this.GetModel<ICollectionModel>();
-        if (!collectionModel.TryGetCard(MonsterUid, out var monsterRuntime))
+        var combatSystem = this.GetSystem<ICombatSystem>();
+        if (!combatSystem.CanStartCombat(MonsterUid, out _))
         {
             return;
         }
 
-        var playerModel = this.GetModel<IPlayerModel>();
         var flowModel = this.GetModel<IFlowModel>();
         var inputLockSystem = this.GetSystem<IInputLockSystem>();
-        var combatSystem = this.GetSystem<ICombatSystem>();
-        var boardSystem = this.GetSystem<IBoardSystem>();
 
         inputLockSystem.Lock(InputLockReason.CombatResolving);
         flowModel.SetPhase(FlowPhase.CombatResolving);
 
-        var playerStats = this.SendQuery(new GetEffectivePlayerStatsQuery());
-        var monsterStats = this.SendQuery(new GetEffectiveMonsterStatsQuery(MonsterUid));
-        var playerActsFirst = combatSystem.PlayerActsFirst(playerStats, monsterStats);
-        var playerUid = playerModel.PlayerCardUid;
-
-        if (playerActsFirst)
-        {
-            var playerDamageContext = combatSystem.BuildCombatDamage(
-                playerUid, MonsterUid, playerStats, monsterStats, "combat_player_first");
-            this.SendCommand(new ApplyDamageCommand(playerDamageContext));
-            if (collectionModel.TryGetCard(MonsterUid, out monsterRuntime) && monsterRuntime.CurrentHp <= 0)
-            {
-                this.SendCommand(new KillMonsterCommand(MonsterUid));
-            }
-            else
-            {
-                var updatedMonsterStats = this.SendQuery(new GetEffectiveMonsterStatsQuery(MonsterUid));
-                var monsterDamageContext = combatSystem.BuildCombatDamage(
-                    MonsterUid, playerUid, updatedMonsterStats, playerStats, "combat_monster_counter");
-                this.SendCommand(new ApplyDamageCommand(monsterDamageContext));
-            }
-        }
-        else
-        {
-            var monsterDamageContext = combatSystem.BuildCombatDamage(
-                MonsterUid, playerUid, monsterStats, playerStats, "combat_monster_first");
-            this.SendCommand(new ApplyDamageCommand(monsterDamageContext));
-            var updatedPlayerStats = this.SendQuery(new GetEffectivePlayerStatsQuery());
-            if (updatedPlayerStats.CurrentHp > 0)
-            {
-                var playerDamageContext = combatSystem.BuildCombatDamage(
-                    playerUid, MonsterUid, updatedPlayerStats, monsterStats, "combat_player_counter");
-                this.SendCommand(new ApplyDamageCommand(playerDamageContext));
-                if (collectionModel.TryGetCard(MonsterUid, out monsterRuntime) && monsterRuntime.CurrentHp <= 0)
-                {
-                    this.SendCommand(new KillMonsterCommand(MonsterUid));
-                }
-            }
-        }
+        var context = combatSystem.BuildCombatContext(MonsterUid);
+        this.SendEvent(new CombatStartedEvent(context.PlayerUid, context.MonsterUid));
+        this.SendCommand(new ResolveCombatCommand(context));
 
         inputLockSystem.Unlock(InputLockReason.CombatResolving);
-        if (this.SendQuery(new GetEffectivePlayerStatsQuery()).CurrentHp <= 0)
+
+        if (context.Result.PlayerDied)
         {
-            flowModel.SetPhase(FlowPhase.GameOver);
-            this.SendEvent(new GameOverEvent("player_hp_zero"));
-            this.SendCommand(new SaveRunCommand(SaveRunReason.GameOver));
+            this.SendCommand(new GameOverCommand("player_hp_zero"));
             return;
         }
 
-        boardSystem.RotateClockwise();
-        this.SendCommand(new RequestRefillBoardCommand());
+        this.SendCommand(new CommitPlayerActionCommand());
+    }
+}
+
+public sealed class ResolveCombatCommand : AbstractCommand
+{
+    public ResolveCombatCommand(CombatContext context)
+    {
+        Context = context;
+    }
+
+    public CombatContext Context { get; }
+
+    protected override void OnExecute()
+    {
+        var combatSystem = this.GetSystem<ICombatSystem>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var context = Context;
+
+        this.SendEvent(new CombatBeforeResolvedEvent(context));
+        combatSystem.PopulateCombatStats(context);
+
+        BuildAndApplyHitGroup(
+            combatSystem,
+            context,
+            CombatStep.FirstHit,
+            context.PlayerActsFirst,
+            context.PlayerStats,
+            context.MonsterStats,
+            context.FirstHitGroup);
+
+        if (!IsCardAlive(collectionModel, context.MonsterUid))
+        {
+            context.Result.MonsterKilled = true;
+            this.SendCommand(new KillMonsterCommand(context.MonsterUid));
+        }
+        else if (IsCardAlive(collectionModel, context.PlayerUid))
+        {
+            var playerStats = this.SendQuery(new GetEffectivePlayerStatsQuery());
+            var monsterStats = this.SendQuery(new GetEffectiveMonsterStatsQuery(context.MonsterUid));
+            BuildAndApplyHitGroup(
+                combatSystem,
+                context,
+                CombatStep.CounterHit,
+                !context.PlayerActsFirst,
+                !context.PlayerActsFirst ? playerStats : monsterStats,
+                !context.PlayerActsFirst ? monsterStats : playerStats,
+                context.CounterHitGroup);
+
+            if (!IsCardAlive(collectionModel, context.MonsterUid))
+            {
+                context.Result.MonsterKilled = true;
+                this.SendCommand(new KillMonsterCommand(context.MonsterUid));
+            }
+        }
+
+        ResolvePlayerDeath(context);
+
+        this.SendEvent(new CombatResolvedEvent(context));
+        this.SendEvent(new CombatAfterResolvedEvent(context));
+    }
+
+    private void BuildAndApplyHitGroup(
+        ICombatSystem combatSystem,
+        CombatContext context,
+        CombatStep step,
+        bool playerAttacks,
+        EffectiveStats attackerStats,
+        EffectiveStats defenderStats,
+        List<DamageContext> storage)
+    {
+        storage.Clear();
+        var attacker = playerAttacks ? context.PlayerUid : context.MonsterUid;
+        var defender = playerAttacks ? context.MonsterUid : context.PlayerUid;
+        var causeId = ResolveCombatCauseId(step, playerAttacks);
+
+        storage.Add(combatSystem.BuildCombatDamage(attacker, defender, attackerStats, defenderStats, causeId));
+        var parallel = combatSystem.BuildParallelDamageGroup(
+            context, step, attacker, defender, attackerStats, defenderStats);
+        for (var i = 0; i < parallel.Count; i++)
+        {
+            storage.Add(parallel[i]);
+        }
+
+        this.SendCommand(new ApplyDamageGroupCommand(storage));
+    }
+
+    private void ResolvePlayerDeath(CombatContext context)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(context.PlayerUid, out var playerRuntime) || playerRuntime.CurrentHp > 0)
+        {
+            return;
+        }
+
+        var preventCommand = new ApplyDeathPreventCommand(context.PlayerUid);
+        this.SendCommand(preventCommand);
+        if (preventCommand.WasPrevented)
+        {
+            context.Result.PlayerDeathPrevented = true;
+            return;
+        }
+
+        context.Result.PlayerDied = true;
+    }
+
+    private static string ResolveCombatCauseId(CombatStep step, bool playerAttacks)
+    {
+        if (step == CombatStep.FirstHit)
+        {
+            return playerAttacks
+                ? CombatConstants.CauseCombatPlayerFirst
+                : CombatConstants.CauseCombatMonsterFirst;
+        }
+
+        return playerAttacks
+            ? CombatConstants.CauseCombatPlayerCounter
+            : CombatConstants.CauseCombatMonsterCounter;
+    }
+
+    private static bool IsCardAlive(ICollectionModel collectionModel, CardUid uid)
+    {
+        return collectionModel.TryGetCard(uid, out var runtime) && runtime.CurrentHp > 0;
+    }
+}
+
+public sealed class ApplyDamageGroupCommand : AbstractCommand
+{
+    public ApplyDamageGroupCommand(IReadOnlyList<DamageContext> contexts)
+    {
+        Contexts = contexts;
+    }
+
+    public IReadOnlyList<DamageContext> Contexts { get; }
+
+    protected override void OnExecute()
+    {
+        if (Contexts == null || Contexts.Count == 0)
+        {
+            return;
+        }
+
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var grouped = new Dictionary<CardUid, List<DamageContext>>();
+        for (var i = 0; i < Contexts.Count; i++)
+        {
+            var context = Contexts[i];
+            if (!grouped.TryGetValue(context.Target, out var list))
+            {
+                list = new List<DamageContext>();
+                grouped.Add(context.Target, list);
+            }
+
+            list.Add(context);
+        }
+
+        foreach (var pair in grouped)
+        {
+            if (!collectionModel.TryGetCard(pair.Key, out var runtime))
+            {
+                continue;
+            }
+
+            ApplyParallelDamageToTarget(runtime, pair.Value, deckModel);
+        }
+    }
+
+    private void ApplyParallelDamageToTarget(CardRuntime runtime, List<DamageContext> contexts, IDeckModel deckModel)
+    {
+        var snapshotArmor = runtime.CurrentArmor;
+        var oldArmor = runtime.CurrentArmor;
+        var oldHp = runtime.CurrentHp;
+        var normalDamageTotal = 0;
+        var ignoreHpDamageTotal = 0;
+        var appliedContexts = new List<DamageContext>();
+
+        for (var i = 0; i < contexts.Count; i++)
+        {
+            var context = contexts[i];
+            DamageApplication.ResolveAgainstSnapshot(snapshotArmor, context);
+            if (context.DamageBeforeArmor <= 0)
+            {
+                continue;
+            }
+
+            if (TryPreventBlessing(runtime, context, deckModel))
+            {
+                this.SendEvent(new DamageAppliedEvent(context));
+                continue;
+            }
+
+            if (context.IgnoreArmor)
+            {
+                ignoreHpDamageTotal += context.HpDamage;
+            }
+            else
+            {
+                normalDamageTotal += context.DamageBeforeArmor;
+            }
+
+            appliedContexts.Add(context);
+        }
+
+        if (normalDamageTotal <= 0 && ignoreHpDamageTotal <= 0)
+        {
+            return;
+        }
+
+        var armorAbsorbed = Math.Min(snapshotArmor, normalDamageTotal);
+        var hpFromNormal = normalDamageTotal - armorAbsorbed;
+        var totalHpDamage = hpFromNormal + ignoreHpDamageTotal;
+
+        if (armorAbsorbed > 0)
+        {
+            runtime.CurrentArmor -= armorAbsorbed;
+            if (runtime.CurrentArmor < 0)
+            {
+                runtime.CurrentArmor = 0;
+            }
+        }
+
+        if (totalHpDamage > 0)
+        {
+            runtime.CurrentHp -= totalHpDamage;
+            if (runtime.CurrentHp < 0)
+            {
+                runtime.CurrentHp = 0;
+            }
+        }
+
+        DistributeResolvedAmounts(appliedContexts, snapshotArmor, normalDamageTotal, armorAbsorbed, hpFromNormal);
+
+        if (oldArmor != runtime.CurrentArmor)
+        {
+            this.SendEvent(new ArmorChangedEvent(
+                runtime.Uid,
+                oldArmor,
+                runtime.CurrentArmor,
+                appliedContexts.Count > 0 ? appliedContexts[0].CauseId : "damage_group"));
+        }
+
+        if (oldArmor != runtime.CurrentArmor || oldHp != runtime.CurrentHp)
+        {
+            this.SendEvent(new StatsDirtyEvent(runtime.Uid));
+        }
+
+        for (var i = 0; i < appliedContexts.Count; i++)
+        {
+            this.SendEvent(new DamageAppliedEvent(appliedContexts[i]));
+        }
+    }
+
+    private bool TryPreventBlessing(CardRuntime runtime, DamageContext context, IDeckModel deckModel)
+    {
+        if (!context.Preventable ||
+            runtime.CardType != CardType.Player ||
+            deckModel.PendingHelpCardAction.Kind != PendingHelpCardActionKind.BlessingShield ||
+            context.DamageBeforeArmor <= 0)
+        {
+            return false;
+        }
+
+        deckModel.PendingHelpCardAction.Clear();
+        context.WasPrevented = true;
+        context.HpDamage = 0;
+        context.ArmorAbsorbed = 0;
+        this.SendEvent(new DamagePreventedEvent(runtime.Uid, DefaultGameConfigFactory.HelpBlessingId));
+        return true;
+    }
+
+    private static void DistributeResolvedAmounts(
+        List<DamageContext> contexts,
+        int snapshotArmor,
+        int normalDamageTotal,
+        int armorAbsorbed,
+        int hpFromNormal)
+    {
+        if (normalDamageTotal <= 0)
+        {
+            return;
+        }
+
+        var remainingArmor = armorAbsorbed;
+        var remainingHp = hpFromNormal;
+        for (var i = 0; i < contexts.Count; i++)
+        {
+            var context = contexts[i];
+            if (context.IgnoreArmor)
+            {
+                continue;
+            }
+
+            var share = context.DamageBeforeArmor;
+            var armorShare = Math.Min(remainingArmor, share);
+            var hpShare = share - armorShare;
+            context.ArmorAbsorbed = armorShare;
+            context.HpDamage = hpShare;
+            remainingArmor -= armorShare;
+            remainingHp -= hpShare;
+        }
+    }
+}
+
+public sealed class ApplyDeathPreventCommand : AbstractCommand
+{
+    public ApplyDeathPreventCommand(CardUid targetUid)
+    {
+        TargetUid = targetUid;
+    }
+
+    public CardUid TargetUid { get; }
+    public bool WasPrevented { get; private set; }
+
+    protected override void OnExecute()
+    {
+        var relicSystem = this.GetSystem<IRelicSystem>();
+        if (!relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId))
+        {
+            return;
+        }
+
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(TargetUid, out var runtime) || runtime.CardType != CardType.Player)
+        {
+            return;
+        }
+
+        if (runtime.CurrentHp > 0)
+        {
+            return;
+        }
+
+        var maxHp = this.GetSystem<IStatSystem>().GetEffectivePlayerStats().MaxHp;
+        runtime.CurrentHp = Math.Max(1, maxHp / 2);
+
+        var playerModel = this.GetModel<IPlayerModel>();
+        for (var i = 0; i < playerModel.Relics.Count; i++)
+        {
+            if (playerModel.Relics[i].RelicId != DefaultGameConfigFactory.RelicPhoenixFeatherId)
+            {
+                continue;
+            }
+
+            playerModel.Relics[i].IsConsumed = true;
+            break;
+        }
+
+        WasPrevented = true;
+        this.SendEvent(new DamagePreventedEvent(TargetUid, DefaultGameConfigFactory.RelicPhoenixFeatherId));
+        this.SendEvent(new StatsDirtyEvent(TargetUid));
+    }
+}
+
+public sealed class GameOverCommand : AbstractCommand
+{
+    public GameOverCommand(string reason)
+    {
+        Reason = reason;
+    }
+
+    public string Reason { get; }
+
+    protected override void OnExecute()
+    {
+        var flowModel = this.GetModel<IFlowModel>();
+        flowModel.SetPhase(FlowPhase.GameOver);
+        this.SendEvent(new GameOverEvent(Reason));
+        this.SendCommand(new SaveRunCommand(SaveRunReason.GameOver));
+    }
+}
+
+public sealed class CommitPlayerActionCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        this.SendEvent(new PlayerActionCommittedEvent());
+
+        var flowModel = this.GetModel<IFlowModel>();
+        var phase = flowModel.Phase.Value;
+        if (phase == FlowPhase.PlayerControl || phase == FlowPhase.CombatResolving)
+        {
+            this.GetSystem<IBoardSystem>().RotateClockwise();
+            this.SendCommand(new RequestRefillBoardCommand());
+            return;
+        }
+
+        this.SendCommand(new CheckClearConditionCommand());
+    }
+}
+
+internal static class DamageApplication
+{
+    public static void ResolveAgainstSnapshot(int snapshotArmor, DamageContext context)
+    {
+        if (context.DamageBeforeArmor <= 0 && context.RawAttack > 0)
+        {
+            context.DamageBeforeArmor = Math.Max(0, context.RawAttack - context.DamageReduction);
+        }
+
+        if (context.DamageBeforeArmor <= 0)
+        {
+            context.HpDamage = 0;
+            context.ArmorAbsorbed = 0;
+            return;
+        }
+
+        if (context.IgnoreArmor)
+        {
+            context.ArmorAbsorbed = 0;
+            context.HpDamage = context.DamageBeforeArmor;
+            return;
+        }
+
+        context.ArmorAbsorbed = Math.Min(snapshotArmor, context.DamageBeforeArmor);
+        context.HpDamage = context.DamageBeforeArmor - context.ArmorAbsorbed;
     }
 }
 
@@ -481,7 +852,7 @@ public sealed class ApplyDamageCommand : AbstractCommand
             return;
         }
 
-        ResolveDamageAmounts(runtime, Context);
+        DamageApplication.ResolveAgainstSnapshot(runtime.CurrentArmor, Context);
         if (Context.DamageBeforeArmor <= 0 && Context.HpDamage <= 0 && Context.ArmorAbsorbed <= 0)
         {
             return;
@@ -489,14 +860,14 @@ public sealed class ApplyDamageCommand : AbstractCommand
 
         var oldArmor = runtime.CurrentArmor;
         var oldHp = runtime.CurrentHp;
-        ApplyDamageToRuntime(runtime, Context);
+        ApplyResolvedDamageToRuntime(runtime, Context);
 
         if (!Context.IgnoreArmor && oldArmor != runtime.CurrentArmor)
         {
             this.SendEvent(new ArmorChangedEvent(Context.Target, oldArmor, runtime.CurrentArmor, Context.CauseId));
         }
 
-        if (oldHp != runtime.CurrentHp)
+        if (oldArmor != runtime.CurrentArmor || oldHp != runtime.CurrentHp)
         {
             this.SendEvent(new StatsDirtyEvent(Context.Target));
         }
@@ -504,35 +875,7 @@ public sealed class ApplyDamageCommand : AbstractCommand
         this.SendEvent(new DamageAppliedEvent(Context));
     }
 
-    private static void ResolveDamageAmounts(CardRuntime runtime, DamageContext context)
-    {
-        if (context.DamageBeforeArmor <= 0 && context.RawAttack > 0)
-        {
-            context.DamageBeforeArmor = Math.Max(0, context.RawAttack - context.DamageReduction);
-        }
-
-        if (context.DamageBeforeArmor <= 0)
-        {
-            context.HpDamage = 0;
-            context.ArmorAbsorbed = 0;
-            return;
-        }
-
-        if (context.IgnoreArmor)
-        {
-            context.ArmorAbsorbed = 0;
-            context.HpDamage = context.DamageBeforeArmor;
-            return;
-        }
-
-        if (context.ArmorAbsorbed == 0 && context.HpDamage == 0)
-        {
-            context.ArmorAbsorbed = Math.Min(runtime.CurrentArmor, context.DamageBeforeArmor);
-            context.HpDamage = context.DamageBeforeArmor - context.ArmorAbsorbed;
-        }
-    }
-
-    private static void ApplyDamageToRuntime(CardRuntime runtime, DamageContext context)
+    private static void ApplyResolvedDamageToRuntime(CardRuntime runtime, DamageContext context)
     {
         if (!context.IgnoreArmor && context.ArmorAbsorbed > 0)
         {
@@ -651,7 +994,12 @@ public sealed class ApplyStatChangeCommand : AbstractCommand
                 runtime.BaseDefense = ApplyNonNegativeDelta(runtime.BaseDefense, Delta);
                 if (Delta > 0)
                 {
+                    var oldArmor = runtime.CurrentArmor;
                     runtime.CurrentArmor = ApplyNonNegativeDelta(runtime.CurrentArmor, Delta);
+                    if (oldArmor != runtime.CurrentArmor)
+                    {
+                        this.SendEvent(new ArmorChangedEvent(TargetUid, oldArmor, runtime.CurrentArmor, CauseId));
+                    }
                 }
                 break;
             case StatType.MaxHp:

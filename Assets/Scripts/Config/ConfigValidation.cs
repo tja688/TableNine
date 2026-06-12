@@ -187,12 +187,14 @@ public static class ConfigValidator
                 continue;
             }
 
-            if (card.IsPermanentRemoveOnUse)
+            if (!card.IsPermanentRemoveOnUse)
             {
-                warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse is deprecated; configure RestoreAfterNode instead.");
+                continue;
             }
 
-            if (card.IsPermanentRemoveOnUse != !card.RestoreAfterNode)
+            warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse is deprecated; configure RestoreAfterNode instead.");
+
+            if (card.RestoreAfterNode)
             {
                 warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse conflicts with RestoreAfterNode.");
             }
