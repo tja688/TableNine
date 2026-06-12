@@ -103,7 +103,8 @@ public enum PendingHelpCardActionKind
     None,
     ThrowingKnifeTarget,
     AttributeChoice,
-    BlessingShield
+    BlessingShield,
+    SwapTarget
 }
 
 public enum RewardSource
@@ -321,6 +322,7 @@ public sealed class CardDefinition
     public bool IsPermanentRemoveOnUse;
     public bool RestoreAfterNode;
     public bool RestoreAfterNodeAuthoritative;
+    public string EffectGraphId;
     public List<string> SkillIds = new List<string>();
 }
 
@@ -372,6 +374,7 @@ public sealed class GameConfigDatabase : ScriptableObject
         config.Relics.AddRange(Relics);
         config.Rooms.AddRange(Rooms);
         CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
+        EffectGraphRegistry.AssignToConfig(config);
         return config;
     }
 }
@@ -452,6 +455,11 @@ public sealed class PendingHelpCardAction
 {
     public CardUid HelpCardUid;
     public PendingHelpCardActionKind Kind;
+    public int TargetingDamage;
+    public string TargetingCauseId;
+    public string TargetingMode;
+    public bool SwapFirstTargetSelected;
+    public CardUid? SwapFirstTargetUid;
 
     public bool IsActive => Kind != PendingHelpCardActionKind.None;
 
@@ -459,6 +467,11 @@ public sealed class PendingHelpCardAction
     {
         HelpCardUid = default;
         Kind = PendingHelpCardActionKind.None;
+        TargetingDamage = 0;
+        TargetingCauseId = null;
+        TargetingMode = null;
+        SwapFirstTargetSelected = false;
+        SwapFirstTargetUid = null;
     }
 }
 

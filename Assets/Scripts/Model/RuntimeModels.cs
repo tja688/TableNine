@@ -701,6 +701,7 @@ public interface IRewardModel : IModel
     IReadOnlyList<string> ShopCardIds { get; }
     IReadOnlyList<string> RoomCandidateIds { get; }
     RewardSource CurrentRewardSource { get; set; }
+    FlowPhase? RewardResumePhase { get; set; }
     void Clear();
     void ClearHelpRewardCardIds();
     void ClearChestRewardRelicIds();
@@ -729,6 +730,7 @@ public sealed class RewardModel : AbstractModel, IRewardModel
     public IReadOnlyList<string> ShopCardIds => mShopCardIds;
     public IReadOnlyList<string> RoomCandidateIds => mRoomCandidateIds;
     public RewardSource CurrentRewardSource { get; set; }
+    public FlowPhase? RewardResumePhase { get; set; }
 
     protected override void OnInit()
     {
@@ -743,6 +745,7 @@ public sealed class RewardModel : AbstractModel, IRewardModel
         mShopCardIds.Clear();
         mRoomCandidateIds.Clear();
         CurrentRewardSource = RewardSource.None;
+        RewardResumePhase = null;
     }
 
     public void ClearHelpRewardCardIds() => mHelpRewardCardIds.Clear();

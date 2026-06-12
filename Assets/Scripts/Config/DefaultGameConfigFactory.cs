@@ -303,6 +303,7 @@ public static partial class DefaultGameConfigFactory
         });
 
         CardDefinitionMigration.MarkAuthoritativeRestoreAfterNode(config.Cards);
+        EffectGraphRegistry.AssignToConfig(config);
         return config;
     }
 }

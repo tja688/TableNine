@@ -7,6 +7,8 @@ public sealed class TableNine : Architecture<TableNine>
 
     public static bool IsInitialized => mArchitecture != null;
 
+    private int mCommandDepth;
+
 #if UNITY_EDITOR || UNITY_INCLUDE_TESTS
     public static void ResetForTests()
     {
@@ -43,6 +45,7 @@ public sealed class TableNine : Architecture<TableNine>
         RegisterSystem<ICombatSystem>(new CombatSystem());
         RegisterSystem<IStatSystem>(new StatSystem());
         RegisterSystem<IEffectSystem>(new EffectSystem());
+        RegisterSystem<ISkillSystem>(new SkillSystem());
         RegisterSystem<IInputLockSystem>(new InputLockSystem());
         RegisterSystem<IRewardSystem>(new RewardSystem());
         RegisterSystem<IRelicSystem>(new RelicSystem());
@@ -53,6 +56,13 @@ public sealed class TableNine : Architecture<TableNine>
 
     protected override void ExecuteCommand(ICommand command)
     {
+        var isRoot = mCommandDepth == 0;
+        mCommandDepth++;
+        if (isRoot)
+        {
+            GetSystem<ISkillSystem>()?.BeginRootCommand();
+        }
+
         var trace = GetTraceUtilityOrNull();
         var replay = GetReplayUtilityOrNull();
         trace?.Before(command);
@@ -68,10 +78,21 @@ public sealed class TableNine : Architecture<TableNine>
             trace?.OnException(command, exception);
             throw;
         }
+        finally
+        {
+            mCommandDepth--;
+        }
     }
 
     protected override TResult ExecuteCommand<TResult>(ICommand<TResult> command)
     {
+        var isRoot = mCommandDepth == 0;
+        mCommandDepth++;
+        if (isRoot)
+        {
+            GetSystem<ISkillSystem>()?.BeginRootCommand();
+        }
+
         var trace = GetTraceUtilityOrNull();
         var replay = GetReplayUtilityOrNull();
         trace?.Before(command);
@@ -87,6 +108,10 @@ public sealed class TableNine : Architecture<TableNine>
         {
             trace?.OnException(command, exception);
             throw;
+        }
+        finally
+        {
+            mCommandDepth--;
         }
     }
 

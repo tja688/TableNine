@@ -49,16 +49,18 @@ public sealed class TableNineR0BaselineEditModeTests
     }
 
     [Test]
-    public void Baseline_EffectSystem_Is_Empty_And_SkillSystem_Not_Registered()
+    public void Baseline_EffectSystem_And_SkillSystem_Are_Registered()
     {
         TableNine.InitArchitecture();
 
-        Assert.That(TableNine.Interface.GetSystem<IEffectSystem>(), Is.Not.Null);
-        Assert.That(TableNine.Interface.GetSystem<IEffectSystem>().GetType(), Is.EqualTo(typeof(EffectSystem)));
+        var effectSystem = TableNine.Interface.GetSystem<IEffectSystem>();
+        Assert.That(effectSystem, Is.Not.Null);
+        Assert.That(effectSystem.GetType(), Is.EqualTo(typeof(EffectSystem)));
+        Assert.That(EffectGraphRegistry.ContainsGraph("eg_help_potion"), Is.True);
 
-        var architectureType = typeof(TableNine);
-        var initMethod = architectureType.GetMethod("Init", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.That(initMethod, Is.Not.Null);
+        var skillSystem = TableNine.Interface.GetSystem<ISkillSystem>();
+        Assert.That(skillSystem, Is.Not.Null);
+        Assert.That(skillSystem.GetType(), Is.EqualTo(typeof(SkillSystem)));
     }
 
     [Test]

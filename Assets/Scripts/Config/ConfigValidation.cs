@@ -153,6 +153,26 @@ public static class ConfigValidator
             }
         }
 
+        for (var i = 0; i < config.Cards.Count; i++)
+        {
+            var card = config.Cards[i];
+            if (card.CardType != CardType.Help)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(card.EffectGraphId))
+            {
+                errors.Add($"Help card {card.CardId} missing EffectGraphId.");
+                continue;
+            }
+
+            if (!EffectGraphRegistry.ContainsGraph(card.EffectGraphId))
+            {
+                errors.Add($"Help card {card.CardId} references unknown EffectGraphId: {card.EffectGraphId}.");
+            }
+        }
+
         for (var i = 0; i < config.Rooms.Count; i++)
         {
             var room = config.Rooms[i];

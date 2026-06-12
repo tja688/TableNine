@@ -63,6 +63,7 @@ public interface IBoardSystem : ISystem
     void PlaceCard(CardUid uid, BoardSlotNo slot, CardPlacementSource source);
     CardUid? RemoveCardAt(BoardSlotNo slot);
     void RotateClockwise();
+    void RotateCounterclockwise();
 }
 
 public sealed class BoardSystem : AbstractSystem, IBoardSystem
@@ -121,6 +122,7 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
 
         this.SendEvent(new CardPlacedEvent(uid, slot, source));
         this.SendEvent(new BoardSlotChangedEvent(slot, uid));
+        this.SendEvent(new CardMovedEvent(uid, slot, null, source));
     }
 
     public CardUid? RemoveCardAt(BoardSlotNo slot)
@@ -149,19 +151,35 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
 
     public void RotateClockwise()
     {
+        RotateRing(stepOffset: -1);
+    }
+
+    public void RotateCounterclockwise()
+    {
+        RotateRing(stepOffset: 1);
+    }
+
+    private void RotateRing(int stepOffset)
+    {
         var boardModel = this.GetModel<IBoardModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
-        var values = new CardUid?[BoardSlotUtility.ClockwiseRing.Length];
-        for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
+        var ring = BoardSlotUtility.ClockwiseRing;
+        var previousSlots = new Dictionary<int, BoardSlotNo>();
+        var values = new CardUid?[ring.Length];
+        for (var i = 0; i < ring.Length; i++)
         {
-            values[i] = boardModel.GetCardAt(BoardSlotUtility.ClockwiseRing[i]);
+            values[i] = boardModel.GetCardAt(ring[i]);
+            if (values[i].HasValue)
+            {
+                previousSlots[values[i].Value.Value] = ring[i];
+            }
         }
 
-        for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
+        for (var i = 0; i < ring.Length; i++)
         {
-            var fromIndex = (i - 1 + values.Length) % values.Length;
+            var fromIndex = (i + stepOffset + values.Length) % values.Length;
             var newValue = values[fromIndex];
-            var slot = BoardSlotUtility.ClockwiseRing[i];
+            var slot = ring[i];
             boardModel.SetCardAt(slot, newValue);
 
             if (newValue.HasValue && collectionModel.TryGetCard(newValue.Value, out var runtime))
@@ -170,6 +188,13 @@ public sealed class BoardSystem : AbstractSystem, IBoardSystem
             }
 
             this.SendEvent(new BoardSlotChangedEvent(slot, newValue));
+
+            if (newValue.HasValue &&
+                previousSlots.TryGetValue(newValue.Value.Value, out var previousSlot) &&
+                previousSlot.Value != slot.Value)
+            {
+                this.SendEvent(new CardMovedEvent(newValue.Value, slot, previousSlot, CardPlacementSource.Refill));
+            }
         }
     }
 }
@@ -428,59 +453,16 @@ public sealed class CombatSystem : AbstractSystem, ICombatSystem
         EffectiveStats defenderStats)
     {
         var extras = new List<DamageContext>();
-        var playerModel = this.GetModel<IPlayerModel>();
-        var relicSystem = this.GetSystem<IRelicSystem>();
-
-        if (step == CombatStep.FirstHit &&
-            primaryAttacker.Equals(context.PlayerUid) &&
-            primaryDefender.Equals(context.MonsterUid) &&
-            relicSystem.HasRelic(DefaultGameConfigFactory.RelicThornArmorId))
+        var skillSystem = this.GetSystem<ISkillSystem>();
+        var triggerContext = new TriggerContext
         {
-            extras.Add(new DamageContext
-            {
-                Source = context.PlayerUid,
-                Target = context.MonsterUid,
-                CauseId = CombatConstants.CauseThornArmor,
-                Type = DamageType.Relic,
-                RawAttack = CombatConstants.ThornArmorDamage,
-                DamageBeforeArmor = CombatConstants.ThornArmorDamage,
-                IgnoreArmor = true,
-                Preventable = false
-            });
-        }
-
-        if (primaryDefender.Equals(context.PlayerUid) && HasThornSkinSkill(playerModel))
-        {
-            var reflectAttack = Math.Max(0, attackerStats.Attack);
-            if (reflectAttack > 0)
-            {
-                var reflectAttackerStats = new EffectiveStats { Attack = reflectAttack };
-                var reflectDefenderStats = primaryAttacker.Equals(context.MonsterUid)
-                    ? context.MonsterStats
-                    : context.PlayerStats;
-                extras.Add(BuildCombatDamage(
-                    context.PlayerUid,
-                    primaryAttacker,
-                    reflectAttackerStats,
-                    reflectDefenderStats,
-                    CombatConstants.CauseThornSkin));
-            }
-        }
-
+            Combat = context,
+            CombatStep = step,
+            PrimaryAttacker = primaryAttacker,
+            PrimaryDefender = primaryDefender
+        };
+        skillSystem.CollectParallelDamage(triggerContext, extras);
         return extras;
-    }
-
-    private static bool HasThornSkinSkill(IPlayerModel playerModel)
-    {
-        for (var i = 0; i < playerModel.SkillIds.Count; i++)
-        {
-            if (playerModel.SkillIds[i] == DefaultGameConfigFactory.SkillThornSkinId)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
 
@@ -525,6 +507,14 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             defense += relic.StatDefenseBonus;
             maxHp += relic.StatMaxHpBonus;
             currentHp += relic.StatMaxHpBonus;
+        }
+
+        if (HasWoodSet(playerModel))
+        {
+            attack += 2;
+            defense += 2;
+            maxHp += 8;
+            currentHp += 8;
         }
 
         return new EffectiveStats
@@ -576,6 +566,12 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             }
         }
 
+        var damageReduction = 0;
+        if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillHardSkinId))
+        {
+            damageReduction = 1;
+        }
+
         return new EffectiveStats
         {
             CurrentHp = currentHp,
@@ -583,9 +579,39 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             CurrentArmor = monsterRuntime.CurrentArmor,
             Attack = attack,
             Defense = defense,
-            DamageReduction = 0,
+            DamageReduction = damageReduction,
             HasFirstStrike = HasFirstStrike(monsterRuntime, configModel)
         };
+    }
+
+    private static bool HasWoodSet(IPlayerModel playerModel)
+    {
+        var hasShield = false;
+        var hasSword = false;
+        var hasArmor = false;
+        for (var i = 0; i < playerModel.Relics.Count; i++)
+        {
+            var relic = playerModel.Relics[i];
+            if (relic.IsConsumed)
+            {
+                continue;
+            }
+
+            if (relic.RelicId == DefaultGameConfigFactory.RelicWoodShieldId)
+            {
+                hasShield = true;
+            }
+            else if (relic.RelicId == DefaultGameConfigFactory.RelicWoodSwordId)
+            {
+                hasSword = true;
+            }
+            else if (relic.RelicId == DefaultGameConfigFactory.RelicWoodArmorId)
+            {
+                hasArmor = true;
+            }
+        }
+
+        return hasShield && hasSword && hasArmor;
     }
 
     private static bool HasFirstStrike(CardRuntime runtime, IConfigModel configModel)
@@ -663,17 +689,6 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         runtime.CurrentArmor = newArmor;
         this.SendEvent(new ArmorChangedEvent(uid, oldArmor, newArmor, "node_start_defense"));
         this.SendEvent(new StatsDirtyEvent(uid));
-    }
-}
-
-public interface IEffectSystem : ISystem
-{
-}
-
-public sealed class EffectSystem : AbstractSystem, IEffectSystem
-{
-    protected override void OnInit()
-    {
     }
 }
 
@@ -1065,7 +1080,7 @@ public interface IRelicSystem : ISystem
 {
     bool AddRelic(string relicId);
     bool DiscardRelic(string relicId);
-    void GenerateChestRewardCandidates();
+    void GenerateChestRewardCandidates(ChestTier chestTier = ChestTier.Normal);
     bool HasRelic(string relicId);
     void ApplyRelicStats();
 }
@@ -1114,7 +1129,7 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
         return true;
     }
 
-    public void GenerateChestRewardCandidates()
+    public void GenerateChestRewardCandidates(ChestTier chestTier = ChestTier.Normal)
     {
         var playerModel = this.GetModel<IPlayerModel>();
         var rewardModel = this.GetModel<IRewardModel>();
@@ -1132,28 +1147,85 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
             }
         }
 
-        // Remove owned relics
-        var pool = new List<string>();
-        for (var i = 0; i < allRelics.Count; i++)
-        {
-            if (!playerModel.HasRelic(allRelics[i].RelicId))
-            {
-                pool.Add(allRelics[i].RelicId);
-            }
-        }
-
-        if (playerModel.Relics.Count >= playerModel.MaxRelicCount || pool.Count == 0)
+        if (playerModel.Relics.Count >= playerModel.MaxRelicCount || allRelics.Count == 0)
         {
             return;
         }
 
-        var pickCount = pool.Count < RewardConstants.ChestRewardCandidateCount ? pool.Count : RewardConstants.ChestRewardCandidateCount;
+        var pickCount = allRelics.Count < RewardConstants.ChestRewardCandidateCount
+            ? allRelics.Count
+            : RewardConstants.ChestRewardCandidateCount;
+        var picked = new HashSet<string>();
         for (var i = 0; i < pickCount; i++)
         {
-            var index = randomUtility.Range(0, pool.Count);
-            rewardModel.AddChestRewardRelicId(pool[index]);
-            pool.RemoveAt(index);
+            var relicId = PickChestRelicId(allRelics, playerModel, randomUtility, chestTier, picked);
+            if (string.IsNullOrEmpty(relicId))
+            {
+                break;
+            }
+
+            picked.Add(relicId);
+            rewardModel.AddChestRewardRelicId(relicId);
         }
+    }
+
+    private static string PickChestRelicId(
+        IReadOnlyList<RelicDefinition> allRelics,
+        IPlayerModel playerModel,
+        IRandomUtility randomUtility,
+        ChestTier chestTier,
+        HashSet<string> picked)
+    {
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            var quality = RollChestRelicQuality(randomUtility, chestTier);
+            var candidates = new List<string>();
+            for (var i = 0; i < allRelics.Count; i++)
+            {
+                var relic = allRelics[i];
+                if (relic.Quality != quality ||
+                    playerModel.HasRelic(relic.RelicId) ||
+                    picked.Contains(relic.RelicId))
+                {
+                    continue;
+                }
+
+                candidates.Add(relic.RelicId);
+            }
+
+            if (candidates.Count == 0)
+            {
+                continue;
+            }
+
+            return candidates[randomUtility.Range(0, candidates.Count)];
+        }
+
+        return null;
+    }
+
+    private static CardQuality RollChestRelicQuality(IRandomUtility randomUtility, ChestTier chestTier)
+    {
+        var weights = chestTier switch
+        {
+            ChestTier.Blue => RewardConstants.BlueChestQualityWeights,
+            ChestTier.Gold => RewardConstants.GoldChestQualityWeights,
+            _ => RewardConstants.NormalChestQualityWeights
+        };
+
+        var roll = randomUtility.Value() * 100f;
+        var cumulative = 0f;
+        var qualityMap = new[] { CardQuality.White, CardQuality.Blue, CardQuality.Gold };
+        for (var i = 0; i < weights.Length; i++)
+        {
+            cumulative += weights[i];
+            if (roll < cumulative)
+            {
+                return qualityMap[i];
+            }
+        }
+
+        return CardQuality.White;
     }
 
     public bool HasRelic(string relicId)

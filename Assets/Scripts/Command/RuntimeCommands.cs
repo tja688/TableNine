@@ -162,6 +162,7 @@ public sealed class DealOpeningCardsCommand : AbstractCommand
 
         deckSystem.UpdateNextBattlePreview();
         this.GetSystem<IStatSystem>().FillArmorFromDefenseAtNodeStart();
+        this.GetSystem<ISkillSystem>().Trigger(SkillTrigger.OnNodeStart, new TriggerContext(), this);
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
 }
@@ -183,7 +184,10 @@ public sealed class ClickBoardSlotCommand : AbstractCommand
             switch (deckModel.PendingHelpCardAction.Kind)
             {
                 case PendingHelpCardActionKind.ThrowingKnifeTarget:
-                    this.SendCommand(new ResolveThrowingKnifeTargetCommand(Slot));
+                    this.SendCommand(new ResolveTargetingCommand(Slot));
+                    break;
+                case PendingHelpCardActionKind.SwapTarget:
+                    this.SendCommand(new ResolveSwapTargetCommand(Slot));
                     break;
             }
 
@@ -456,6 +460,10 @@ public sealed class ResolveCombatCommand : AbstractCommand
 
         this.SendEvent(new CombatResolvedEvent(context));
         this.SendEvent(new CombatAfterResolvedEvent(context));
+        this.GetSystem<ISkillSystem>().Trigger(
+            SkillTrigger.OnAfterCombat,
+            new TriggerContext { Combat = context },
+            this);
     }
 
     private void BuildAndApplyHitGroup(
@@ -1110,84 +1118,49 @@ public sealed class UseHelpCardCommand : AbstractCommand
         }
 
         var configModel = this.GetModel<IConfigModel>();
-        var deckModel = this.GetModel<IDeckModel>();
-        var playerModel = this.GetModel<IPlayerModel>();
-        var flowModel = this.GetModel<IFlowModel>();
-        var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var helpDefinition = configModel.GetCardDefinition(helpRuntime.DefinitionId);
-
-        switch (helpDefinition.CardId)
+        if (string.IsNullOrWhiteSpace(helpDefinition.EffectGraphId))
         {
-            case DefaultGameConfigFactory.HelpPotionId:
-            {
-                var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
-                playerRuntime.CurrentHp += 10;
-                if (playerRuntime.CurrentHp > playerRuntime.MaxHp)
-                {
-                    playerRuntime.CurrentHp = playerRuntime.MaxHp;
-                }
-
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgPotionHeal)));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
-                break;
-            }
-            case DefaultGameConfigFactory.HelpThrowingKnifeId:
-                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
-                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.ThrowingKnifeTarget;
-                flowModel.SetPhase(FlowPhase.PlayerControl);
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgThrowingKnifeSelect)));
-                break;
-            case DefaultGameConfigFactory.HelpAttributeUpId:
-                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
-                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.AttributeChoice;
-                inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttributeSelect)));
-                this.SendEvent(new AttributeChoiceRequestedEvent(HelpCardUid));
-                break;
-            case DefaultGameConfigFactory.HelpCommonChestId:
-            case DefaultGameConfigFactory.HelpChestCardId:
-            case DefaultGameConfigFactory.HelpBlueChestId:
-            case DefaultGameConfigFactory.HelpGoldChestId:
-            {
-                var rewardModel = this.GetModel<IRewardModel>();
-                rewardModel.CurrentRewardSource = RewardSource.ChestCard;
-                flowModel.SetPhase(FlowPhase.ChestRewardChoosing);
-                inputLockSystem.Lock(InputLockReason.OverlayVisible);
-                this.GetSystem<IRelicSystem>().GenerateChestRewardCandidates();
-                this.SendEvent(new ChestRewardGeneratedEvent(
-                    this.GetModel<IRewardModel>().ChestRewardRelicIds));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
-                break;
-            }
-            case DefaultGameConfigFactory.HelpGoldCardId:
-            {
-                this.ChangeGold(playerModel, 50);
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
-                    DescriptionPanelTextKeys.MsgRoomGold,
-                    50)));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
-                break;
-            }
-            case DefaultGameConfigFactory.HelpBlessingId:
-            {
-                deckModel.PendingHelpCardAction.HelpCardUid = HelpCardUid;
-                deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.BlessingShield;
-                this.SendEvent(new GameplayMessageEvent("庇佑已生效：下一次受到伤害为0。"));
-                this.SendCommand(new ConsumeHelpCardCommand(HelpCardUid, HelpCardConsumeReason.Used));
-                break;
-            }
-            default:
-                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
-                    DescriptionPanelTextKeys.MsgNotImplemented,
-                    helpDefinition.DisplayName)));
-                break;
+            UnityEngine.Debug.LogError($"[UseHelpCardCommand] Help card {helpDefinition.CardId} missing EffectGraphId.");
+            this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                DescriptionPanelTextKeys.MsgNotImplemented,
+                helpDefinition.DisplayName)));
+            return;
         }
+
+        var context = new EffectContext
+        {
+            Source = EffectSource.HelpCard,
+            Caster = HelpCardUid
+        };
+        this.SendCommand(new ResolveEffectGraphCommand(helpDefinition.EffectGraphId, context));
+        this.GetSystem<ISkillSystem>().Trigger(
+            SkillTrigger.OnHelpCardUsed,
+            new TriggerContext { HelpCardUsedUid = HelpCardUid },
+            this);
     }
 }
 
-public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
+public sealed class ResolveEffectGraphCommand : AbstractCommand
 {
-    public ResolveThrowingKnifeTargetCommand(BoardSlotNo slot)
+    public ResolveEffectGraphCommand(string effectGraphId, EffectContext context)
+    {
+        EffectGraphId = effectGraphId;
+        Context = context;
+    }
+
+    public string EffectGraphId { get; }
+    public EffectContext Context { get; }
+
+    protected override void OnExecute()
+    {
+        this.GetSystem<IEffectSystem>().ResolveEffectGraph(EffectGraphId, Context, this);
+    }
+}
+
+public sealed class ResolveTargetingCommand : AbstractCommand
+{
+    public ResolveTargetingCommand(BoardSlotNo slot)
     {
         Slot = slot;
     }
@@ -1204,24 +1177,55 @@ public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
 
         var boardModel = this.GetModel<IBoardModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
+        var playerModel = this.GetModel<IPlayerModel>();
         var targetUid = boardModel.GetCardAt(Slot);
-        if (!targetUid.HasValue || !collectionModel.TryGetCard(targetUid.Value, out var targetRuntime) || targetRuntime.CardType != CardType.Monster)
+        if (!targetUid.HasValue || !collectionModel.TryGetCard(targetUid.Value, out var targetRuntime))
         {
             return;
         }
 
-        var helpCardUid = deckModel.PendingHelpCardAction.HelpCardUid;
+        var pending = deckModel.PendingHelpCardAction;
+        var mode = string.IsNullOrEmpty(pending.TargetingMode) ? "damage" : pending.TargetingMode;
+        var helpCardUid = pending.HelpCardUid;
+        var causeId = string.IsNullOrEmpty(pending.TargetingCauseId) ? "help_throwing_knife" : pending.TargetingCauseId;
+
+        if (mode == "reduce_armor")
+        {
+            if (targetUid.Value.Equals(playerModel.PlayerCardUid))
+            {
+                return;
+            }
+
+            var armorDelta = pending.TargetingDamage != 0 ? -Math.Abs(pending.TargetingDamage) : -5;
+            deckModel.PendingHelpCardAction.Clear();
+            this.SendCommand(new ChangeArmorCommand(targetUid.Value, armorDelta, causeId));
+            this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
+            this.SendCommand(new CheckClearConditionCommand());
+            return;
+        }
+
+        if (targetRuntime.CardType != CardType.Monster)
+        {
+            return;
+        }
+
+        var damageAmount = ResolveTargetingDamage(pending, playerModel, collectionModel);
+        if (damageAmount <= 0)
+        {
+            return;
+        }
+
         deckModel.PendingHelpCardAction.Clear();
 
-        var knifeDamage = new DamageContext
+        var damage = new DamageContext
         {
             Target = targetUid.Value,
-            CauseId = "help_throwing_knife",
+            CauseId = causeId,
             Type = DamageType.HelpCard,
-            RawAttack = 6,
-            DamageBeforeArmor = 6
+            RawAttack = damageAmount,
+            DamageBeforeArmor = damageAmount
         };
-        this.SendCommand(new ApplyDamageCommand(knifeDamage));
+        this.SendCommand(new ApplyDamageCommand(damage));
         var targetDied = collectionModel.TryGetCard(targetUid.Value, out targetRuntime) && targetRuntime.CurrentHp <= 0;
         if (targetDied)
         {
@@ -1241,6 +1245,77 @@ public sealed class ResolveThrowingKnifeTargetCommand : AbstractCommand
         {
             this.SendCommand(new CheckClearConditionCommand());
         }
+    }
+
+    private static int ResolveTargetingDamage(
+        PendingHelpCardAction pending,
+        IPlayerModel playerModel,
+        ICollectionModel collectionModel)
+    {
+        var mode = string.IsNullOrEmpty(pending.TargetingMode) ? "damage" : pending.TargetingMode;
+        var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
+        switch (mode)
+        {
+            case "player_attack":
+                return playerRuntime.BaseAttack;
+            case "player_current_hp":
+                return playerRuntime.CurrentHp;
+            default:
+                return pending.TargetingDamage > 0 ? pending.TargetingDamage : 6;
+        }
+    }
+}
+
+public sealed class ResolveSwapTargetCommand : AbstractCommand
+{
+    public ResolveSwapTargetCommand(BoardSlotNo slot)
+    {
+        Slot = slot;
+    }
+
+    public BoardSlotNo Slot { get; }
+
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        if (deckModel.PendingHelpCardAction.Kind != PendingHelpCardActionKind.SwapTarget)
+        {
+            return;
+        }
+
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var targetUid = boardModel.GetCardAt(Slot);
+        if (!targetUid.HasValue ||
+            targetUid.Value.Equals(playerModel.PlayerCardUid) ||
+            !collectionModel.TryGetCard(targetUid.Value, out _))
+        {
+            return;
+        }
+
+        var pending = deckModel.PendingHelpCardAction;
+        var helpCardUid = pending.HelpCardUid;
+
+        if (!pending.SwapFirstTargetSelected)
+        {
+            pending.SwapFirstTargetSelected = true;
+            pending.SwapFirstTargetUid = targetUid.Value;
+            this.SendEvent(new GameplayMessageEvent("交换卡：请选择第二张卡牌。"));
+            return;
+        }
+
+        if (pending.SwapFirstTargetUid.HasValue && pending.SwapFirstTargetUid.Value.Equals(targetUid.Value))
+        {
+            return;
+        }
+
+        var firstTarget = pending.SwapFirstTargetUid.Value;
+        deckModel.PendingHelpCardAction.Clear();
+
+        this.SendCommand(new SwapBoardCardsCommand(firstTarget, targetUid.Value));
+        this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
+        this.SendCommand(new CheckClearConditionCommand());
     }
 }
 
@@ -1538,10 +1613,7 @@ public sealed class PickRelicRewardCommand : AbstractCommand
         var rewardModel = this.GetModel<IRewardModel>();
         if (rewardModel.CurrentRewardSource == RewardSource.ChestCard)
         {
-            rewardModel.CurrentRewardSource = RewardSource.None;
-            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
-            flowModel.SetPhase(FlowPhase.PlayerControl);
-            this.SendCommand(new CheckClearConditionCommand());
+            ChestRewardFlow.ResumeAfterChestReward(this, flowModel, rewardModel, inputLockSystem);
             return;
         }
 
@@ -1550,7 +1622,6 @@ public sealed class PickRelicRewardCommand : AbstractCommand
             rewardModel.CurrentRewardSource = RewardSource.None;
             inputLockSystem.Unlock(InputLockReason.OverlayVisible);
             this.SendCommand(new ProceedToNextNodeCommand());
-            return;
         }
     }
 }
@@ -1570,10 +1641,7 @@ public sealed class SkipChestRewardCommand : AbstractCommand
         var rewardModel = this.GetModel<IRewardModel>();
         if (rewardModel.CurrentRewardSource == RewardSource.ChestCard)
         {
-            rewardModel.CurrentRewardSource = RewardSource.None;
-            inputLockSystem.Unlock(InputLockReason.OverlayVisible);
-            flowModel.SetPhase(FlowPhase.PlayerControl);
-            this.SendCommand(new CheckClearConditionCommand());
+            ChestRewardFlow.ResumeAfterChestReward(this, flowModel, rewardModel, inputLockSystem);
             return;
         }
 
@@ -1584,6 +1652,34 @@ public sealed class SkipChestRewardCommand : AbstractCommand
             this.SendCommand(new ProceedToNextNodeCommand());
             return;
         }
+    }
+}
+
+internal static class ChestRewardFlow
+{
+    public static void ResumeAfterChestReward(
+        ICanSendCommand commandSender,
+        IFlowModel flowModel,
+        IRewardModel rewardModel,
+        IInputLockSystem inputLockSystem)
+    {
+        if (rewardModel.CurrentRewardSource != RewardSource.ChestCard)
+        {
+            return;
+        }
+
+        var resumePhase = rewardModel.RewardResumePhase ?? FlowPhase.PlayerControl;
+        rewardModel.CurrentRewardSource = RewardSource.None;
+        rewardModel.RewardResumePhase = null;
+        inputLockSystem.Unlock(InputLockReason.OverlayVisible);
+        flowModel.SetPhase(resumePhase);
+
+        if (resumePhase == FlowPhase.RoomChoosing)
+        {
+            return;
+        }
+
+        commandSender.SendCommand(new CheckClearConditionCommand());
     }
 }
 
