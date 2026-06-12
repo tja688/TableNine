@@ -1341,6 +1341,11 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
 
         if (deckModel.HelpCardStates.TryGetValue(helpCardUid.Value, out var state))
         {
+            if (state.IsPermanentlyRemoved || state.IsTemporarilyRemoved)
+            {
+                return false;
+            }
+
             state.IsPermanentlyRemoved = true;
             state.IsOnBoard = false;
             state.IsInItemSlot = false;

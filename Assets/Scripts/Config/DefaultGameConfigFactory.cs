@@ -279,7 +279,7 @@ public static partial class DefaultGameConfigFactory
             RoomId = RoomGoldId,
             DisplayName = "金币房间",
             RoomType = RoomType.Gold,
-            RewardGold = 30
+            RewardGold = 50
         });
         config.Rooms.Add(new RoomDefinition
         {
@@ -291,9 +291,9 @@ public static partial class DefaultGameConfigFactory
         config.Rooms.Add(new RoomDefinition
         {
             RoomId = RoomAttributeId,
-            DisplayName = "属性房间",
+            DisplayName = "温泉房",
             RoomType = RoomType.Attribute,
-            InjectCardId = HelpAttributeUpId
+            StatMaxHpBonus = RewardConstants.AttributeRoomMaxHpBonus
         });
         config.Rooms.Add(new RoomDefinition
         {

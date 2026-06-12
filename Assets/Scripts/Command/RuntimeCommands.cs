@@ -1423,6 +1423,19 @@ public sealed class ConsumeHelpCardCommand : AbstractCommand
 // M3: Reward Loop Commands
 // ============================================================
 
+public sealed class SettleNodeEndCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+
+        rewardSystem.SettleUnusedHelpCards();
+        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
+        deckModel.ClearNodeState();
+    }
+}
+
 public sealed class ChooseRoomCommand : AbstractCommand
 {
     public ChooseRoomCommand(string roomId)
@@ -1436,18 +1449,15 @@ public sealed class ChooseRoomCommand : AbstractCommand
     {
         var configModel = this.GetModel<IConfigModel>();
         var flowModel = this.GetModel<IFlowModel>();
-        var rewardSystem = this.GetSystem<IRewardSystem>();
         var inputLockSystem = this.GetSystem<IInputLockSystem>();
         var playerModel = this.GetModel<IPlayerModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
-        var deckModel = this.GetModel<IDeckModel>();
 
         var rewardModel = this.GetModel<IRewardModel>();
         flowModel.SetPhase(FlowPhase.RoomResolving);
         rewardModel.CurrentRewardSource = RewardSource.Room;
 
-        rewardSystem.SettleUnusedHelpCards();
-        rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
+        this.SendCommand(new SettleNodeEndCommand());
 
         var roomDef = configModel.GetRoomDefinition(RoomId);
         this.SendEvent(new RoomChosenEvent(RoomId, roomDef.RoomType));
@@ -1470,22 +1480,25 @@ public sealed class ChooseRoomCommand : AbstractCommand
                 break;
 
             case RoomType.Attribute:
-                if (!string.IsNullOrEmpty(roomDef.InjectCardId))
-                {
-                    var attrDef = configModel.GetCardDefinition(roomDef.InjectCardId);
-                    var attrRuntime = collectionModel.CreateCard(attrDef);
-                    deckModel.OwnedHelpCards.Add(attrRuntime.Uid);
-                    deckModel.HelpCardStates[attrRuntime.Uid.Value] = new HelpCardState
-                    {
-                        Uid = attrRuntime.Uid,
-                        DefinitionId = attrRuntime.DefinitionId
-                    };
-                    this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
-                        DescriptionPanelTextKeys.MsgRoomAttribute,
-                        attrDef.DisplayName)));
-                }
+            {
+                var hpBonus = roomDef.StatMaxHpBonus > 0
+                    ? roomDef.StatMaxHpBonus
+                    : RewardConstants.AttributeRoomMaxHpBonus;
+                this.SendCommand(new ApplyStatChangeCommand(
+                    playerModel.PlayerCardUid,
+                    StatType.MaxHp,
+                    hpBonus,
+                    "room_attribute"));
+                var effectiveMax = this.GetSystem<IStatSystem>().GetEffectivePlayerStats().MaxHp;
+                var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
+                playerRuntime.CurrentHp = effectiveMax;
+                this.SendEvent(new StatsDirtyEvent(playerModel.PlayerCardUid));
+                this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(
+                    DescriptionPanelTextKeys.MsgRoomAttribute,
+                    hpBonus)));
                 this.SendCommand(new ProceedToNextNodeCommand());
                 break;
+            }
 
             case RoomType.Shop:
                 flowModel.SetPhase(FlowPhase.Shop);

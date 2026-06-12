@@ -28,8 +28,8 @@ public sealed class TableNineUIRouter : IController, IDisposable
         Register<HelpRewardGeneratedEvent>(OnHelpRewardGenerated);
         Register<TutorSkillChoiceRequestedEvent>(OnTutorSkillChoiceRequested);
         Register<TutorSkillChosenEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.TutorSkillChoice));
-        Register<HelpRewardPickedEvent>(_ => CloseHelpRewardAndPromptNextNode());
-        Register<HelpRewardSkippedEvent>(_ => CloseHelpRewardAndPromptNextNode());
+        Register<HelpRewardPickedEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.HelpReward));
+        Register<HelpRewardSkippedEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.HelpReward));
         Register<ChestRewardGeneratedEvent>(OnChestRewardGenerated);
         Register<RelicRewardPickedEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.ChestReward));
         Register<ChestRewardSkippedEvent>(_ => TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.ChestReward));
@@ -213,7 +213,9 @@ public sealed class TableNineUIRouter : IController, IDisposable
         for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
         {
             var uid = deckModel.OwnedHelpCards[i];
-            if (!deckModel.HelpCardStates.TryGetValue(uid.Value, out var state) || state.IsPermanentlyRemoved)
+            if (!deckModel.HelpCardStates.TryGetValue(uid.Value, out var state) ||
+                state.IsPermanentlyRemoved ||
+                state.IsTemporarilyRemoved)
             {
                 continue;
             }
@@ -240,28 +242,6 @@ public sealed class TableNineUIRouter : IController, IDisposable
         }
     }
 
-    private void CloseHelpRewardAndPromptNextNode()
-    {
-        TableNineUIRuntime.Close(mRegistry, TableNineUIKeys.HelpReward);
-        OpenNextNodePrompt();
-    }
-
-    private void OpenNextNodePrompt()
-    {
-        var runModel = this.GetModel<IRunModel>();
-        var isLayerEnd = runModel.NodeInLayer.Value >= 9;
-        TableNineUIRuntime.Open(mRegistry, new TableNineUIRequestPanelData
-        {
-            Key = TableNineUIKeys.NextNodePrompt,
-            Title = isLayerEnd ? "层通关" : "节点奖励已结算",
-            Message = isLayerEnd
-                ? $"第 {runModel.Layer.Value} 层 9 个节点已全部完成。"
-                : $"第 {runModel.Layer.Value} 层第 {runModel.NodeInLayer.Value} 节点完成。",
-            CloseLabel = isLayerEnd ? "确认" : "下一节点",
-            CloseAction = controller => controller.SendCommand(new ProceedToNextNodeCommand())
-        });
-    }
-
     private static string DescribeRoom(RoomDefinition room)
     {
         switch (room.RoomType)
@@ -271,7 +251,8 @@ public sealed class TableNineUIRouter : IController, IDisposable
             case RoomType.Chest:
                 return "打开遗物选择";
             case RoomType.Attribute:
-                return "获得属性提升卡";
+                var bonus = room.StatMaxHpBonus > 0 ? room.StatMaxHpBonus : RewardConstants.AttributeRoomMaxHpBonus;
+                return $"生命上限 +{bonus} 并回满生命";
             case RoomType.Shop:
                 return "购买或删除帮助卡";
             default:
@@ -345,6 +326,14 @@ public static class TableNineUIRuntime
             data.FallbackScrollViewPrefab = registry.FallbackScrollViewPrefab;
         }
 
+#if UNITY_EDITOR
+        TableNineUIRuntimeTestRecorder.RecordOpen(data.Key);
+        if (TableNineUIRuntimeTestRecorder.SkipActualPanelOpen)
+        {
+            return null;
+        }
+#endif
+
         if (entry.HasFormalPrefab)
         {
             return OpenPanel(entry.PanelName, null, entry.Level, entry.OpenType, data);
@@ -361,6 +350,13 @@ public static class TableNineUIRuntime
 
     public static void Close(TableNineUIPanelRegistry registry, string uiKey)
     {
+#if UNITY_EDITOR
+        TableNineUIRuntimeTestRecorder.RecordClose(uiKey);
+        if (TableNineUIRuntimeTestRecorder.SkipActualPanelOpen)
+        {
+            return;
+        }
+#endif
         var entry = registry != null ? registry.GetEntry(uiKey) : null;
         if (entry != null && !string.IsNullOrWhiteSpace(entry.PanelName))
         {

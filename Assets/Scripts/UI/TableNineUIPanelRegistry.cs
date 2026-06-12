@@ -490,7 +490,7 @@ public sealed class TableNineUIPanelRegistry : ScriptableObject, ISerializationC
                 OpenType = PanelOpenType.Single,
                 FallbackStrategy = TableNineUIFallbackStrategy.AtomicStatusPrompt,
                 BlocksGameplayInput = false,
-                Notes = "Prompt shown after reward chain resolves."
+                Notes = "Reserved status prompt. Not opened during help-reward→RoomChoosing; node advance uses ChooseRoomCommand / DescriptionPanel."
             },
             new PanelEntry
             {

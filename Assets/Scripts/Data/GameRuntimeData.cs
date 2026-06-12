@@ -655,6 +655,7 @@ public sealed class RoomDefinition
     public string DisplayName;
     public RoomType RoomType;
     public int RewardGold;
+    public int StatMaxHpBonus;
     public string InjectCardId;
 }
 
@@ -701,6 +702,7 @@ public static class RewardConstants
     public const int HelpRewardCandidateCount = 3;
     public const int RoomCandidateCount = 2;
     public const int ChestRewardCandidateCount = 3;
+    public const int AttributeRoomMaxHpBonus = 4;
 
     public static readonly float[] HelpRewardQualityWeights = { 65f, 30f, 5f, 0f };
     public static readonly float[] NormalChestQualityWeights = { 65f, 30f, 5f };
