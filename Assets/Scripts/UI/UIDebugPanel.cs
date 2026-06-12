@@ -38,6 +38,16 @@ public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
 #endif
     }
 
+    private void Start()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (mRoot != null)
+        {
+            mRoot.SetActive(false);
+        }
+#endif
+    }
+
     private void Update()
     {
 #if !(UNITY_EDITOR || DEVELOPMENT_BUILD)
@@ -130,19 +140,33 @@ public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
         var deckModel = this.GetModel<IDeckModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
         var configModel = this.GetModel<IConfigModel>();
+        var playerModel = this.GetModel<IPlayerModel>();
         var replay = this.GetUtility<ICommandReplayUtility>();
         var eventLog = this.GetUtility<IDebugEventLogUtility>();
+        var builder = new StringBuilder(4096);
+        builder.AppendLine($"Seed: {runModel.Seed.Value}  Layer/Node: {runModel.Layer.Value}/{runModel.NodeInLayer.Value}");
+        builder.AppendLine($"Phase: {flowModel.Phase.Value}  Locks: {FormatLocks(flowModel)}");
+
+        if (!runModel.IsRunActive.Value || !collectionModel.TryGetCard(playerModel.PlayerCardUid, out var player))
+        {
+            builder.AppendLine("Run: inactive");
+            builder.AppendLine($"Replay: entries={replay.Entries.Count} lastHash={mLastReplayHash} matched={mLastReplayHashMatched}");
+            builder.AppendLine("Legacy auto-start is disabled. Start or load a run before gameplay state becomes available.");
+            builder.AppendLine("Recent Commands:");
+            AppendRecentLines(builder, replay.Entries, entry => $"{entry.CommandType} | {entry.PayloadJson}");
+            builder.AppendLine("Recent Events:");
+            AppendRecentLines(builder, eventLog.RecentEvents, line => line);
+            mInfoText.text = builder.ToString();
+            return;
+        }
+
         var stats = this.SendQuery(new GetEffectivePlayerStatsQuery());
-        var player = collectionModel.GetCard(this.GetModel<IPlayerModel>().PlayerCardUid);
         var boardHash = this.SendQuery(new GetBoardSnapshotHashQuery());
         var runHash = this.SendQuery(new GetRunSnapshotHashQuery());
         var monsterDetail = this.SendQuery(new GetMonsterRemainingDetailQuery());
 
-        var builder = new StringBuilder(4096);
-        builder.AppendLine($"Seed: {runModel.Seed.Value}  Layer/Node: {runModel.Layer.Value}/{runModel.NodeInLayer.Value}");
-        builder.AppendLine($"Phase: {flowModel.Phase.Value}  Locks: {FormatLocks(flowModel)}");
         builder.AppendLine($"BoardHash: {boardHash}  RunHash: {runHash}");
-        builder.AppendLine($"Player: hp={player.CurrentHp}/{player.MaxHp} armor={player.CurrentArmor} atk={stats.Attack} def={stats.Defense} dr={stats.DamageReduction} gold={this.GetModel<IPlayerModel>().Gold.Value}");
+        builder.AppendLine($"Player: hp={player.CurrentHp}/{player.MaxHp} armor={player.CurrentArmor} atk={stats.Attack} def={stats.Defense} dr={stats.DamageReduction} gold={playerModel.Gold.Value}");
         builder.AppendLine($"BattleDeck: {deckModel.BattleDrawPile.Count}  Next: {deckModel.NextBattleCardPreview.Value.DisplayName}");
         builder.AppendLine($"MonsterCheck: {monsterDetail}");
         builder.AppendLine($"Replay: entries={replay.Entries.Count} lastHash={mLastReplayHash} matched={mLastReplayHashMatched}");

@@ -312,6 +312,7 @@ public static partial class DefaultGameConfigFactory
     private static void AddScaledMonsterSet(GameConfigSet config, int layer, float scale)
     {
         var suffix = layer == 2 ? "_l2" : "_l3";
+        DuplicateScaledMonsters(config, Layer1Level1MonsterIds, suffix, scale, MonsterLevel.Level1);
         DuplicateScaledMonsters(config, Layer1Level2MonsterIds, suffix, scale, MonsterLevel.Level2);
         DuplicateScaledMonsters(config, Layer1Level3MonsterIds, suffix, scale, MonsterLevel.Level3);
         DuplicateScaledMonsters(config, Layer1Level4MonsterIds, suffix, scale, MonsterLevel.Level4);

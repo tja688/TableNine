@@ -14,7 +14,7 @@
 
 ```text
 Command / System
-  → 领域事件（或 Bootstrap 直接开 HUD）
+  → 领域事件（旧版 HUD 若启用则由 Bootstrap 显式打开）
   → TableNineUIRouter 组装 TableNineUIRequestPanelData
   → TableNineUIRuntime.Open(registry, data)
   → Registry 查 UIKey
@@ -24,7 +24,7 @@ Command / System
 ```
 
 配置资产：`Assets/ScriptableObjects/TableNineUIPanelRegistry.asset`  
-Bootstrap 在 `GameplayBootstrap` 注入 Registry 并启动 Router；HUD 由 `UIKit.OpenPanel<UIGameplayPanel>` 直接打开，不经 Router。
+Bootstrap 在 `GameplayBootstrap` 注入 Registry 并启动 Router。清理旧灰盒后，Bootstrap 默认**不再自动打开** `UIGameplayPanel`，后续 R8 表现层应显式决定启动时打开什么 UI。
 
 ## 3. 数据分工（填表架构）
 
@@ -43,7 +43,7 @@ Bootstrap 在 `GameplayBootstrap` 注入 Registry 并启动 Router；HUD 由 `UI
 
 | UIKey | 中文 | 触发 | Router | 说明 |
 |-------|------|------|:------:|------|
-| `gameplay.hud` | 主游戏界面 | Bootstrap | — | 必须正式 Prefab；`FallbackStrategy=None` |
+| `gameplay.hud` | 主游戏界面 | 手动/未来表现层入口 | — | 旧 Bootstrap 默认不再自动打开；`FallbackStrategy=None` |
 | `popup.message` | 通用提示 | `PopupRequestedEvent` | ✓ | |
 | `choice.attribute` | 属性提升 | `AttributeChoiceRequestedEvent` | ✓ | |
 | `choice.room` | 房间选择 | `RoomChoiceRequestedEvent` | ✓ | `BlocksGameplayInput=false` |

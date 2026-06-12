@@ -6,6 +6,8 @@ using Object = UnityEngine.Object;
 public sealed class GameplayBootstrap : MonoBehaviour
 {
     [SerializeField] private TableNineUIPanelRegistry mUIPanelRegistry;
+    [SerializeField] private bool mOpenLegacyHudOnBoot;
+    [SerializeField] private bool mAutoStartLegacyRun;
 
     private bool mBootstrapped;
     private TableNineUIRouter mUIRouter;
@@ -29,7 +31,8 @@ public sealed class GameplayBootstrap : MonoBehaviour
         TableNine.InitArchitecture();
         SetupUIKit();
 
-        if (!this.GetArchitecture().GetModel<IRunModel>().IsRunActive.Value)
+        if (mAutoStartLegacyRun &&
+            !this.GetArchitecture().GetModel<IRunModel>().IsRunActive.Value)
         {
             this.GetArchitecture().SendCommand(new StartNewRunCommand());
         }
@@ -55,7 +58,10 @@ public sealed class GameplayBootstrap : MonoBehaviour
         UIKit.Root.SetResolution(426, 240, 0.5f);
         UIKit.Root.ScreenSpaceOverlayRenderMode();
         UIKit.CloseAllPanel();
-        UIKit.OpenPanel<UIGameplayPanel>(UILevel.Common);
+        if (mOpenLegacyHudOnBoot)
+        {
+            UIKit.OpenPanel<UIGameplayPanel>(UILevel.Common);
+        }
 
         mUIRouter?.Dispose();
         mUIRouter = new TableNineUIRouter(mUIPanelRegistry);

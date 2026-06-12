@@ -8,6 +8,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     private readonly Dictionary<int, GameplayCardVisual> mItemCardViews = new Dictionary<int, GameplayCardVisual>();
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
+    [SerializeField] private bool mEnableLegacyGreyboxPresentation;
     [SerializeField] private Transform mBoardRoot;
     [SerializeField] private Transform mItemRoot;
     [SerializeField] private GameObject mCardTemplate;
@@ -15,6 +16,17 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
+    }
+
+    private void Awake()
+    {
+        if (mEnableLegacyGreyboxPresentation)
+        {
+            return;
+        }
+
+        HideLegacySceneRoots();
+        enabled = false;
     }
 
     private void Start()
@@ -307,6 +319,20 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
 
         return null;
+    }
+
+    private void HideLegacySceneRoots()
+    {
+        HideObject(mBoardRoot != null ? mBoardRoot.gameObject : GameObject.Find("NineGrid CardSlots"));
+        HideObject(mCardTemplate != null ? mCardTemplate : GameObject.Find("CardExample"));
+    }
+
+    private static void HideObject(GameObject target)
+    {
+        if (target != null)
+        {
+            target.SetActive(false);
+        }
     }
 }
 

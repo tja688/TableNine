@@ -33,6 +33,12 @@ MonoBehaviour:
     - Assembly-CSharp-firstpass
     - AudioKit
     - EasySave3
+    - Febucci.Attributes.Runtime
+    - Febucci.TextAnimator.Demo.Runtime
+    - Febucci.TextAnimator.Demo.Sounds.Runtime
+    - Febucci.TextAnimatorForUnity.Input.Runtime
+    - Febucci.TextAnimatorForUnity.Runtime
+    - Febucci.TextAnimatorForUnity.TMP.Runtime
     - MCPForUnity.Runtime
     - QFramework
     - QFramework.CoreKit

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using QFramework;
 using UnityEngine;
@@ -43,12 +44,19 @@ public sealed class TableNineBootstrapPlayModeTests
     }
 
     [UnityTest]
-    public IEnumerator BootstrapScene_Opens_GameplayPanel_With_UIKit()
+    public IEnumerator BootstrapScene_Does_Not_Auto_Start_Legacy_Gameplay()
     {
         yield return SceneManager.LoadSceneAsync("TableNineBootstrap", LoadSceneMode.Single);
         yield return null;
 
-        Assert.That(UIKit.GetPanel<UIGameplayPanel>(), Is.Not.Null);
+        var legacyBoardRoot = Resources.FindObjectsOfTypeAll<Transform>()
+            .FirstOrDefault(transform => transform.name == "NineGrid CardSlots")
+            ?.gameObject;
+
+        Assert.That(TableNine.Interface.GetModel<IRunModel>().IsRunActive.Value, Is.False);
+        Assert.That(UIKit.GetPanel<UIGameplayPanel>(), Is.Null);
+        Assert.That(legacyBoardRoot, Is.Not.Null);
+        Assert.That(legacyBoardRoot.activeSelf, Is.False);
         Assert.That(GameObject.Find("DeckCountText"), Is.Null);
         Assert.That(GameObject.Find("ClearBanner"), Is.Null);
         Assert.That(GameObject.Find("AttributeChoiceOverlay"), Is.Null);
