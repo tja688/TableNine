@@ -23,8 +23,7 @@ public sealed class TableNineM5EditModeTests
     [Test]
     public void ConfigValidator_Passes_For_Full_Playtest_Config()
     {
-        var config = DefaultGameConfigFactory.Create();
-        var errors = ConfigValidator.Validate(config);
+        var errors = ConfigValidator.Validate(TableNineTestConfig.LoadProductionRuntimeBundle());
         Assert.That(errors, Is.Empty, string.Join("\n", errors));
     }
 
@@ -47,13 +46,13 @@ public sealed class TableNineM5EditModeTests
     [Test]
     public void Layer2_Node5_Contains_Heart_Elite()
     {
-        AssertMandatoryMonster(2, 5, DefaultGameConfigFactory.MonsterHeartEliteId);
+        AssertMandatoryMonster(2, 5, GameConfigIds.MonsterHeartEliteId);
     }
 
     [Test]
     public void Layer3_Node9_Contains_Diamond_Boss()
     {
-        AssertMandatoryMonster(3, 9, DefaultGameConfigFactory.MonsterDiamondBossId);
+        AssertMandatoryMonster(3, 9, GameConfigIds.MonsterDiamondBossId);
     }
 
     [Test]
@@ -61,9 +60,9 @@ public sealed class TableNineM5EditModeTests
     {
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
-        for (var i = 0; i < DefaultGameConfigFactory.PlaytestHelpCardIds.Length; i++)
+        for (var i = 0; i < GameConfigIds.PlaytestHelpCardIds.Length; i++)
         {
-            var id = DefaultGameConfigFactory.PlaytestHelpCardIds[i];
+            var id = GameConfigIds.PlaytestHelpCardIds[i];
             Assert.That(configModel.TryGetCardDefinition(id, out var def), Is.True, $"Missing help card {id}");
             Assert.That(def.CardType, Is.EqualTo(CardType.Help));
         }

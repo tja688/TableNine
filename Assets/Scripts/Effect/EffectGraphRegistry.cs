@@ -38,36 +38,62 @@ public static class EffectGraphRegistry
         return !string.IsNullOrEmpty(effectGraphId) && Graphs.ContainsKey(effectGraphId);
     }
 
+    public static IReadOnlyList<EffectGraphDefinition> ExportAllGraphs()
+    {
+        var result = new List<EffectGraphDefinition>(Graphs.Count);
+        foreach (var pair in Graphs)
+        {
+            result.Add(EffectAtomSerializationUtility.CloneGraph(pair.Value));
+        }
+
+        return result;
+    }
+
+    public static IReadOnlyList<HelpCardEffectMapping> ExportHelpCardMappings()
+    {
+        var result = new List<HelpCardEffectMapping>(CardToGraphId.Count);
+        foreach (var pair in CardToGraphId)
+        {
+            result.Add(new HelpCardEffectMapping
+            {
+                CardId = pair.Key,
+                EffectGraphId = pair.Value
+            });
+        }
+
+        return result;
+    }
+
     private static void BuildCardMappings()
     {
-        Map(DefaultGameConfigFactory.HelpPotionId, "eg_help_potion");
-        Map(DefaultGameConfigFactory.HelpThrowingKnifeId, "eg_help_throwing_knife");
-        Map(DefaultGameConfigFactory.HelpCommonChestId, "eg_help_common_chest");
-        Map(DefaultGameConfigFactory.HelpAttributeUpId, "eg_help_attribute_up");
-        Map(DefaultGameConfigFactory.HelpGoldCardId, "eg_help_gold_card");
-        Map(DefaultGameConfigFactory.HelpChestCardId, "eg_help_chest_card");
-        Map(DefaultGameConfigFactory.HelpBlessingId, "eg_help_blessing");
-        Map(DefaultGameConfigFactory.HelpBandageId, "eg_help_bandage");
-        Map(DefaultGameConfigFactory.HelpBlueChestId, "eg_help_blue_chest");
-        Map(DefaultGameConfigFactory.HelpGoldChestId, "eg_help_gold_chest");
-        Map(DefaultGameConfigFactory.HelpFireballId, "eg_help_fireball");
-        Map(DefaultGameConfigFactory.HelpSpinWheelId, "eg_help_spin_wheel");
-        Map(DefaultGameConfigFactory.HelpViolenceId, "eg_help_violence");
-        Map(DefaultGameConfigFactory.HelpBoulderId, "eg_help_boulder");
-        Map(DefaultGameConfigFactory.HelpBombId, "eg_help_bomb");
-        Map(DefaultGameConfigFactory.HelpSwapId, "eg_help_swap");
-        Map(DefaultGameConfigFactory.HelpSmasherId, "eg_help_smasher");
-        Map(DefaultGameConfigFactory.HelpFoodId, "eg_help_food");
-        Map(DefaultGameConfigFactory.HelpHealingSpringId, "eg_help_healing_spring");
-        Map(DefaultGameConfigFactory.HelpCrashTutorialId, "eg_help_crash_tutorial");
-        Map(DefaultGameConfigFactory.HelpWatchtowerId, "eg_help_watchtower");
-        Map(DefaultGameConfigFactory.HelpMultiplierTowerId, "eg_help_multiplier_tower");
-        Map(DefaultGameConfigFactory.HelpDurableShieldId, "eg_help_durable_shield");
-        Map(DefaultGameConfigFactory.HelpShieldStrikeTutorialId, "eg_help_shield_strike_tutorial");
-        Map(DefaultGameConfigFactory.HelpTeleportId, "eg_help_teleport");
-        Map(DefaultGameConfigFactory.HelpKidnapId, "eg_help_kidnap");
-        Map(DefaultGameConfigFactory.HelpBearTrapId, "eg_help_bear_trap");
-        Map(DefaultGameConfigFactory.HelpBloodConvertId, "eg_help_blood_convert");
+        Map(GameConfigIds.HelpPotionId, "eg_help_potion");
+        Map(GameConfigIds.HelpThrowingKnifeId, "eg_help_throwing_knife");
+        Map(GameConfigIds.HelpCommonChestId, "eg_help_common_chest");
+        Map(GameConfigIds.HelpAttributeUpId, "eg_help_attribute_up");
+        Map(GameConfigIds.HelpGoldCardId, "eg_help_gold_card");
+        Map(GameConfigIds.HelpChestCardId, "eg_help_chest_card");
+        Map(GameConfigIds.HelpBlessingId, "eg_help_blessing");
+        Map(GameConfigIds.HelpBandageId, "eg_help_bandage");
+        Map(GameConfigIds.HelpBlueChestId, "eg_help_blue_chest");
+        Map(GameConfigIds.HelpGoldChestId, "eg_help_gold_chest");
+        Map(GameConfigIds.HelpFireballId, "eg_help_fireball");
+        Map(GameConfigIds.HelpSpinWheelId, "eg_help_spin_wheel");
+        Map(GameConfigIds.HelpViolenceId, "eg_help_violence");
+        Map(GameConfigIds.HelpBoulderId, "eg_help_boulder");
+        Map(GameConfigIds.HelpBombId, "eg_help_bomb");
+        Map(GameConfigIds.HelpSwapId, "eg_help_swap");
+        Map(GameConfigIds.HelpSmasherId, "eg_help_smasher");
+        Map(GameConfigIds.HelpFoodId, "eg_help_food");
+        Map(GameConfigIds.HelpHealingSpringId, "eg_help_healing_spring");
+        Map(GameConfigIds.HelpCrashTutorialId, "eg_help_crash_tutorial");
+        Map(GameConfigIds.HelpWatchtowerId, "eg_help_watchtower");
+        Map(GameConfigIds.HelpMultiplierTowerId, "eg_help_multiplier_tower");
+        Map(GameConfigIds.HelpDurableShieldId, "eg_help_durable_shield");
+        Map(GameConfigIds.HelpShieldStrikeTutorialId, "eg_help_shield_strike_tutorial");
+        Map(GameConfigIds.HelpTeleportId, "eg_help_teleport");
+        Map(GameConfigIds.HelpKidnapId, "eg_help_kidnap");
+        Map(GameConfigIds.HelpBearTrapId, "eg_help_bear_trap");
+        Map(GameConfigIds.HelpBloodConvertId, "eg_help_blood_convert");
     }
 
     private static void Map(string cardId, string graphId)
@@ -82,10 +108,10 @@ public static class EffectGraphRegistry
             Consume());
 
         Register("eg_help_throwing_knife",
-            Targeting(6, DefaultGameConfigFactory.HelpThrowingKnifeId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+            Targeting(6, GameConfigIds.HelpThrowingKnifeId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
 
         Register("eg_help_fireball",
-            TargetingPlayerAttack(DefaultGameConfigFactory.HelpFireballId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+            TargetingPlayerAttack(GameConfigIds.HelpFireballId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
 
         Register("eg_help_attribute_up",
             Overlay("attribute"));
@@ -126,7 +152,7 @@ public static class EffectGraphRegistry
             Consume());
 
         Register("eg_help_bomb",
-            Damage(4, "all_monsters", DefaultGameConfigFactory.HelpBombId),
+            Damage(4, "all_monsters", GameConfigIds.HelpBombId),
             Consume());
 
         Register("eg_help_spin_wheel",
@@ -134,13 +160,13 @@ public static class EffectGraphRegistry
             Consume());
 
         Register("eg_help_crash_tutorial",
-            TargetingPlayerCurrentHp(DefaultGameConfigFactory.HelpCrashTutorialId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+            TargetingPlayerCurrentHp(GameConfigIds.HelpCrashTutorialId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
 
         Register("eg_help_boulder",
             Consume());
 
         Register("eg_help_smasher",
-            TargetingReduceArmor(10, DefaultGameConfigFactory.HelpSmasherId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+            TargetingReduceArmor(10, GameConfigIds.HelpSmasherId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
 
         Register("eg_help_durable_shield",
             ModifyArmor(5),
@@ -148,21 +174,21 @@ public static class EffectGraphRegistry
 
         Register("eg_help_shield_strike_tutorial",
             TargetingPlayerCurrentArmor(
-                DefaultGameConfigFactory.HelpShieldStrikeTutorialId,
+                GameConfigIds.HelpShieldStrikeTutorialId,
                 DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
 
         Register("eg_help_teleport",
-            Targeting(0, DefaultGameConfigFactory.HelpTeleportId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "teleport_to_deck"));
+            Targeting(0, GameConfigIds.HelpTeleportId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "teleport_to_deck"));
 
         Register("eg_help_kidnap",
-            Targeting(0, DefaultGameConfigFactory.HelpKidnapId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "kidnap"));
+            Targeting(0, GameConfigIds.HelpKidnapId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "kidnap"));
 
         Register("eg_help_violence",
             Status("violence_attack"),
             Consume());
 
         Register("eg_help_swap",
-            Targeting(0, DefaultGameConfigFactory.HelpSwapId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "swap"));
+            Targeting(0, GameConfigIds.HelpSwapId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "swap"));
 
         Register("eg_help_watchtower",
             Status("tower_watch"),
@@ -179,6 +205,19 @@ public static class EffectGraphRegistry
             Modify(StatType.MaxHp, -5),
             Atom(EffectAtomTypes.BloodConvertReward),
             Consume());
+
+        Register("eg_relic_thorn_armor",
+            Atom(EffectAtomTypes.ReflectParallelDamage,
+                ("mode", "fixed"),
+                ("amount", CombatConstants.ThornArmorDamage.ToString()),
+                ("causeId", CombatConstants.CauseThornArmor),
+                ("damageType", DamageType.Relic.ToString())));
+
+        Register("eg_skill_thorn_skin_reflect",
+            Atom(EffectAtomTypes.ReflectParallelDamage,
+                ("mode", "attacker_attack"),
+                ("causeId", CombatConstants.CauseThornSkin),
+                ("damageType", DamageType.Skill.ToString())));
     }
 
     private static void Register(string graphId, params EffectAtomDefinition[] atoms)
@@ -195,7 +234,7 @@ public static class EffectGraphRegistry
         var atom = new EffectAtomDefinition { AtomType = type };
         for (var i = 0; i < parameters.Length; i++)
         {
-            atom.Parameters[parameters[i].key] = parameters[i].value;
+            EffectAtomSerializationUtility.SetParameter(atom, parameters[i].key, parameters[i].value);
         }
 
         return atom;

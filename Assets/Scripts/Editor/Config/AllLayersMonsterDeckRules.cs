@@ -21,8 +21,8 @@ public static class AllLayersMonsterDeckRules
         var level2 = DefaultGameConfigFactory.GetLevelMonsterIds(layer, MonsterLevel.Level2);
         var level3 = DefaultGameConfigFactory.GetLevelMonsterIds(layer, MonsterLevel.Level3);
         var level4 = DefaultGameConfigFactory.GetLevelMonsterIds(layer, MonsterLevel.Level4);
-        var eliteId = DefaultGameConfigFactory.GetEliteMonsterId(layer);
-        var bossId = DefaultGameConfigFactory.GetBossMonsterId(layer);
+        var eliteId = GameConfigIds.GetEliteMonsterId(layer);
+        var bossId = GameConfigIds.GetBossMonsterId(layer);
 
         AddRule(config, layer, 1, Quota(MonsterLevel.Level1, 6, 8, level1),
             QuotaRemainder(MonsterLevel.Level2, 2, 4, level2));

@@ -28,22 +28,22 @@ public sealed class TableNineR8PresentationEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentArmor = 7;
-        playerModel.AddSkill(DefaultGameConfigFactory.SkillHardSkinId);
+        playerModel.AddSkill(GameConfigIds.SkillHardSkinId);
 
         var playerData = CardViewDataFactory.Create(controller, playerModel.PlayerCardUid);
 
         Assert.That(playerData.CurrentArmor, Is.EqualTo(7));
         Assert.That(playerData.SpriteId, Is.EqualTo(player.DefinitionId));
-        Assert.That(playerData.StatusIconIds, Does.Contain(DefaultGameConfigFactory.SkillHardSkinId));
+        Assert.That(playerData.StatusIconIds, Does.Contain(GameConfigIds.SkillHardSkinId));
         Assert.That(CardViewDataFactory.FormatWorldCard(playerData, false), Does.Contain("ARM 7"));
 
         var monsterUid = FindMonsterOnBoard();
-        collectionModel.GetCard(monsterUid).SkillIds.Add(DefaultGameConfigFactory.SkillHardSkinId);
+        collectionModel.GetCard(monsterUid).SkillIds.Add(GameConfigIds.SkillHardSkinId);
 
         var monsterData = CardViewDataFactory.Create(controller, monsterUid);
 
         Assert.That(monsterData.DamageReduction, Is.EqualTo(1));
-        Assert.That(monsterData.StatusIconIds, Does.Contain(DefaultGameConfigFactory.SkillHardSkinId));
+        Assert.That(monsterData.StatusIconIds, Does.Contain(GameConfigIds.SkillHardSkinId));
         Assert.That(CardViewDataFactory.FormatWorldCard(monsterData, false), Does.Contain("DR 1"));
     }
 

@@ -22,15 +22,15 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterSpade4Id, 12, 6, 2);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterHeart4Id, 16, 4, 0);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterDiamond4Id, 8, 4, 8);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterClub4Id, 12, 4, 4);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterSpade4Id, 12, 6, 2);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterHeart4Id, 16, 4, 0);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterDiamond4Id, 8, 4, 8);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterClub4Id, 12, 4, 4);
 
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterSpade5Id, 20, 7, 3);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterHeart5Id, 30, 0, 0);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterDiamond5Id, 12, 5, 13);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterClub5Id, 20, 5, 5);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterSpade5Id, 20, 7, 3);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterHeart5Id, 30, 0, 0);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterDiamond5Id, 12, 5, 13);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterClub5Id, 20, 5, 5);
     }
 
     [Test]
@@ -39,8 +39,8 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        CollectionAssert.Contains(DefaultGameConfigFactory.Layer1Level1MonsterIds, DefaultGameConfigFactory.MonsterColorlessId);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterColorlessId, 6, 2, 0);
+        CollectionAssert.Contains(GameConfigIds.Layer1Level1MonsterIds, GameConfigIds.MonsterColorlessId);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterColorlessId, 6, 2, 0);
     }
 
     [Test]
@@ -49,32 +49,32 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpAttributeUpId, "属性提升卡", CardQuality.Gold, 100);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpGoldCardId, "金币卡", CardQuality.Blue, 30);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpDurableShieldId, "耐用盾牌", CardQuality.White, 50);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpBearTrapId, "捕熊陷阱", CardQuality.White, 50);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpTeleportId, "传送卡", CardQuality.White, 30);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpBloodConvertId, "血液转换", CardQuality.White, 50);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpShieldStrikeTutorialId, "盾击教程", CardQuality.Blue, 80);
-        AssertHelpCard(configModel, DefaultGameConfigFactory.HelpKidnapId, "绑票", CardQuality.Blue, 100);
+        AssertHelpCard(configModel, GameConfigIds.HelpAttributeUpId, "属性提升卡", CardQuality.Gold, 100);
+        AssertHelpCard(configModel, GameConfigIds.HelpGoldCardId, "金币卡", CardQuality.Blue, 30);
+        AssertHelpCard(configModel, GameConfigIds.HelpDurableShieldId, "耐用盾牌", CardQuality.White, 50);
+        AssertHelpCard(configModel, GameConfigIds.HelpBearTrapId, "捕熊陷阱", CardQuality.White, 50);
+        AssertHelpCard(configModel, GameConfigIds.HelpTeleportId, "传送卡", CardQuality.White, 30);
+        AssertHelpCard(configModel, GameConfigIds.HelpBloodConvertId, "血液转换", CardQuality.White, 50);
+        AssertHelpCard(configModel, GameConfigIds.HelpShieldStrikeTutorialId, "盾击教程", CardQuality.Blue, 80);
+        AssertHelpCard(configModel, GameConfigIds.HelpKidnapId, "绑票", CardQuality.Blue, 100);
 
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpDurableShieldId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpDurableShieldId).EffectGraphId, out _),
             Is.True);
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpShieldStrikeTutorialId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpShieldStrikeTutorialId).EffectGraphId, out _),
             Is.True);
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpTeleportId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpTeleportId).EffectGraphId, out _),
             Is.True);
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpKidnapId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpKidnapId).EffectGraphId, out _),
             Is.True);
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBearTrapId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpBearTrapId).EffectGraphId, out _),
             Is.True);
         Assert.That(
-            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBloodConvertId).EffectGraphId),
+            configModel.TryGetEffectGraph(configModel.GetCardDefinition(GameConfigIds.HelpBloodConvertId).EffectGraphId, out _),
             Is.True);
     }
 
@@ -86,7 +86,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var boardModel = TableNine.Interface.GetModel<IBoardModel>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var trapUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBearTrapId);
+        var trapUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpBearTrapId);
 
         var adjacentSlot = new BoardSlotNo(2);
         if (boardModel.GetCardAt(adjacentSlot).HasValue)
@@ -94,7 +94,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
             boardSystem.RemoveCardAt(adjacentSlot);
         }
 
-        var monsterUid = SpawnMonster(DefaultGameConfigFactory.MonsterHeart2Id);
+        var monsterUid = SpawnMonster(GameConfigIds.MonsterHeart2Id);
         var monster = collectionModel.GetCard(monsterUid);
         monster.CurrentHp = 20;
         monster.CurrentArmor = 0;
@@ -116,7 +116,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var maxHpBefore = player.MaxHp;
         var attackBefore = player.BaseAttack;
 
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBloodConvertId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpBloodConvertId);
         UseItemSlotHelpCard(uid);
 
         Assert.That(player.MaxHp, Is.EqualTo(maxHpBefore - 5));
@@ -138,7 +138,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentArmor = 1;
 
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpDurableShieldId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpDurableShieldId);
         UseItemSlotHelpCard(uid);
 
         Assert.That(player.CurrentArmor, Is.EqualTo(6));
@@ -159,7 +159,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         TableNine.Interface.SendCommand(new ChangeArmorCommand(playerModel.PlayerCardUid, 3, "test_setup"));
         Assert.That(collectionModel.GetCard(playerModel.PlayerCardUid).CurrentArmor, Is.EqualTo(4));
 
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpShieldStrikeTutorialId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpShieldStrikeTutorialId);
         UseItemSlotHelpCard(uid);
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
@@ -186,7 +186,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         target.CurrentArmor = 7;
         target.BaseDefense = 0;
 
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpKidnapId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpKidnapId);
         UseItemSlotHelpCard(uid);
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
@@ -210,7 +210,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         var pileCountBefore = deckModel.BattleDrawPile.Count;
 
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpTeleportId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpTeleportId);
         UseItemSlotHelpCard(uid);
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(3)));
 

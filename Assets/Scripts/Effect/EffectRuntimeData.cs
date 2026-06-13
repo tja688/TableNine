@@ -21,7 +21,7 @@ public sealed class EffectGraphDefinition
 public sealed class EffectAtomDefinition
 {
     public string AtomType;
-    public Dictionary<string, string> Parameters = new Dictionary<string, string>();
+    public List<EffectAtomParameter> Parameters = new List<EffectAtomParameter>();
 }
 
 public sealed class EffectContext
@@ -50,18 +50,14 @@ public static class EffectAtomTypes
     public const string RemoveCard = "RemoveCardAtom";
     public const string ApplyStatus = "ApplyStatusAtom";
     public const string BloodConvertReward = "BloodConvertRewardAtom";
+    public const string ReflectParallelDamage = "ReflectParallelDamageAtom";
 }
 
 internal static class EffectAtomParams
 {
     public static string Get(EffectAtomDefinition atom, string key, string defaultValue = "")
     {
-        if (atom.Parameters != null && atom.Parameters.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
-        {
-            return value;
-        }
-
-        return defaultValue;
+        return EffectAtomSerializationUtility.GetParameter(atom, key, defaultValue);
     }
 
     public static int GetInt(EffectAtomDefinition atom, string key, int defaultValue = 0)

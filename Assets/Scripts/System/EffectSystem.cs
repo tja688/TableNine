@@ -17,7 +17,8 @@ public sealed class EffectSystem : AbstractSystem, IEffectSystem
 
     public void ResolveEffectGraph(string effectGraphId, EffectContext context, ICanSendCommand commandSender)
     {
-        if (!EffectGraphRegistry.TryGetGraph(effectGraphId, out var graph))
+        var configModel = this.GetModel<IConfigModel>();
+        if (!configModel.TryGetEffectGraph(effectGraphId, out var graph))
         {
             Debug.LogError($"[EffectSystem] Missing effect graph: {effectGraphId}");
             return;
@@ -242,7 +243,7 @@ public sealed class EffectSystem : AbstractSystem, IEffectSystem
                     playerUid,
                     StatType.Attack,
                     runtime.BaseAttack,
-                    DefaultGameConfigFactory.HelpViolenceId));
+                    GameConfigIds.HelpViolenceId));
                 this.SendEvent(new GameplayMessageEvent("暴力：本节点攻击翻倍。"));
                 break;
             case "tower_watch":

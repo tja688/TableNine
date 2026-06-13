@@ -2,6 +2,7 @@
   "name": "TableNine.Tests.EditMode",
   "references": [
     "TableNine.Runtime",
+    "TableNine.Editor",
     "QFramework"
   ],
   "optionalUnityReferences": [

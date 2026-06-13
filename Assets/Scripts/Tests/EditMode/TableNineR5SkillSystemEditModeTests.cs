@@ -27,7 +27,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
 
-        var springUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId);
+        var springUid = SpawnHelpCard(GameConfigIds.HelpHealingSpringId);
         PlaceHelpCardOnBoard(springUid, new BoardSlotNo(2));
 
         Assert.That(player.CurrentHp, Is.EqualTo(5));
@@ -42,7 +42,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
 
-        var springUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId);
+        var springUid = SpawnHelpCard(GameConfigIds.HelpHealingSpringId);
         PlaceHelpCardOnBoard(springUid, new BoardSlotNo(1));
 
         TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
@@ -59,7 +59,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
 
-        SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpHealingSpringId);
+        SpawnHelpCardToItemSlot(GameConfigIds.HelpHealingSpringId);
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monster = collectionModel.GetCard(monsterUid);
         monster.CurrentHp = 999;
@@ -81,7 +81,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(6));
         collectionModel.GetCard(monsterUid).MonsterLevel = MonsterLevel.Level1;
 
-        var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
+        var boulderUid = SpawnHelpCard(GameConfigIds.HelpBoulderId);
         PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(3));
 
         Assert.That(boardModel.GetCardAt(new BoardSlotNo(6)).Value, Is.EqualTo(monsterUid));
@@ -100,7 +100,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         collectionModel.GetCard(monsterUid).MonsterLevel = MonsterLevel.Level1;
 
-        var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
+        var boulderUid = SpawnHelpCard(GameConfigIds.HelpBoulderId);
         PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(2));
 
         TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
@@ -121,7 +121,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         collectionModel.GetCard(monsterUid).MonsterLevel = MonsterLevel.Elite;
 
-        var boulderUid = SpawnHelpCard(DefaultGameConfigFactory.HelpBoulderId);
+        var boulderUid = SpawnHelpCard(GameConfigIds.HelpBoulderId);
         PlaceHelpCardOnBoard(boulderUid, new BoardSlotNo(2));
 
         TableNine.Interface.GetSystem<IBoardSystem>().RotateClockwise();
@@ -136,7 +136,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(12345);
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var boulderUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBoulderId);
+        var boulderUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpBoulderId);
 
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(0));
 
@@ -148,7 +148,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicThornArmorId);
+        relicSystem.AddRelic(GameConfigIds.RelicThornArmorId);
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
 
         CombatResolvedEvent? resolved = null;
@@ -166,8 +166,8 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(42);
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillThornSkinId));
-        Assert.That(playerModel.SkillIds.Contains(DefaultGameConfigFactory.SkillThornSkinId), Is.True);
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(GameConfigIds.SkillThornSkinId));
+        Assert.That(playerModel.SkillIds.Contains(GameConfigIds.SkillThornSkinId), Is.True);
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monster = TableNine.Interface.GetModel<ICollectionModel>().GetCard(monsterUid);
         monster.CurrentHp = 999;
@@ -189,14 +189,14 @@ public sealed class TableNineR5SkillSystemEditModeTests
         StartRun(42);
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        var thornSkin = configModel.GetSkillDefinition(DefaultGameConfigFactory.SkillThornSkinId);
+        var thornSkin = configModel.GetSkillDefinition(GameConfigIds.SkillThornSkinId);
         Assert.That(thornSkin.HasRuntimeBinding, Is.True);
         Assert.That(thornSkin.Trigger, Is.EqualTo(SkillTrigger.OnModifyDamage));
         Assert.That(thornSkin.ConditionKey, Is.EqualTo("player_defender_monster_attacks"));
         Assert.That(thornSkin.EffectGraphId, Is.EqualTo("eg_skill_thorn_skin_reflect"));
         Assert.That(thornSkin.Description, Is.Not.Empty);
 
-        var hardSkin = configModel.GetSkillDefinition(DefaultGameConfigFactory.SkillHardSkinId);
+        var hardSkin = configModel.GetSkillDefinition(GameConfigIds.SkillHardSkinId);
         Assert.That(hardSkin.HasRuntimeBinding, Is.True);
         Assert.That(hardSkin.Trigger, Is.EqualTo(SkillTrigger.OnNodeClear));
         Assert.That(hardSkin.MaxHpOnAcquire, Is.EqualTo(10));
@@ -209,7 +209,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId);
+        relicSystem.AddRelic(GameConfigIds.RelicPhoenixFeatherId);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
@@ -223,7 +223,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(2)));
 
         Assert.That(player.CurrentHp, Is.GreaterThan(0));
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.False);
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicPhoenixFeatherId), Is.False);
     }
 
     [Test]
@@ -234,14 +234,14 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var statSystem = TableNine.Interface.GetSystem<IStatSystem>();
         var statsBefore = statSystem.GetEffectivePlayerStats();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodSwordId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodSwordId);
         var statsWithTwoPieces = statSystem.GetEffectivePlayerStats();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodArmorId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodArmorId);
         var statsWithFullSet = statSystem.GetEffectivePlayerStats();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
-        var woodArmorHpBonus = configModel.GetRelicDefinition(DefaultGameConfigFactory.RelicWoodArmorId).StatMaxHpBonus;
+        var woodArmorHpBonus = configModel.GetRelicDefinition(GameConfigIds.RelicWoodArmorId).StatMaxHpBonus;
 
         Assert.That(statsWithTwoPieces.Attack, Is.GreaterThan(statsBefore.Attack));
         Assert.That(statsWithFullSet.Attack - statsWithTwoPieces.Attack, Is.EqualTo(2));
@@ -257,7 +257,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
         TableNine.Interface.SendCommand(new StartNodeCommand(1, 2));
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
@@ -273,7 +273,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var monsterUid = MoveAnyMonsterToSlot(new BoardSlotNo(2));
         var monster = collectionModel.GetCard(monsterUid);
-        monster.SkillIds.Add(DefaultGameConfigFactory.SkillHardSkinId);
+        monster.SkillIds.Add(GameConfigIds.SkillHardSkinId);
 
         var stats = statSystem.GetEffectiveMonsterStats(monsterUid);
         var combatSystem = TableNine.Interface.GetSystem<ICombatSystem>();
@@ -293,7 +293,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
         var maxHpBefore = player.MaxHp;
         var hpBefore = player.CurrentHp;
 
-        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillHardSkinId));
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(GameConfigIds.SkillHardSkinId));
 
         Assert.That(player.MaxHp, Is.EqualTo(maxHpBefore + 10));
         Assert.That(player.CurrentHp, Is.EqualTo(hpBefore + 10));
@@ -310,13 +310,13 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         StartRun(12345);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicLivingFleshId);
+        relicSystem.AddRelic(GameConfigIds.RelicLivingFleshId);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
 
-        var potionUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpPotionId);
+        var potionUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpPotionId);
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(potionUid).ItemSlotIndex.Value));
 
         Assert.That(player.CurrentHp, Is.GreaterThanOrEqualTo(6));
@@ -328,13 +328,13 @@ public sealed class TableNineR5SkillSystemEditModeTests
         StartRun(42);
         var skillSystem = TableNine.Interface.GetSystem<ISkillSystem>();
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicThornArmorId);
+        relicSystem.AddRelic(GameConfigIds.RelicThornArmorId);
         MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
 
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(2)));
 
         Assert.That(skillSystem.RecentLogs.Any(log =>
-            log.OwnerDefinitionId == DefaultGameConfigFactory.RelicThornArmorId &&
+            log.OwnerDefinitionId == GameConfigIds.RelicThornArmorId &&
             log.Trigger == SkillTrigger.OnModifyDamage &&
             log.EffectGraphId == "eg_relic_thorn_armor"), Is.True);
     }
@@ -350,8 +350,8 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         var context = new TriggerContext
         {
-            OwnerUid = SpawnHelpCard(DefaultGameConfigFactory.HelpHealingSpringId),
-            OwnerDefinitionId = DefaultGameConfigFactory.HelpHealingSpringId,
+            OwnerUid = SpawnHelpCard(GameConfigIds.HelpHealingSpringId),
+            OwnerDefinitionId = GameConfigIds.HelpHealingSpringId,
             CardSlot = new BoardSlotNo(2),
             PreviousSlot = null,
             IsBoardMovement = true
@@ -497,7 +497,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
             }
 
             var runtime = collectionModel.GetCard(uid.Value);
-            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(DefaultGameConfigFactory.SkillFirstStrikeId))
+            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(GameConfigIds.SkillFirstStrikeId))
             {
                 boardSystem.RemoveCardAt(slot);
                 boardSystem.PlaceCard(uid.Value, new BoardSlotNo(2), CardPlacementSource.Refill);
@@ -513,9 +513,9 @@ public sealed class TableNineR5SkillSystemEditModeTests
     {
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monster = TableNine.Interface.GetModel<ICollectionModel>().GetCard(monsterUid);
-        if (!monster.HasSkill(DefaultGameConfigFactory.SkillFirstStrikeId))
+        if (!monster.HasSkill(GameConfigIds.SkillFirstStrikeId))
         {
-            monster.SkillIds.Add(DefaultGameConfigFactory.SkillFirstStrikeId);
+            monster.SkillIds.Add(GameConfigIds.SkillFirstStrikeId);
         }
 
         return monsterUid;

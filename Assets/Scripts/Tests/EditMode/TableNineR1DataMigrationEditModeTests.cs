@@ -66,7 +66,7 @@ public sealed class TableNineR1DataMigrationEditModeTests
     [Test]
     public void Default_Config_Help_Cards_Have_RestoreAfterNode_False()
     {
-        var config = DefaultGameConfigFactory.Create();
+        var config = TableNineTestConfig.LoadProductionCoreConfig();
 
         for (var i = 0; i < config.Cards.Count; i++)
         {
@@ -83,7 +83,7 @@ public sealed class TableNineR1DataMigrationEditModeTests
     [Test]
     public void Default_Config_Has_No_Deprecated_Help_Card_Warnings()
     {
-        var config = DefaultGameConfigFactory.Create();
+        var config = TableNineTestConfig.LoadProductionCoreConfig();
         var warnings = ConfigValidator.CollectWarnings(config);
 
         Assert.That(warnings.Exists(w => w.Contains("legacy IsPermanentRemoveOnUse")), Is.False,

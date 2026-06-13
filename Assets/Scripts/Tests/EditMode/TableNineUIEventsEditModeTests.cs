@@ -26,7 +26,7 @@ public sealed class TableNineUIEventsEditModeTests
         var resolved = new List<AttributeChoiceResolvedEvent>();
         var requestRegister = TableNine.Interface.RegisterEvent<AttributeChoiceRequestedEvent>(requested.Add);
         var resolveRegister = TableNine.Interface.RegisterEvent<AttributeChoiceResolvedEvent>(resolved.Add);
-        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpAttributeUpId);
 
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(0));
 
@@ -51,7 +51,7 @@ public sealed class TableNineUIEventsEditModeTests
         StartRun(12345);
         var events = new List<ItemSlotChangedEvent>();
         var unRegister = TableNine.Interface.RegisterEvent<ItemSlotChangedEvent>(events.Add);
-        var potionUid = FindHelpCard(DefaultGameConfigFactory.HelpPotionId);
+        var potionUid = FindHelpCard(GameConfigIds.HelpPotionId);
         var playerRuntime = TableNine.Interface.GetModel<ICollectionModel>().GetCard(TableNine.Interface.GetModel<IPlayerModel>().PlayerCardUid);
         playerRuntime.CurrentHp = 1;
 
@@ -116,7 +116,7 @@ public sealed class TableNineUIEventsEditModeTests
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var runModel = TableNine.Interface.GetModel<IRunModel>();
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(2));
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: TableNineGameConfig
+  m_EditorClassIdentifier: TableNine.Runtime::TableNineGameConfig
+  CharacterConfig: {fileID: 11400000, guid: 6d6bca8ed3dbb0646a0d0f981d85e0bc, type: 2}
+  CardConfig: {fileID: 11400000, guid: af64160efb5d56b4caf33c38c7158280, type: 2}
+  SkillConfig: {fileID: 11400000, guid: b8200f5183471fb4ea8e4704a4614462, type: 2}
+  RelicConfig: {fileID: 11400000, guid: 9f20f6b820d868643b2fa4fa49a95ad7, type: 2}
+  EffectConfig: {fileID: 11400000, guid: fcc13089aa9ba41428a3485578f79b4f, type: 2}

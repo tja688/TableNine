@@ -190,7 +190,7 @@ public sealed class TableNineR2BasicRulesEditModeTests
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
-        var potionUid = FindHelpCardOnBoardOrDeck(DefaultGameConfigFactory.HelpPotionId);
+        var potionUid = FindHelpCardOnBoardOrDeck(GameConfigIds.HelpPotionId);
 
         TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(potionUid));
         var itemSlot = collectionModel.GetCard(potionUid).ItemSlotIndex.Value;
@@ -210,10 +210,10 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
 
-        var definition = configModel.GetCardDefinition(DefaultGameConfigFactory.HelpPotionId);
+        var definition = configModel.GetCardDefinition(GameConfigIds.HelpPotionId);
         definition.RestoreAfterNode = true;
 
-        var uid = FindHelpCardOnBoardOrDeck(DefaultGameConfigFactory.HelpPotionId);
+        var uid = FindHelpCardOnBoardOrDeck(GameConfigIds.HelpPotionId);
         TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(uid));
         var itemSlot = collectionModel.GetCard(uid).ItemSlotIndex.Value;
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(itemSlot));
@@ -276,7 +276,7 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var goldBefore = playerModel.Gold.Value;
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(playerModel.Gold.Value, Is.GreaterThan(goldBefore));
     }

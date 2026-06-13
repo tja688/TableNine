@@ -90,7 +90,7 @@ public sealed class TableNineM3EditModeTests
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
         // 快照已保存（StartNodeCommand 中调用），现在添加一张新卡
-        var newDef = configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBlessingId);
+        var newDef = configModel.GetCardDefinition(GameConfigIds.HelpBlessingId);
         var newRuntime = collectionModel.CreateCard(newDef);
         deckModel.OwnedHelpCards.Add(newRuntime.Uid);
         deckModel.HelpCardStates[newRuntime.Uid.Value] = new HelpCardState
@@ -135,7 +135,7 @@ public sealed class TableNineM3EditModeTests
         deckModel.HelpCardStates[tempUid.Value].IsTemporarilyRemoved = true;
 
         // 新增 1 张
-        var newDef = configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBlessingId);
+        var newDef = configModel.GetCardDefinition(GameConfigIds.HelpBlessingId);
         var newRuntime = collectionModel.CreateCard(newDef);
         deckModel.OwnedHelpCards.Add(newRuntime.Uid);
         deckModel.HelpCardStates[newRuntime.Uid.Value] = new HelpCardState
@@ -304,7 +304,7 @@ public sealed class TableNineM3EditModeTests
         // Layer 1 上限 12 张
         FillHelpDeckToCapacity(12);
 
-        Assert.That(rewardSystem.CanAddHelpCard(DefaultGameConfigFactory.HelpBlessingId), Is.False,
+        Assert.That(rewardSystem.CanAddHelpCard(GameConfigIds.HelpBlessingId), Is.False,
             "满容量时 CanAddHelpCard 应返回 false");
     }
 
@@ -320,7 +320,7 @@ public sealed class TableNineM3EditModeTests
         // 清空并添加 3 张同名药水
         deckModel.OwnedHelpCards.Clear();
         deckModel.HelpCardStates.Clear();
-        var potionDef = configModel.GetCardDefinition(DefaultGameConfigFactory.HelpPotionId);
+        var potionDef = configModel.GetCardDefinition(GameConfigIds.HelpPotionId);
         for (var i = 0; i < 3; i++)
         {
             var rt = collectionModel.CreateCard(potionDef);
@@ -328,11 +328,11 @@ public sealed class TableNineM3EditModeTests
             deckModel.HelpCardStates[rt.Uid.Value] = new HelpCardState
             {
                 Uid = rt.Uid,
-                DefinitionId = DefaultGameConfigFactory.HelpPotionId
+                DefinitionId = GameConfigIds.HelpPotionId
             };
         }
 
-        Assert.That(rewardSystem.CanAddHelpCard(DefaultGameConfigFactory.HelpPotionId), Is.False,
+        Assert.That(rewardSystem.CanAddHelpCard(GameConfigIds.HelpPotionId), Is.False,
             "同名卡达上限 3 时 CanAddHelpCard 应返回 false");
     }
 
@@ -349,9 +349,9 @@ public sealed class TableNineM3EditModeTests
 
         // 手动设置候选（因为满容量时 Generate 不会产生候选）
         rewardModel.ClearHelpRewardCardIds();
-        rewardModel.AddHelpRewardCardId(DefaultGameConfigFactory.HelpBlessingId);
+        rewardModel.AddHelpRewardCardId(GameConfigIds.HelpBlessingId);
 
-        TableNine.Interface.SendCommand(new PickHelpCardRewardCommand(DefaultGameConfigFactory.HelpBlessingId));
+        TableNine.Interface.SendCommand(new PickHelpCardRewardCommand(GameConfigIds.HelpBlessingId));
 
         Assert.That(popups.Count, Is.GreaterThan(0), "满容量时应弹出提示");
 
@@ -369,7 +369,7 @@ public sealed class TableNineM3EditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
         var goldBefore = playerModel.Gold.Value;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         // GoldRoom: 结算未使用卡 + RewardGold(30)
         Assert.That(playerModel.Gold.Value, Is.GreaterThan(goldBefore), "金币房应增加金币");
@@ -382,7 +382,7 @@ public sealed class TableNineM3EditModeTests
         StartRunAndClearNode();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(flowModel.Phase.Value, Is.Not.EqualTo(FlowPhase.HelpRewardChoosing));
     }
@@ -394,7 +394,7 @@ public sealed class TableNineM3EditModeTests
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomShopId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomShopId));
 
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.Shop), "选择商店房应进入 Shop 阶段");
         Assert.That(rewardModel.ShopCardIds.Count, Is.GreaterThan(0), "应生成商店商品");
@@ -407,7 +407,7 @@ public sealed class TableNineM3EditModeTests
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomChestId));
 
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.ChestRewardChoosing),
             "选择宝箱房应进入 ChestRewardChoosing 阶段");
@@ -426,7 +426,7 @@ public sealed class TableNineM3EditModeTests
 
         playerRuntime.CurrentHp = 1;
         var maxHpBefore = playerRuntime.MaxHp;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomAttributeId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomAttributeId));
 
         Assert.That(playerRuntime.MaxHp, Is.EqualTo(maxHpBefore + RewardConstants.AttributeRoomMaxHpBonus),
             "属性房应提高生命上限");
@@ -447,7 +447,7 @@ public sealed class TableNineM3EditModeTests
         deckModel.HelpCardStates[helpUid.Value].IsTemporarilyRemoved = true;
 
         var goldBefore = playerModel.Gold.Value;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         // 临时移除的卡应被恢复
         Assert.That(deckModel.HelpCardStates[helpUid.Value].IsTemporarilyRemoved, Is.False);
@@ -603,10 +603,10 @@ public sealed class TableNineM3EditModeTests
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
-        var result = relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        var result = relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
 
         Assert.That(result, Is.True, "添加遗物应成功");
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicWoodShieldId), Is.True,
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicWoodShieldId), Is.True,
             "应拥有该遗物");
         Assert.That(playerModel.Relics.Count, Is.EqualTo(1));
     }
@@ -617,8 +617,8 @@ public sealed class TableNineM3EditModeTests
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
-        var result = relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
+        var result = relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
 
         Assert.That(result, Is.False, "重复添加遗物应失败");
     }
@@ -630,13 +630,13 @@ public sealed class TableNineM3EditModeTests
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
         var goldBefore = playerModel.Gold.Value;
 
-        var result = relicSystem.DiscardRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        var result = relicSystem.DiscardRelic(GameConfigIds.RelicWoodShieldId);
 
         Assert.That(result, Is.True, "丢弃遗物应成功");
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicWoodShieldId), Is.False,
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicWoodShieldId), Is.False,
             "丢弃后不应拥有该遗物");
         Assert.That(playerModel.Gold.Value - goldBefore, Is.EqualTo(20), "丢弃遗物应 +20 金币");
     }
@@ -647,7 +647,7 @@ public sealed class TableNineM3EditModeTests
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
 
-        var result = relicSystem.DiscardRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        var result = relicSystem.DiscardRelic(GameConfigIds.RelicWoodShieldId);
 
         Assert.That(result, Is.False, "丢弃未拥有的遗物应失败");
     }
@@ -660,12 +660,12 @@ public sealed class TableNineM3EditModeTests
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
 
         // 先添加一个遗物
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
 
         // 生成宝箱候选
         relicSystem.GenerateChestRewardCandidates();
 
-        Assert.That(rewardModel.ChestRewardRelicIds.Contains(DefaultGameConfigFactory.RelicWoodShieldId),
+        Assert.That(rewardModel.ChestRewardRelicIds.Contains(GameConfigIds.RelicWoodShieldId),
             Is.False, "已拥有的遗物不应出现在候选中");
         Assert.That(rewardModel.ChestRewardRelicIds.Count, Is.GreaterThan(0).And.LessThanOrEqualTo(3));
     }
@@ -681,7 +681,7 @@ public sealed class TableNineM3EditModeTests
 
         // 选宝箱房
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomChestId));
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.ChestRewardChoosing));
         Assert.That(rewardModel.ChestRewardRelicIds.Count, Is.GreaterThan(0));
 
@@ -701,7 +701,7 @@ public sealed class TableNineM3EditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomChestId));
 
         var goldBefore = playerModel.Gold.Value;
         TableNine.Interface.SendCommand(new SkipChestRewardCommand());
@@ -772,12 +772,12 @@ public sealed class TableNineM3EditModeTests
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
 
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodSwordId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodSwordId);
         var goldBefore = playerModel.Gold.Value;
 
-        TableNine.Interface.SendCommand(new DiscardRelicCommand(DefaultGameConfigFactory.RelicWoodSwordId));
+        TableNine.Interface.SendCommand(new DiscardRelicCommand(GameConfigIds.RelicWoodSwordId));
 
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicWoodSwordId), Is.False);
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicWoodSwordId), Is.False);
         Assert.That(playerModel.Gold.Value - goldBefore, Is.EqualTo(20));
     }
 
@@ -809,7 +809,7 @@ public sealed class TableNineM3EditModeTests
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
 
         var skillCountBefore = playerModel.SkillIds.Count;
-        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillFirstStrikeId));
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(GameConfigIds.SkillFirstStrikeId));
 
         Assert.That(playerModel.SkillIds.Count, Is.EqualTo(skillCountBefore + 1), "应新增一个导师技能");
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl), "选取后应回到 PlayerControl");
@@ -823,7 +823,7 @@ public sealed class TableNineM3EditModeTests
         var unReg = TableNine.Interface.RegisterEvent<PopupRequestedEvent>(popups.Add);
 
         // 小鬼初始已有轻车熟路，再次选取应弹 Popup
-        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(DefaultGameConfigFactory.SkillLightFootedId));
+        TableNine.Interface.SendCommand(new ChooseTutorSkillCommand(GameConfigIds.SkillLightFootedId));
 
         unReg.UnRegister();
         Assert.That(popups.Count, Is.GreaterThan(0), "重复选取导师技能应弹出提示");
@@ -842,12 +842,12 @@ public sealed class TableNineM3EditModeTests
         // 填满 12 个遗物格（用反射绕过 HasRelic 重复检查）
         var relicIds = new[]
         {
-            DefaultGameConfigFactory.RelicWoodShieldId,
-            DefaultGameConfigFactory.RelicWoodSwordId,
-            DefaultGameConfigFactory.RelicWoodArmorId,
-            DefaultGameConfigFactory.RelicLivingFleshId,
-            DefaultGameConfigFactory.RelicThornArmorId,
-            DefaultGameConfigFactory.RelicPhoenixFeatherId
+            GameConfigIds.RelicWoodShieldId,
+            GameConfigIds.RelicWoodSwordId,
+            GameConfigIds.RelicWoodArmorId,
+            GameConfigIds.RelicLivingFleshId,
+            GameConfigIds.RelicThornArmorId,
+            GameConfigIds.RelicPhoenixFeatherId
         };
 
         var relicsField = playerModel.GetType().GetField("mRelics",
@@ -878,17 +878,17 @@ public sealed class TableNineM3EditModeTests
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
 
-        var def = configModel.GetRelicDefinition(DefaultGameConfigFactory.RelicPhoenixFeatherId);
+        var def = configModel.GetRelicDefinition(GameConfigIds.RelicPhoenixFeatherId);
         var relic = RelicInstance.FromDefinition(def);
         playerModel.AddRelic(relic);
 
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.True,
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicPhoenixFeatherId), Is.True,
             "添加后应拥有遗物");
 
         // 标记为已消耗
         relic.IsConsumed = true;
 
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.False,
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicPhoenixFeatherId), Is.False,
             "消耗后 HasRelic 应返回 false");
         Assert.That(playerModel.Relics.Count, Is.EqualTo(1), "消耗后遗物仍在列表中");
     }
@@ -967,7 +967,7 @@ public sealed class TableNineM3EditModeTests
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
 
         var nodeBefore = runModel.NodeInLayer.Value;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1), "选房间后应推进到下一节点");
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
     }
@@ -1020,8 +1020,8 @@ public sealed class TableNineM3EditModeTests
         var statsBefore = statSystem.GetEffectivePlayerStats();
 
         // 添加木盾（DEF+2）和木剑（ATK+2）
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodShieldId);
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicWoodSwordId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodShieldId);
+        relicSystem.AddRelic(GameConfigIds.RelicWoodSwordId);
 
         var statsAfter = statSystem.GetEffectivePlayerStats();
 

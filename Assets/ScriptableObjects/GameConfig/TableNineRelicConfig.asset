@@ -1,0 +1,175 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: TableNineRelicConfig
+  m_EditorClassIdentifier: TableNine.Runtime::TableNineRelicConfig
+  Relics:
+  - RelicId: relic_lucky_coin
+    DisplayName: "\u5E78\u8FD0\u786C\u5E01"
+    Quality: 1
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u51FB\u8D25\u7CBE\u82F1\u6216\u5C42\u4E3B\u65F6\u5C06\u91D1\u5E01\u5361\u52A0\u5165\u6218\u6597\u724C\u7EC4"
+  - RelicId: relic_iron_shield
+    DisplayName: "\u94C1\u76FE"
+    Quality: 2
+    StatAttackBonus: 0
+    StatDefenseBonus: 1
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u53D7\u5230\u7684\u6240\u6709\u4F24\u5BB3\u51CF\u5C111\u70B9"
+  - RelicId: relic_sharp_sword
+    DisplayName: "\u9510\u5229\u957F\u5251"
+    Quality: 2
+    StatAttackBonus: 1
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u672C\u5173\u5361\u6BCF\u79FB\u9664\u4E00\u5F20\u602A\u7269\u5361\u653B\u51FB+1"
+  - RelicId: relic_vitality_charm
+    DisplayName: "\u6D3B\u529B\u62A4\u7B26"
+    Quality: 2
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 6
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u6BCF\u4E2A\u5173\u5361\u7ED3\u675F\u65F6\u6062\u590D6\u8840\u91CF"
+  - RelicId: relic_blood_fang
+    DisplayName: "\u55DC\u8840\u4E4B\u7259"
+    Quality: 2
+    StatAttackBonus: 1
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u6BCF\u6B21\u79FB\u9664\u602A\u7269\u5361\u65F6\u6062\u590D2\u70B9\u751F\u547D"
+  - RelicId: relic_gold_sword
+    DisplayName: "\u91D1\u5251"
+    Quality: 3
+    StatAttackBonus: 8
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u6BCF\u8FDB\u884C\u4E00\u6B21\u6218\u6597\uFF0C\u672C\u9057\u7269\u63D0\u4F9B\u7684\u653B\u51FB-1"
+  - RelicId: relic_dragon_armor
+    DisplayName: "\u9F99\u9CDE\u7532"
+    Quality: 3
+    StatAttackBonus: 0
+    StatDefenseBonus: 1
+    StatMaxHpBonus: 6
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u6240\u6709\u602A\u7269\u5361\u7684\u653B\u51FB-1"
+  - RelicId: relic_golden_chest
+    DisplayName: "\u91D1\u8272\u5B9D\u7BB1"
+    Quality: 3
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 1
+    TriggerDescription: "\u83B7\u53D6\u65F6\u5C06\u4E24\u5F20\u91D1\u8272\u5B9D\u7BB1\u5361\u52A0\u5165\u5E2E\u52A9\u5361\u7EC4"
+  - RelicId: relic_berserker_axe
+    DisplayName: "\u72C2\u6218\u58EB\u65A7"
+    Quality: 3
+    StatAttackBonus: 1
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u5F53\u524D\u8840\u91CF\u4F4E\u4E8E50%\u65F6\u653B\u51FB+3"
+  - RelicId: relic_wood_shield
+    DisplayName: "\u6728\u76FE"
+    Quality: 1
+    StatAttackBonus: 0
+    StatDefenseBonus: 2
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: 
+  - RelicId: relic_wood_sword
+    DisplayName: "\u6728\u5251"
+    Quality: 1
+    StatAttackBonus: 2
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: 
+  - RelicId: relic_wood_armor
+    DisplayName: "\u6728\u7532"
+    Quality: 1
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 3
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: 
+  - RelicId: relic_living_flesh
+    DisplayName: "\u6D3B\u8089"
+    Quality: 2
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 5
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: 
+  - RelicId: relic_thorn_armor
+    DisplayName: "\u8346\u68D8\u7532"
+    Quality: 2
+    StatAttackBonus: 0
+    StatDefenseBonus: 1
+    StatMaxHpBonus: 0
+    IsOneShot: 0
+    ExcludeFromPool: 0
+    TriggerDescription: "\u53D7\u5230\u653B\u51FB\u65F6\u53CD\u5F391\u70B9\u4F24\u5BB3"
+  - RelicId: relic_phoenix_feather
+    DisplayName: "\u51E4\u51F0\u7FBD\u6BDB"
+    Quality: 3
+    StatAttackBonus: 0
+    StatDefenseBonus: 0
+    StatMaxHpBonus: 0
+    IsOneShot: 1
+    ExcludeFromPool: 0
+    TriggerDescription: "\u53D7\u5230\u81F4\u547D\u4F24\u5BB3\u65F6\u9632\u6B62\u6B7B\u4EA1\uFF0C\u7136\u540E\u6D88\u8017"
+  Rooms:
+  - RoomId: room_gold
+    DisplayName: "\u91D1\u5E01\u623F\u95F4"
+    RoomType: 2
+    RewardGold: 50
+    StatMaxHpBonus: 0
+    InjectCardId: 
+  - RoomId: room_chest
+    DisplayName: "\u5B9D\u7BB1\u623F\u95F4"
+    RoomType: 3
+    RewardGold: 0
+    StatMaxHpBonus: 0
+    InjectCardId: help_chest_card
+  - RoomId: room_attribute
+    DisplayName: "\u6E29\u6CC9\u623F"
+    RoomType: 4
+    RewardGold: 0
+    StatMaxHpBonus: 4
+    InjectCardId: 
+  - RoomId: room_shop
+    DisplayName: "\u5546\u5E97\u623F\u95F4"
+    RoomType: 1
+    RewardGold: 0
+    StatMaxHpBonus: 0
+    InjectCardId: 

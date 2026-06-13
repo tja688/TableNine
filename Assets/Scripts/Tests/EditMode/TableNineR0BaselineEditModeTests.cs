@@ -73,8 +73,7 @@ public sealed class TableNineR0BaselineEditModeTests
     [Test]
     public void Baseline_ConfigValidator_Passes_For_Layer1_Core_Config()
     {
-        var config = DefaultGameConfigFactory.Create();
-        CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
+        var config = TableNineTestConfig.LoadProductionCoreConfig();
 
         var errors = ConfigValidator.Validate(config);
         var layer1Errors = new List<string>();

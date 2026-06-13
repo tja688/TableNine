@@ -141,7 +141,7 @@ public static class CommandReplayFactory
         {
             case nameof(StartNewRunCommand):
                 return new StartNewRunCommand(
-                    GetString(payload, nameof(StartNewRunCommand.CharacterId), DefaultGameConfigFactory.CharacterImpId),
+                    GetString(payload, nameof(StartNewRunCommand.CharacterId), GameConfigIds.CharacterImpId),
                     GetNullableInt(payload, nameof(StartNewRunCommand.SeedOverride)));
             case nameof(ClickBoardSlotCommand):
                 return new ClickBoardSlotCommand(new BoardSlotNo(GetInt(payload, nameof(ClickBoardSlotCommand.Slot))));

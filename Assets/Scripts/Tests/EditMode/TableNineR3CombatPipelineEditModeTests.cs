@@ -99,7 +99,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
     {
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicThornArmorId);
+        relicSystem.AddRelic(GameConfigIds.RelicThornArmorId);
 
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
@@ -132,7 +132,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
     {
         StartRun(42);
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        playerModel.AddSkill(DefaultGameConfigFactory.SkillThornSkinId);
+        playerModel.AddSkill(GameConfigIds.SkillThornSkinId);
 
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
@@ -165,7 +165,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
     {
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId);
+        relicSystem.AddRelic(GameConfigIds.RelicPhoenixFeatherId);
 
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
@@ -186,7 +186,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
 
         Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.Not.EqualTo(FlowPhase.GameOver));
         Assert.That(player.CurrentHp, Is.EqualTo(Math.Max(1, maxHp / 2)));
-        Assert.That(relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId), Is.False);
+        Assert.That(relicSystem.HasRelic(GameConfigIds.RelicPhoenixFeatherId), Is.False);
     }
 
     [Test]
@@ -280,7 +280,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
     {
         StartRun(42);
         var relicSystem = TableNine.Interface.GetSystem<IRelicSystem>();
-        relicSystem.AddRelic(DefaultGameConfigFactory.RelicThornArmorId);
+        relicSystem.AddRelic(GameConfigIds.RelicThornArmorId);
 
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
@@ -359,7 +359,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
             }
 
             var runtime = collectionModel.GetCard(uid.Value);
-            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(DefaultGameConfigFactory.SkillFirstStrikeId))
+            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(GameConfigIds.SkillFirstStrikeId))
             {
                 boardSystem.RemoveCardAt(slot);
                 boardSystem.PlaceCard(uid.Value, new BoardSlotNo(2), CardPlacementSource.Refill);
@@ -375,9 +375,9 @@ public sealed class TableNineR3CombatPipelineEditModeTests
     {
         var monsterUid = MoveAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monster = TableNine.Interface.GetModel<ICollectionModel>().GetCard(monsterUid);
-        if (!monster.HasSkill(DefaultGameConfigFactory.SkillFirstStrikeId))
+        if (!monster.HasSkill(GameConfigIds.SkillFirstStrikeId))
         {
-            monster.SkillIds.Add(DefaultGameConfigFactory.SkillFirstStrikeId);
+            monster.SkillIds.Add(GameConfigIds.SkillFirstStrikeId);
         }
 
         return monsterUid;

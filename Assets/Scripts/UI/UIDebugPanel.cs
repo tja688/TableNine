@@ -108,12 +108,12 @@ public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
 
     public void OnClickAddPotion()
     {
-        this.SendCommand(new DebugSpawnHelpCardCommand(DefaultGameConfigFactory.HelpPotionId));
+        this.SendCommand(new DebugSpawnHelpCardCommand(GameConfigIds.HelpPotionId));
     }
 
     public void OnClickAddPhoenixFeather()
     {
-        this.SendCommand(new DebugAddRelicCommand(DefaultGameConfigFactory.RelicPhoenixFeatherId));
+        this.SendCommand(new DebugAddRelicCommand(GameConfigIds.RelicPhoenixFeatherId));
     }
 
     public void OnClickProceedNode()

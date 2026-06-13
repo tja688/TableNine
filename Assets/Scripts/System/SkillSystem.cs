@@ -169,35 +169,8 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
 
     private IEnumerable<SkillEffectBinding> EnumerateBindings(SkillTrigger trigger)
     {
-        var staticBindings = SkillEffectRegistry.AllBindings;
-        for (var i = 0; i < staticBindings.Count; i++)
-        {
-            if (staticBindings[i].Trigger == trigger)
-            {
-                yield return staticBindings[i];
-            }
-        }
-
         var configModel = this.GetModel<IConfigModel>();
-        var skills = configModel.GetAllSkillDefinitions();
-        for (var i = 0; i < skills.Count; i++)
-        {
-            var skill = skills[i];
-            if (!skill.HasRuntimeBinding || skill.Trigger != trigger)
-            {
-                continue;
-            }
-
-            yield return new SkillEffectBinding
-            {
-                BindingId = $"player_skill_{skill.SkillId}_{skill.Trigger}",
-                OwnerKind = SkillOwnerKind.PlayerSkill,
-                OwnerDefinitionId = skill.SkillId,
-                Trigger = skill.Trigger,
-                ConditionKey = skill.ConditionKey,
-                EffectGraphId = skill.EffectGraphId
-            };
-        }
+        return configModel.GetSkillBindings(trigger);
     }
 
     private IEnumerable<SkillOwnerInstance> EnumerateOwners(SkillEffectBinding binding, TriggerContext context)
@@ -401,43 +374,94 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
         ICanSendCommand commandSender,
         int depth)
     {
-        if (binding.EffectGraphId == "eg_relic_thorn_armor")
-        {
-            AppendThornArmorDamage(context);
-        }
-        else if (binding.EffectGraphId == "eg_skill_thorn_skin_reflect")
-        {
-            AppendThornSkinDamage(context);
-        }
-        else if (PassiveGraphs.TryGetGraph(binding.EffectGraphId, out var graph))
-        {
-            var effectContext = BuildEffectContext(binding, owner);
-            if (binding.EffectGraphId == "eg_passive_boulder_kill" &&
-                TryGetKillableMonsterAtSlot(new BoardSlotNo(6), out var monsterUid))
-            {
-                effectContext.Targets.Add(monsterUid);
-            }
-
-            if (binding.EffectGraphId == "eg_passive_bear_trap_refill" &&
-                context.TriggerCardUid.HasValue)
-            {
-                effectContext.Targets.Add(context.TriggerCardUid.Value);
-            }
-
-            var effectSystem = this.GetSystem<IEffectSystem>();
-            for (var i = 0; i < graph.Atoms.Count; i++)
-            {
-                effectSystem.ResolveAtom(graph.Atoms[i], effectContext, commandSender);
-            }
-        }
-        else
+        var configModel = this.GetModel<IConfigModel>();
+        if (!configModel.TryGetEffectGraph(binding.EffectGraphId, out var graph))
         {
             Debug.LogWarning($"[SkillSystem] Missing passive effect graph: {binding.EffectGraphId}");
             return;
         }
 
+        if (TryExecuteReflectGraph(graph, context))
+        {
+            AppendLog(binding, owner, depth);
+            this.SendEvent(new SkillTriggeredEvent(binding.OwnerDefinitionId, owner.Uid, binding.Trigger, binding.EffectGraphId));
+            return;
+        }
+
+        var effectContext = BuildEffectContext(binding, owner);
+        if (binding.EffectGraphId == "eg_passive_boulder_kill" &&
+            TryGetKillableMonsterAtSlot(new BoardSlotNo(6), out var monsterUid))
+        {
+            effectContext.Targets.Add(monsterUid);
+        }
+
+        if (binding.EffectGraphId == "eg_passive_bear_trap_refill" &&
+            context.TriggerCardUid.HasValue)
+        {
+            effectContext.Targets.Add(context.TriggerCardUid.Value);
+        }
+
+        var effectSystem = this.GetSystem<IEffectSystem>();
+        for (var i = 0; i < graph.Atoms.Count; i++)
+        {
+            effectSystem.ResolveAtom(graph.Atoms[i], effectContext, commandSender);
+        }
+
         AppendLog(binding, owner, depth);
         this.SendEvent(new SkillTriggeredEvent(binding.OwnerDefinitionId, owner.Uid, binding.Trigger, binding.EffectGraphId));
+    }
+
+    private bool TryExecuteReflectGraph(EffectGraphDefinition graph, TriggerContext context)
+    {
+        if (graph == null || graph.Atoms.Count == 0 || context.Combat == null)
+        {
+            return false;
+        }
+
+        var atom = graph.Atoms[0];
+        if (atom.AtomType != EffectAtomTypes.ReflectParallelDamage)
+        {
+            return false;
+        }
+
+        var mode = EffectAtomParams.Get(atom, "mode");
+        if (mode == "fixed")
+        {
+            var amount = EffectAtomParams.GetInt(atom, "amount", CombatConstants.ThornArmorDamage);
+            context.ParallelDamage.Add(new DamageContext
+            {
+                Source = context.Combat.PlayerUid,
+                Target = context.Combat.MonsterUid,
+                CauseId = EffectAtomParams.Get(atom, "causeId", CombatConstants.CauseThornArmor),
+                Type = DamageType.Relic,
+                RawAttack = amount,
+                DamageBeforeArmor = amount,
+                IgnoreArmor = true,
+                Preventable = false
+            });
+            return true;
+        }
+
+        if (mode == "attacker_attack")
+        {
+            var reflectAttack = Math.Max(0, context.Combat.MonsterStats.Attack);
+            if (reflectAttack <= 0)
+            {
+                return true;
+            }
+
+            var combatSystem = this.GetSystem<ICombatSystem>();
+            var reflectAttackerStats = new EffectiveStats { Attack = reflectAttack };
+            context.ParallelDamage.Add(combatSystem.BuildCombatDamage(
+                context.Combat.PlayerUid,
+                context.Combat.MonsterUid,
+                reflectAttackerStats,
+                context.Combat.MonsterStats,
+                EffectAtomParams.Get(atom, "causeId", CombatConstants.CauseThornSkin)));
+            return true;
+        }
+
+        return false;
     }
 
     private static EffectContext BuildEffectContext(SkillEffectBinding binding, SkillOwnerInstance owner)
@@ -451,39 +475,6 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
                     : EffectSource.Skill,
             Caster = owner.Uid
         };
-    }
-
-    private void AppendThornArmorDamage(TriggerContext context)
-    {
-        context.ParallelDamage.Add(new DamageContext
-        {
-            Source = context.Combat.PlayerUid,
-            Target = context.Combat.MonsterUid,
-            CauseId = CombatConstants.CauseThornArmor,
-            Type = DamageType.Relic,
-            RawAttack = CombatConstants.ThornArmorDamage,
-            DamageBeforeArmor = CombatConstants.ThornArmorDamage,
-            IgnoreArmor = true,
-            Preventable = false
-        });
-    }
-
-    private void AppendThornSkinDamage(TriggerContext context)
-    {
-        var reflectAttack = Math.Max(0, context.Combat.MonsterStats.Attack);
-        if (reflectAttack <= 0)
-        {
-            return;
-        }
-
-        var combatSystem = this.GetSystem<ICombatSystem>();
-        var reflectAttackerStats = new EffectiveStats { Attack = reflectAttack };
-        context.ParallelDamage.Add(combatSystem.BuildCombatDamage(
-            context.Combat.PlayerUid,
-            context.Combat.MonsterUid,
-            reflectAttackerStats,
-            context.Combat.MonsterStats,
-            CombatConstants.CauseThornSkin));
     }
 
     private void AppendLog(SkillEffectBinding binding, SkillOwnerInstance owner, int depth)

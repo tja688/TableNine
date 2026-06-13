@@ -14,15 +14,35 @@ public sealed class TableNine : Architecture<TableNine>
     /// </summary>
     public static bool UseMemorySaveUtility { get; private set; } = true;
 
+    public static TableNineGameConfig GameConfig { get; private set; }
+
+    public static void ConfigureGameConfig(TableNineGameConfig config)
+    {
+        GameConfig = config;
+    }
+
     public static void ConfigureRuntimePersistence()
     {
         UseMemorySaveUtility = false;
     }
 
 #if UNITY_EDITOR || UNITY_INCLUDE_TESTS
+    public static Func<TableNineGameConfig> TestGameConfigResolver { get; set; }
+
     public static void ResetForTests()
     {
         UseMemorySaveUtility = true;
+        GameConfig = null;
+        if (mArchitecture != null)
+        {
+            mArchitecture.Deinit();
+        }
+    }
+#else
+    public static void ResetForTests()
+    {
+        UseMemorySaveUtility = true;
+        GameConfig = null;
         if (mArchitecture != null)
         {
             mArchitecture.Deinit();

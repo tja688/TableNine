@@ -33,7 +33,7 @@ public sealed class TableNineM4EditModeTests
         foreach (var uid in deckModel.DemonDeckQueue)
         {
             var runtime = collectionModel.GetCard(uid);
-            if (runtime.DefinitionId == DefaultGameConfigFactory.MonsterSpadeEliteId)
+            if (runtime.DefinitionId == GameConfigIds.MonsterSpadeEliteId)
             {
                 hasElite = true;
             }
@@ -55,7 +55,7 @@ public sealed class TableNineM4EditModeTests
         foreach (var uid in deckModel.DemonDeckQueue)
         {
             var runtime = collectionModel.GetCard(uid);
-            if (runtime.DefinitionId == DefaultGameConfigFactory.MonsterSpadeBossId)
+            if (runtime.DefinitionId == GameConfigIds.MonsterSpadeBossId)
             {
                 hasBoss = true;
             }
@@ -85,7 +85,7 @@ public sealed class TableNineM4EditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        var eliteDef = configModel.GetCardDefinition(DefaultGameConfigFactory.MonsterSpadeEliteId);
+        var eliteDef = configModel.GetCardDefinition(GameConfigIds.MonsterSpadeEliteId);
         var elite = collectionModel.CreateCard(eliteDef);
         var battleCountBefore = deckModel.BattleDrawPile.Count;
 
@@ -99,9 +99,9 @@ public sealed class TableNineM4EditModeTests
         Assert.That(deckModel.BattleDrawPile.Count, Is.EqualTo(battleCountBefore + 3),
             "击杀精英应向战斗牌堆注入 3 张帮助卡");
         Assert.That(injectedEvents.Count, Is.EqualTo(1));
-        Assert.That(injectedEvents[0].CardIds, Contains.Item(DefaultGameConfigFactory.HelpBlueChestId));
-        Assert.That(injectedEvents[0].CardIds, Contains.Item(DefaultGameConfigFactory.HelpGoldCardId));
-        Assert.That(injectedEvents[0].CardIds, Contains.Item(DefaultGameConfigFactory.HelpAttributeUpId));
+        Assert.That(injectedEvents[0].CardIds, Contains.Item(GameConfigIds.HelpBlueChestId));
+        Assert.That(injectedEvents[0].CardIds, Contains.Item(GameConfigIds.HelpGoldCardId));
+        Assert.That(injectedEvents[0].CardIds, Contains.Item(GameConfigIds.HelpAttributeUpId));
         Assert.That(deckModel.PendingTutorSkillChoice, Is.True, "击杀精英应标记待处理导师技能");
     }
 
@@ -113,7 +113,7 @@ public sealed class TableNineM4EditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        var bossDef = configModel.GetCardDefinition(DefaultGameConfigFactory.MonsterSpadeBossId);
+        var bossDef = configModel.GetCardDefinition(GameConfigIds.MonsterSpadeBossId);
         var boss = collectionModel.CreateCard(bossDef);
         var battleCountBefore = deckModel.BattleDrawPile.Count;
 
@@ -126,7 +126,7 @@ public sealed class TableNineM4EditModeTests
         foreach (var uid in deckModel.BattleDrawPile)
         {
             var runtime = collectionModel.GetCard(uid);
-            if (runtime.DefinitionId == DefaultGameConfigFactory.HelpGoldCardId)
+            if (runtime.DefinitionId == GameConfigIds.HelpGoldCardId)
             {
                 goldCardCount++;
             }
@@ -164,9 +164,9 @@ public sealed class TableNineM4EditModeTests
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
 
-        for (var i = 0; i < DefaultGameConfigFactory.TutorSkillPoolIds.Length; i++)
+        for (var i = 0; i < GameConfigIds.TutorSkillPoolIds.Length; i++)
         {
-            var skillId = DefaultGameConfigFactory.TutorSkillPoolIds[i];
+            var skillId = GameConfigIds.TutorSkillPoolIds[i];
             var alreadyOwned = false;
             for (var j = 0; j < playerModel.SkillIds.Count; j++)
             {
@@ -204,8 +204,7 @@ public sealed class TableNineM4EditModeTests
     [Test]
     public void ConfigValidator_Passes_For_Default_Config()
     {
-        var config = DefaultGameConfigFactory.Create();
-        var errors = ConfigValidator.Validate(config);
+        var errors = ConfigValidator.Validate(TableNineTestConfig.LoadProductionRuntimeBundle());
         Assert.That(errors, Is.Empty, string.Join("\n", errors));
     }
 

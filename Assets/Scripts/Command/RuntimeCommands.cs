@@ -4,7 +4,7 @@ using QFramework;
 
 public sealed class StartNewRunCommand : AbstractCommand
 {
-    public StartNewRunCommand(string characterId = DefaultGameConfigFactory.CharacterImpId, int? seedOverride = null)
+    public StartNewRunCommand(string characterId = GameConfigIds.CharacterImpId, int? seedOverride = null)
     {
         CharacterId = characterId;
         SeedOverride = seedOverride;
@@ -654,7 +654,7 @@ public sealed class ApplyDamageGroupCommand : AbstractCommand
         context.WasPrevented = true;
         context.HpDamage = 0;
         context.ArmorAbsorbed = 0;
-        this.SendEvent(new DamagePreventedEvent(runtime.Uid, DefaultGameConfigFactory.HelpBlessingId));
+        this.SendEvent(new DamagePreventedEvent(runtime.Uid, GameConfigIds.HelpBlessingId));
         return true;
     }
 
@@ -704,7 +704,7 @@ public sealed class ApplyDeathPreventCommand : AbstractCommand
     protected override void OnExecute()
     {
         var relicSystem = this.GetSystem<IRelicSystem>();
-        if (!relicSystem.HasRelic(DefaultGameConfigFactory.RelicPhoenixFeatherId))
+        if (!relicSystem.HasRelic(GameConfigIds.RelicPhoenixFeatherId))
         {
             return;
         }
@@ -726,7 +726,7 @@ public sealed class ApplyDeathPreventCommand : AbstractCommand
         var playerModel = this.GetModel<IPlayerModel>();
         for (var i = 0; i < playerModel.Relics.Count; i++)
         {
-            if (playerModel.Relics[i].RelicId != DefaultGameConfigFactory.RelicPhoenixFeatherId)
+            if (playerModel.Relics[i].RelicId != GameConfigIds.RelicPhoenixFeatherId)
             {
                 continue;
             }
@@ -736,7 +736,7 @@ public sealed class ApplyDeathPreventCommand : AbstractCommand
         }
 
         WasPrevented = true;
-        this.SendEvent(new DamagePreventedEvent(TargetUid, DefaultGameConfigFactory.RelicPhoenixFeatherId));
+        this.SendEvent(new DamagePreventedEvent(TargetUid, GameConfigIds.RelicPhoenixFeatherId));
         this.SendEvent(new StatsDirtyEvent(TargetUid));
     }
 }
@@ -1014,7 +1014,7 @@ public sealed class ApplyDamageCommand : AbstractCommand
             Context.WasPrevented = true;
             Context.HpDamage = 0;
             Context.ArmorAbsorbed = 0;
-            this.SendEvent(new DamagePreventedEvent(Context.Target, DefaultGameConfigFactory.HelpBlessingId));
+            this.SendEvent(new DamagePreventedEvent(Context.Target, GameConfigIds.HelpBlessingId));
             this.SendEvent(new DamageAppliedEvent(Context));
             return;
         }
@@ -1224,9 +1224,9 @@ public sealed class KillMonsterCommand : AbstractCommand
         {
             deckSystem.InjectHelpCardsToBattleDeck(new[]
             {
-                DefaultGameConfigFactory.HelpBlueChestId,
-                DefaultGameConfigFactory.HelpGoldCardId,
-                DefaultGameConfigFactory.HelpAttributeUpId
+                GameConfigIds.HelpBlueChestId,
+                GameConfigIds.HelpGoldCardId,
+                GameConfigIds.HelpAttributeUpId
             });
             deckModel.PendingTutorSkillChoice = true;
         }
@@ -1234,10 +1234,10 @@ public sealed class KillMonsterCommand : AbstractCommand
         {
             deckSystem.InjectHelpCardsToBattleDeck(new[]
             {
-                DefaultGameConfigFactory.HelpGoldChestId,
-                DefaultGameConfigFactory.HelpGoldCardId,
-                DefaultGameConfigFactory.HelpGoldCardId,
-                DefaultGameConfigFactory.HelpAttributeUpId
+                GameConfigIds.HelpGoldChestId,
+                GameConfigIds.HelpGoldCardId,
+                GameConfigIds.HelpGoldCardId,
+                GameConfigIds.HelpAttributeUpId
             });
         }
     }

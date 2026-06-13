@@ -90,7 +90,7 @@ public sealed class ApplyBloodConvertRewardCommand : AbstractCommand
         var randomUtility = this.GetUtility<IRandomUtility>();
         var playerModel = this.GetModel<IPlayerModel>();
         var playerUid = playerModel.PlayerCardUid;
-        var causeId = DefaultGameConfigFactory.HelpBloodConvertId;
+        var causeId = GameConfigIds.HelpBloodConvertId;
 
         switch (randomUtility.Range(0, 4))
         {

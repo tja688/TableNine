@@ -424,7 +424,6 @@ public sealed class GameConfigDatabase : ScriptableObject
         config.Relics.AddRange(Relics);
         config.Rooms.AddRange(Rooms);
         CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
-        EffectGraphRegistry.AssignToConfig(config);
         return config;
     }
 }

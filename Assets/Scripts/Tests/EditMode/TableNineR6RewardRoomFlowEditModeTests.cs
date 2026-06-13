@@ -76,7 +76,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
 
         var nodeBefore = runModel.NodeInLayer.Value;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1));
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
@@ -119,7 +119,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
         var settledEvents = new List<HelpCardsSettledEvent>();
         var unReg = TableNine.Interface.RegisterEvent<HelpCardsSettledEvent>(settledEvents.Add);
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         unReg.UnRegister();
 
@@ -139,7 +139,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
         var goldBefore = playerModel.Gold.Value;
         var nodeBefore = runModel.NodeInLayer.Value;
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(playerModel.Gold.Value - goldBefore, Is.GreaterThanOrEqualTo(50));
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1));
@@ -157,7 +157,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
         playerRuntime.CurrentHp = 3;
         var maxHpBefore = playerRuntime.MaxHp;
 
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomAttributeId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomAttributeId));
 
         Assert.That(playerRuntime.MaxHp, Is.EqualTo(maxHpBefore + RewardConstants.AttributeRoomMaxHpBonus));
         var effectiveMax = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats().MaxHp;
@@ -170,7 +170,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
     {
         StartRunAndClearNode();
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomChestId));
 
         var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
         var relicId = rewardModel.ChestRewardRelicIds[0];
@@ -185,7 +185,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
     {
         StartRunAndClearNode();
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomShopId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomShopId));
 
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var runModel = TableNine.Interface.GetModel<IRunModel>();
@@ -241,7 +241,7 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
 
         if (rewardModel.HelpRewardCardIds.Count == 0)
         {
-            rewardModel.AddHelpRewardCardId(DefaultGameConfigFactory.HelpBlessingId);
+            rewardModel.AddHelpRewardCardId(GameConfigIds.HelpBlessingId);
         }
 
         var cardId = rewardModel.HelpRewardCardIds[0];

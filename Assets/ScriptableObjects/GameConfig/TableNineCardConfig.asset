@@ -1,0 +1,2703 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: TableNineCardConfig
+  m_EditorClassIdentifier: TableNine.Runtime::TableNineCardConfig
+  Cards:
+  - CardId: help_potion
+    DisplayName: "\u6062\u590D\u836F\u6C34"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 30
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_potion
+    SystemTag: 3
+    SkillIds: []
+  - CardId: help_throwing_knife
+    DisplayName: "\u98DE\u5200"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 20
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_throwing_knife
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_common_chest
+    DisplayName: "\u666E\u901A\u5B9D\u7BB1\u5361"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 100
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_common_chest
+    SystemTag: 6
+    SkillIds: []
+  - CardId: help_attribute_up
+    DisplayName: "\u5C5E\u6027\u63D0\u5347\u5361"
+    CardType: 2
+    Quality: 3
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 100
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_attribute_up
+    SystemTag: 8
+    SkillIds: []
+  - CardId: help_gold_card
+    DisplayName: "\u91D1\u5E01\u5361"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 30
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_gold_card
+    SystemTag: 6
+    SkillIds: []
+  - CardId: help_chest_card
+    DisplayName: "\u5B9D\u7BB1\u5361"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 100
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_chest_card
+    SystemTag: 6
+    SkillIds: []
+  - CardId: help_blessing
+    DisplayName: "\u5E87\u4F51\u9B54\u6CD5\u5361"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 20
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_blessing
+    SystemTag: 2
+    SkillIds: []
+  - CardId: help_bandage
+    DisplayName: "\u7EF7\u5E26"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 15
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_bandage
+    SystemTag: 3
+    SkillIds: []
+  - CardId: monster_colorless
+    DisplayName: "\u65E0\u8272\u5361"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 0
+    Rank: 0
+    Price: 0
+    BaseHp: 6
+    BaseAttack: 2
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds: []
+  - CardId: monster_spade_2
+    DisplayName: "\u9ED1\u68432"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 1
+    Rank: 2
+    Price: 0
+    BaseHp: 2
+    BaseAttack: 3
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_spade_cub
+  - CardId: monster_heart_2
+    DisplayName: "\u7EA2\u68432"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 2
+    Rank: 2
+    Price: 0
+    BaseHp: 4
+    BaseAttack: 2
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_cub
+  - CardId: monster_diamond_2
+    DisplayName: "\u65B9\u57572"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 3
+    Rank: 2
+    Price: 0
+    BaseHp: 1
+    BaseAttack: 2
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_diamond_cub
+  - CardId: monster_club_2
+    DisplayName: "\u6885\u82B12"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 4
+    Rank: 2
+    Price: 0
+    BaseHp: 2
+    BaseAttack: 2
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_club_cub
+  - CardId: help_blue_chest
+    DisplayName: "\u84DD\u8272\u5B9D\u7BB1\u5361"
+    CardType: 2
+    Quality: 3
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 150
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_blue_chest
+    SystemTag: 6
+    SkillIds: []
+  - CardId: help_gold_chest
+    DisplayName: "\u91D1\u8272\u5B9D\u7BB1\u5361"
+    CardType: 2
+    Quality: 4
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 400
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_gold_chest
+    SystemTag: 8
+    SkillIds: []
+  - CardId: monster_spade_3
+    DisplayName: "\u9ED1\u68433"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 1
+    Rank: 3
+    Price: 0
+    BaseHp: 6
+    BaseAttack: 4
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_armor_breaker
+  - CardId: monster_heart_3
+    DisplayName: "\u7EA2\u68433"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 2
+    Rank: 3
+    Price: 0
+    BaseHp: 9
+    BaseAttack: 3
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_loving_body
+  - CardId: monster_diamond_3
+    DisplayName: "\u65B9\u57573"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 3
+    Rank: 3
+    Price: 0
+    BaseHp: 3
+    BaseAttack: 0
+    BaseDefense: 9
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_sharp_shield
+  - CardId: monster_club_3
+    DisplayName: "\u6885\u82B13"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 4
+    Rank: 3
+    Price: 0
+    BaseHp: 6
+    BaseAttack: 3
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_ambush
+  - CardId: monster_spade_4
+    DisplayName: "\u9ED1\u68434"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 1
+    Rank: 4
+    Price: 0
+    BaseHp: 12
+    BaseAttack: 6
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_revenge
+  - CardId: monster_heart_4
+    DisplayName: "\u7EA2\u68434"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 2
+    Rank: 4
+    Price: 0
+    BaseHp: 16
+    BaseAttack: 4
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_medic
+  - CardId: monster_diamond_4
+    DisplayName: "\u65B9\u57574"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 3
+    Rank: 4
+    Price: 0
+    BaseHp: 8
+    BaseAttack: 4
+    BaseDefense: 8
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_protection_aura
+  - CardId: monster_club_4
+    DisplayName: "\u6885\u82B14"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 4
+    Rank: 4
+    Price: 0
+    BaseHp: 12
+    BaseAttack: 4
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_relentless_pursuit
+  - CardId: monster_spade_5
+    DisplayName: "\u9ED1\u68435"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 1
+    Rank: 5
+    Price: 0
+    BaseHp: 20
+    BaseAttack: 7
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_side_strike
+  - CardId: monster_heart_5
+    DisplayName: "\u7EA2\u68435"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 2
+    Rank: 5
+    Price: 0
+    BaseHp: 30
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_mother
+  - CardId: monster_diamond_5
+    DisplayName: "\u65B9\u57575"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 3
+    Rank: 5
+    Price: 0
+    BaseHp: 12
+    BaseAttack: 5
+    BaseDefense: 13
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_unbreakable
+  - CardId: monster_club_5
+    DisplayName: "\u6885\u82B15"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 4
+    Rank: 5
+    Price: 0
+    BaseHp: 20
+    BaseAttack: 5
+    BaseDefense: 5
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_vertical_lever
+  - CardId: monster_spade_a
+    DisplayName: "\u9ED1\u6843A"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 5
+    Suit: 1
+    Rank: 1
+    Price: 0
+    BaseHp: 44
+    BaseAttack: 1
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_duel
+    - skill_war_dance
+  - CardId: monster_spade_j
+    DisplayName: "\u9ED1\u6843J"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 6
+    Suit: 1
+    Rank: 11
+    Price: 0
+    BaseHp: 121
+    BaseAttack: 11
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_violence
+    - skill_spade_royalty
+  - CardId: help_fireball
+    DisplayName: "\u706B\u7403\u672F"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 30
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_fireball
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_spin_wheel
+    DisplayName: "\u65CB\u8F6C\u8F6E"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 20
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_spin_wheel
+    SystemTag: 4
+    SkillIds: []
+  - CardId: help_violence
+    DisplayName: "\u66B4\u529B\u5361"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 30
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_violence
+    SystemTag: 5
+    SkillIds: []
+  - CardId: help_boulder
+    DisplayName: "\u6EDA\u77F3"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_boulder
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_bomb
+    DisplayName: "\u7206\u5F39"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_bomb
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_swap
+    DisplayName: "\u4EA4\u6362\u5361"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_swap
+    SystemTag: 4
+    SkillIds: []
+  - CardId: help_smasher
+    DisplayName: "\u7834\u51FB\u9524"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_smasher
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_food
+    DisplayName: "\u98DF\u54C1\u5361"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_food
+    SystemTag: 3
+    SkillIds: []
+  - CardId: help_healing_spring
+    DisplayName: "\u6CBB\u7597\u6CC9"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 80
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_healing_spring
+    SystemTag: 3
+    SkillIds: []
+  - CardId: help_crash_tutorial
+    DisplayName: "\u649E\u51FB\u6559\u7A0B"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 80
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_crash_tutorial
+    SystemTag: 7
+    SkillIds: []
+  - CardId: help_watchtower
+    DisplayName: "\u77AD\u671B\u5854"
+    CardType: 2
+    Quality: 3
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 150
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_watchtower
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_multiplier_tower
+    DisplayName: "\u500D\u589E\u5854"
+    CardType: 2
+    Quality: 3
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 150
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_multiplier_tower
+    SystemTag: 8
+    SkillIds: []
+  - CardId: help_durable_shield
+    DisplayName: "\u8010\u7528\u76FE\u724C"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_durable_shield
+    SystemTag: 2
+    SkillIds: []
+  - CardId: help_bear_trap
+    DisplayName: "\u6355\u718A\u9677\u9631"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_bear_trap
+    SystemTag: 1
+    SkillIds: []
+  - CardId: help_teleport
+    DisplayName: "\u4F20\u9001\u5361"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 30
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_teleport
+    SystemTag: 4
+    SkillIds: []
+  - CardId: help_blood_convert
+    DisplayName: "\u8840\u6DB2\u8F6C\u6362"
+    CardType: 2
+    Quality: 1
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 50
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_blood_convert
+    SystemTag: 4
+    SkillIds: []
+  - CardId: help_shield_strike_tutorial
+    DisplayName: "\u76FE\u51FB\u6559\u7A0B"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 80
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_shield_strike_tutorial
+    SystemTag: 2
+    SkillIds: []
+  - CardId: help_kidnap
+    DisplayName: "\u7ED1\u7968"
+    CardType: 2
+    Quality: 2
+    MonsterLevel: 0
+    Suit: 0
+    Rank: 0
+    Price: 100
+    BaseHp: 0
+    BaseAttack: 0
+    BaseDefense: 0
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 1
+    EffectGraphId: eg_help_kidnap
+    SystemTag: 2
+    SkillIds: []
+  - CardId: monster_colorless_l2
+    DisplayName: "\u65E0\u8272\u5361\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 0
+    Rank: 0
+    Price: 0
+    BaseHp: 7
+    BaseAttack: 2
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds: []
+  - CardId: monster_spade_2_l2
+    DisplayName: "\u9ED1\u68432\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 1
+    Rank: 2
+    Price: 0
+    BaseHp: 2
+    BaseAttack: 3
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_spade_cub
+  - CardId: monster_heart_2_l2
+    DisplayName: "\u7EA2\u68432\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 2
+    Rank: 2
+    Price: 0
+    BaseHp: 4
+    BaseAttack: 2
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_cub
+  - CardId: monster_diamond_2_l2
+    DisplayName: "\u65B9\u57572\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 3
+    Rank: 2
+    Price: 0
+    BaseHp: 1
+    BaseAttack: 2
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_diamond_cub
+  - CardId: monster_club_2_l2
+    DisplayName: "\u6885\u82B12\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 4
+    Rank: 2
+    Price: 0
+    BaseHp: 2
+    BaseAttack: 2
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_club_cub
+  - CardId: monster_spade_3_l2
+    DisplayName: "\u9ED1\u68433\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 1
+    Rank: 3
+    Price: 0
+    BaseHp: 7
+    BaseAttack: 4
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_armor_breaker
+  - CardId: monster_heart_3_l2
+    DisplayName: "\u7EA2\u68433\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 2
+    Rank: 3
+    Price: 0
+    BaseHp: 10
+    BaseAttack: 3
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_loving_body
+  - CardId: monster_diamond_3_l2
+    DisplayName: "\u65B9\u57573\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 3
+    Rank: 3
+    Price: 0
+    BaseHp: 3
+    BaseAttack: 1
+    BaseDefense: 10
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_sharp_shield
+  - CardId: monster_club_3_l2
+    DisplayName: "\u6885\u82B13\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 4
+    Rank: 3
+    Price: 0
+    BaseHp: 7
+    BaseAttack: 3
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_ambush
+  - CardId: monster_spade_4_l2
+    DisplayName: "\u9ED1\u68434\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 1
+    Rank: 4
+    Price: 0
+    BaseHp: 14
+    BaseAttack: 7
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_revenge
+  - CardId: monster_heart_4_l2
+    DisplayName: "\u7EA2\u68434\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 2
+    Rank: 4
+    Price: 0
+    BaseHp: 19
+    BaseAttack: 4
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_medic
+  - CardId: monster_diamond_4_l2
+    DisplayName: "\u65B9\u57574\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 3
+    Rank: 4
+    Price: 0
+    BaseHp: 9
+    BaseAttack: 4
+    BaseDefense: 9
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_protection_aura
+  - CardId: monster_club_4_l2
+    DisplayName: "\u6885\u82B14\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 4
+    Rank: 4
+    Price: 0
+    BaseHp: 14
+    BaseAttack: 4
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_relentless_pursuit
+  - CardId: monster_spade_5_l2
+    DisplayName: "\u9ED1\u68435\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 1
+    Rank: 5
+    Price: 0
+    BaseHp: 24
+    BaseAttack: 8
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_side_strike
+  - CardId: monster_heart_5_l2
+    DisplayName: "\u7EA2\u68435\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 2
+    Rank: 5
+    Price: 0
+    BaseHp: 36
+    BaseAttack: 1
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_mother
+  - CardId: monster_diamond_5_l2
+    DisplayName: "\u65B9\u57575\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 3
+    Rank: 5
+    Price: 0
+    BaseHp: 14
+    BaseAttack: 6
+    BaseDefense: 15
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_unbreakable
+  - CardId: monster_club_5_l2
+    DisplayName: "\u6885\u82B15\xB7\u4E8C\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 4
+    Rank: 5
+    Price: 0
+    BaseHp: 24
+    BaseAttack: 6
+    BaseDefense: 6
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_vertical_lever
+  - CardId: monster_colorless_l3
+    DisplayName: "\u65E0\u8272\u5361\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 0
+    Rank: 0
+    Price: 0
+    BaseHp: 9
+    BaseAttack: 3
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds: []
+  - CardId: monster_spade_2_l3
+    DisplayName: "\u9ED1\u68432\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 1
+    Rank: 2
+    Price: 0
+    BaseHp: 3
+    BaseAttack: 4
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_spade_cub
+  - CardId: monster_heart_2_l3
+    DisplayName: "\u7EA2\u68432\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 2
+    Rank: 2
+    Price: 0
+    BaseHp: 6
+    BaseAttack: 3
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_cub
+  - CardId: monster_diamond_2_l3
+    DisplayName: "\u65B9\u57572\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 3
+    Rank: 2
+    Price: 0
+    BaseHp: 1
+    BaseAttack: 3
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_diamond_cub
+  - CardId: monster_club_2_l3
+    DisplayName: "\u6885\u82B12\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 1
+    Suit: 4
+    Rank: 2
+    Price: 0
+    BaseHp: 3
+    BaseAttack: 3
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_club_cub
+  - CardId: monster_spade_3_l3
+    DisplayName: "\u9ED1\u68433\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 1
+    Rank: 3
+    Price: 0
+    BaseHp: 9
+    BaseAttack: 6
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_armor_breaker
+  - CardId: monster_heart_3_l3
+    DisplayName: "\u7EA2\u68433\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 2
+    Rank: 3
+    Price: 0
+    BaseHp: 13
+    BaseAttack: 4
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_loving_body
+  - CardId: monster_diamond_3_l3
+    DisplayName: "\u65B9\u57573\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 3
+    Rank: 3
+    Price: 0
+    BaseHp: 4
+    BaseAttack: 1
+    BaseDefense: 13
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_sharp_shield
+  - CardId: monster_club_3_l3
+    DisplayName: "\u6885\u82B13\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 2
+    Suit: 4
+    Rank: 3
+    Price: 0
+    BaseHp: 9
+    BaseAttack: 4
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_ambush
+  - CardId: monster_spade_4_l3
+    DisplayName: "\u9ED1\u68434\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 1
+    Rank: 4
+    Price: 0
+    BaseHp: 18
+    BaseAttack: 9
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_revenge
+  - CardId: monster_heart_4_l3
+    DisplayName: "\u7EA2\u68434\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 2
+    Rank: 4
+    Price: 0
+    BaseHp: 24
+    BaseAttack: 6
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_medic
+  - CardId: monster_diamond_4_l3
+    DisplayName: "\u65B9\u57574\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 3
+    Rank: 4
+    Price: 0
+    BaseHp: 12
+    BaseAttack: 6
+    BaseDefense: 12
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_protection_aura
+  - CardId: monster_club_4_l3
+    DisplayName: "\u6885\u82B14\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 3
+    Suit: 4
+    Rank: 4
+    Price: 0
+    BaseHp: 18
+    BaseAttack: 6
+    BaseDefense: 6
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_relentless_pursuit
+  - CardId: monster_spade_5_l3
+    DisplayName: "\u9ED1\u68435\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 1
+    Rank: 5
+    Price: 0
+    BaseHp: 30
+    BaseAttack: 10
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_side_strike
+  - CardId: monster_heart_5_l3
+    DisplayName: "\u7EA2\u68435\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 2
+    Rank: 5
+    Price: 0
+    BaseHp: 45
+    BaseAttack: 1
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_heart_mother
+  - CardId: monster_diamond_5_l3
+    DisplayName: "\u65B9\u57575\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 3
+    Rank: 5
+    Price: 0
+    BaseHp: 18
+    BaseAttack: 7
+    BaseDefense: 19
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_unbreakable
+  - CardId: monster_club_5_l3
+    DisplayName: "\u6885\u82B15\xB7\u4E09\u5C42"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 4
+    Suit: 4
+    Rank: 5
+    Price: 0
+    BaseHp: 30
+    BaseAttack: 7
+    BaseDefense: 7
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_vertical_lever
+  - CardId: monster_heart_a
+    DisplayName: "\u7EA2\u6843A"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 5
+    Suit: 2
+    Rank: 1
+    Price: 0
+    BaseHp: 55
+    BaseAttack: 2
+    BaseDefense: 2
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_duel
+    - skill_war_dance
+  - CardId: monster_heart_j
+    DisplayName: "\u7EA2\u6843J"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 6
+    Suit: 2
+    Rank: 11
+    Price: 0
+    BaseHp: 150
+    BaseAttack: 12
+    BaseDefense: 1
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_violence
+    - skill_spade_royalty
+  - CardId: monster_diamond_a
+    DisplayName: "\u65B9\u5757A"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 5
+    Suit: 3
+    Rank: 1
+    Price: 0
+    BaseHp: 66
+    BaseAttack: 2
+    BaseDefense: 3
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_duel
+    - skill_war_dance
+  - CardId: monster_diamond_j
+    DisplayName: "\u65B9\u5757J"
+    CardType: 1
+    Quality: 0
+    MonsterLevel: 6
+    Suit: 3
+    Rank: 11
+    Price: 0
+    BaseHp: 180
+    BaseAttack: 10
+    BaseDefense: 4
+    LegacyIsPermanentRemoveOnUse: 0
+    RestoreAfterNode: 0
+    RestoreAfterNodeAuthoritative: 0
+    EffectGraphId: 
+    SystemTag: 0
+    SkillIds:
+    - skill_violence
+    - skill_spade_royalty
+  MonsterDeckRules:
+  - Layer: 1
+    NodeInLayer: 1
+    TotalCardCount: 10
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 6
+      MaxCount: 8
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 2
+    TotalCardCount: 11
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 5
+      MaxCount: 7
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 3
+    TotalCardCount: 12
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    LevelQuotas:
+    - Level: 1
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 4
+    TotalCardCount: 13
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 3
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 7
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 5
+    TotalCardCount: 14
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    - monster_spade_5
+    - monster_heart_5
+    - monster_diamond_5
+    - monster_club_5
+    - monster_spade_a
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    - Level: 4
+      MinCount: 2
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_5
+      - monster_heart_5
+      - monster_diamond_5
+      - monster_club_5
+    MandatoryMonsterCardIds:
+    - monster_spade_a
+  - Layer: 1
+    NodeInLayer: 6
+    TotalCardCount: 15
+    AllowedMonsterCardIds:
+    - monster_colorless
+    - monster_spade_2
+    - monster_heart_2
+    - monster_diamond_2
+    - monster_club_2
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    - monster_spade_5
+    - monster_heart_5
+    - monster_diamond_5
+    - monster_club_5
+    LevelQuotas:
+    - Level: 1
+      MinCount: 0
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless
+      - monster_spade_2
+      - monster_heart_2
+      - monster_diamond_2
+      - monster_club_2
+    - Level: 2
+      MinCount: 2
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    - Level: 4
+      MinCount: 1
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_5
+      - monster_heart_5
+      - monster_diamond_5
+      - monster_club_5
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 7
+    TotalCardCount: 16
+    AllowedMonsterCardIds:
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    - monster_spade_5
+    - monster_heart_5
+    - monster_diamond_5
+    - monster_club_5
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    - Level: 4
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_5
+      - monster_heart_5
+      - monster_diamond_5
+      - monster_club_5
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 8
+    TotalCardCount: 17
+    AllowedMonsterCardIds:
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    - monster_spade_5
+    - monster_heart_5
+    - monster_diamond_5
+    - monster_club_5
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    - Level: 4
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_5
+      - monster_heart_5
+      - monster_diamond_5
+      - monster_club_5
+    MandatoryMonsterCardIds: []
+  - Layer: 1
+    NodeInLayer: 9
+    TotalCardCount: 18
+    AllowedMonsterCardIds:
+    - monster_spade_3
+    - monster_heart_3
+    - monster_diamond_3
+    - monster_club_3
+    - monster_spade_4
+    - monster_heart_4
+    - monster_diamond_4
+    - monster_club_4
+    - monster_spade_5
+    - monster_heart_5
+    - monster_diamond_5
+    - monster_club_5
+    - monster_spade_j
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_3
+      - monster_heart_3
+      - monster_diamond_3
+      - monster_club_3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4
+      - monster_heart_4
+      - monster_diamond_4
+      - monster_club_4
+    - Level: 4
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_5
+      - monster_heart_5
+      - monster_diamond_5
+      - monster_club_5
+    MandatoryMonsterCardIds:
+    - monster_spade_j
+  - Layer: 2
+    NodeInLayer: 1
+    TotalCardCount: 10
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    LevelQuotas:
+    - Level: 1
+      MinCount: 6
+      MaxCount: 8
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 2
+    TotalCardCount: 11
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    LevelQuotas:
+    - Level: 1
+      MinCount: 5
+      MaxCount: 7
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 3
+    TotalCardCount: 12
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    LevelQuotas:
+    - Level: 1
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 4
+    TotalCardCount: 13
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 3
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 7
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 5
+    TotalCardCount: 14
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    - monster_spade_5_l2
+    - monster_heart_5_l2
+    - monster_diamond_5_l2
+    - monster_club_5_l2
+    - monster_heart_a
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    - Level: 4
+      MinCount: 2
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_5_l2
+      - monster_heart_5_l2
+      - monster_diamond_5_l2
+      - monster_club_5_l2
+    MandatoryMonsterCardIds:
+    - monster_heart_a
+  - Layer: 2
+    NodeInLayer: 6
+    TotalCardCount: 15
+    AllowedMonsterCardIds:
+    - monster_colorless_l2
+    - monster_spade_2_l2
+    - monster_heart_2_l2
+    - monster_diamond_2_l2
+    - monster_club_2_l2
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    - monster_spade_5_l2
+    - monster_heart_5_l2
+    - monster_diamond_5_l2
+    - monster_club_5_l2
+    LevelQuotas:
+    - Level: 1
+      MinCount: 0
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless_l2
+      - monster_spade_2_l2
+      - monster_heart_2_l2
+      - monster_diamond_2_l2
+      - monster_club_2_l2
+    - Level: 2
+      MinCount: 2
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    - Level: 4
+      MinCount: 1
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_5_l2
+      - monster_heart_5_l2
+      - monster_diamond_5_l2
+      - monster_club_5_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 7
+    TotalCardCount: 16
+    AllowedMonsterCardIds:
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    - monster_spade_5_l2
+    - monster_heart_5_l2
+    - monster_diamond_5_l2
+    - monster_club_5_l2
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    - Level: 4
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_5_l2
+      - monster_heart_5_l2
+      - monster_diamond_5_l2
+      - monster_club_5_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 8
+    TotalCardCount: 17
+    AllowedMonsterCardIds:
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    - monster_spade_5_l2
+    - monster_heart_5_l2
+    - monster_diamond_5_l2
+    - monster_club_5_l2
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    - Level: 4
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_5_l2
+      - monster_heart_5_l2
+      - monster_diamond_5_l2
+      - monster_club_5_l2
+    MandatoryMonsterCardIds: []
+  - Layer: 2
+    NodeInLayer: 9
+    TotalCardCount: 18
+    AllowedMonsterCardIds:
+    - monster_spade_3_l2
+    - monster_heart_3_l2
+    - monster_diamond_3_l2
+    - monster_club_3_l2
+    - monster_spade_4_l2
+    - monster_heart_4_l2
+    - monster_diamond_4_l2
+    - monster_club_4_l2
+    - monster_spade_5_l2
+    - monster_heart_5_l2
+    - monster_diamond_5_l2
+    - monster_club_5_l2
+    - monster_heart_j
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_3_l2
+      - monster_heart_3_l2
+      - monster_diamond_3_l2
+      - monster_club_3_l2
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4_l2
+      - monster_heart_4_l2
+      - monster_diamond_4_l2
+      - monster_club_4_l2
+    - Level: 4
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_5_l2
+      - monster_heart_5_l2
+      - monster_diamond_5_l2
+      - monster_club_5_l2
+    MandatoryMonsterCardIds:
+    - monster_heart_j
+  - Layer: 3
+    NodeInLayer: 1
+    TotalCardCount: 10
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 6
+      MaxCount: 8
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 2
+    TotalCardCount: 11
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 5
+      MaxCount: 7
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 3
+    TotalCardCount: 12
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 2
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 4
+    TotalCardCount: 13
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 3
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 3
+      MaxCount: 7
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 5
+    TotalCardCount: 14
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    - monster_spade_5_l3
+    - monster_heart_5_l3
+    - monster_diamond_5_l3
+    - monster_club_5_l3
+    - monster_diamond_a
+    LevelQuotas:
+    - Level: 1
+      MinCount: 1
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    - Level: 4
+      MinCount: 2
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_5_l3
+      - monster_heart_5_l3
+      - monster_diamond_5_l3
+      - monster_club_5_l3
+    MandatoryMonsterCardIds:
+    - monster_diamond_a
+  - Layer: 3
+    NodeInLayer: 6
+    TotalCardCount: 15
+    AllowedMonsterCardIds:
+    - monster_colorless_l3
+    - monster_spade_2_l3
+    - monster_heart_2_l3
+    - monster_diamond_2_l3
+    - monster_club_2_l3
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    - monster_spade_5_l3
+    - monster_heart_5_l3
+    - monster_diamond_5_l3
+    - monster_club_5_l3
+    LevelQuotas:
+    - Level: 1
+      MinCount: 0
+      MaxCount: 1
+      PoolCardIds:
+      - monster_colorless_l3
+      - monster_spade_2_l3
+      - monster_heart_2_l3
+      - monster_diamond_2_l3
+      - monster_club_2_l3
+    - Level: 2
+      MinCount: 2
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    - Level: 4
+      MinCount: 1
+      MaxCount: 5
+      PoolCardIds:
+      - monster_spade_5_l3
+      - monster_heart_5_l3
+      - monster_diamond_5_l3
+      - monster_club_5_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 7
+    TotalCardCount: 16
+    AllowedMonsterCardIds:
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    - monster_spade_5_l3
+    - monster_heart_5_l3
+    - monster_diamond_5_l3
+    - monster_club_5_l3
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    - Level: 4
+      MinCount: 3
+      MaxCount: 6
+      PoolCardIds:
+      - monster_spade_5_l3
+      - monster_heart_5_l3
+      - monster_diamond_5_l3
+      - monster_club_5_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 8
+    TotalCardCount: 17
+    AllowedMonsterCardIds:
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    - monster_spade_5_l3
+    - monster_heart_5_l3
+    - monster_diamond_5_l3
+    - monster_club_5_l3
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 4
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    - Level: 4
+      MinCount: 3
+      MaxCount: 8
+      PoolCardIds:
+      - monster_spade_5_l3
+      - monster_heart_5_l3
+      - monster_diamond_5_l3
+      - monster_club_5_l3
+    MandatoryMonsterCardIds: []
+  - Layer: 3
+    NodeInLayer: 9
+    TotalCardCount: 18
+    AllowedMonsterCardIds:
+    - monster_spade_3_l3
+    - monster_heart_3_l3
+    - monster_diamond_3_l3
+    - monster_club_3_l3
+    - monster_spade_4_l3
+    - monster_heart_4_l3
+    - monster_diamond_4_l3
+    - monster_club_4_l3
+    - monster_spade_5_l3
+    - monster_heart_5_l3
+    - monster_diamond_5_l3
+    - monster_club_5_l3
+    - monster_diamond_j
+    LevelQuotas:
+    - Level: 2
+      MinCount: 1
+      MaxCount: 2
+      PoolCardIds:
+      - monster_spade_3_l3
+      - monster_heart_3_l3
+      - monster_diamond_3_l3
+      - monster_club_3_l3
+    - Level: 3
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_4_l3
+      - monster_heart_4_l3
+      - monster_diamond_4_l3
+      - monster_club_4_l3
+    - Level: 4
+      MinCount: 3
+      MaxCount: 10
+      PoolCardIds:
+      - monster_spade_5_l3
+      - monster_heart_5_l3
+      - monster_diamond_5_l3
+      - monster_club_5_l3
+    MandatoryMonsterCardIds:
+    - monster_diamond_j

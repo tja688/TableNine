@@ -243,7 +243,7 @@ public sealed class TableNineM1EditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var potionUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpPotionId);
+        var potionUid = MoveHelpCardToItemSlot(GameConfigIds.HelpPotionId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         playerRuntime.CurrentHp = 3;
 
@@ -260,7 +260,7 @@ public sealed class TableNineM1EditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var knifeUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpThrowingKnifeId);
+        var knifeUid = MoveHelpCardToItemSlot(GameConfigIds.HelpThrowingKnifeId);
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(1));
         var targetRuntime = collectionModel.GetCard(targetUid);
         targetRuntime.CurrentHp = 7;
@@ -281,7 +281,7 @@ public sealed class TableNineM1EditModeTests
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var playerRuntime = collectionModel.GetCard(TableNine.Interface.GetModel<IPlayerModel>().PlayerCardUid);
-        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpAttributeUpId);
 
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(cardUid).ItemSlotIndex.Value));
 
@@ -364,7 +364,7 @@ public sealed class TableNineM1EditModeTests
             }
 
             var runtime = collectionModel.GetCard(uid.Value);
-            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(DefaultGameConfigFactory.SkillFirstStrikeId))
+            if (runtime.CardType == CardType.Monster && !runtime.HasSkill(GameConfigIds.SkillFirstStrikeId))
             {
                 boardSystem.RemoveCardAt(slot);
                 boardSystem.PlaceCard(uid.Value, new BoardSlotNo(2), CardPlacementSource.Refill);

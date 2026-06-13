@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public static class SkillEffectRegistry
@@ -12,15 +13,43 @@ public static class SkillEffectRegistry
 
     public static IReadOnlyList<SkillEffectBinding> AllBindings => Bindings;
 
+    public static IReadOnlyList<SkillEffectBinding> ExportAllBindings()
+    {
+        return new List<SkillEffectBinding>(Bindings);
+    }
+
+    public static IReadOnlyList<EffectGraphDefinition> ExportPassiveGraphs()
+    {
+        return PassiveGraphs.ExportAllGraphs();
+    }
+
+    public static bool IsKnownEffectGraph(string graphId, IReadOnlyCollection<EffectGraphDefinition> effectGraphs = null)
+    {
+        if (effectGraphs != null)
+        {
+            foreach (var effectGraph in effectGraphs)
+            {
+                if (effectGraph.EffectGraphId == graphId)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return graphId == "eg_relic_thorn_armor" ||
+               graphId == "eg_skill_thorn_skin_reflect" ||
+               PassiveGraphs.TryGetGraph(graphId, out _);
+    }
+
     private static void BuildBindings()
     {
-        BindRelic(DefaultGameConfigFactory.RelicThornArmorId, SkillTrigger.OnModifyDamage, "first_hit_player_attacks_monster", "eg_relic_thorn_armor");
-        BindRelic(DefaultGameConfigFactory.RelicLivingFleshId, SkillTrigger.OnHelpCardUsed, "always", "eg_relic_living_flesh_heal");
+        BindRelic(GameConfigIds.RelicThornArmorId, SkillTrigger.OnModifyDamage, "first_hit_player_attacks_monster", "eg_relic_thorn_armor");
+        BindRelic(GameConfigIds.RelicLivingFleshId, SkillTrigger.OnHelpCardUsed, "always", "eg_relic_living_flesh_heal");
 
-        BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnCardMoved, "moved_to_adjacent_player", "eg_passive_healing_spring_adjacent");
-        BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnAfterCombat, "in_item_slot", "eg_passive_healing_spring_combat");
-        BindHelpPassive(DefaultGameConfigFactory.HelpBoulderId, SkillTrigger.OnCardMoved, "moved_to_slot_3_killable", "eg_passive_boulder_kill");
-        BindHelpPassive(DefaultGameConfigFactory.HelpBearTrapId, SkillTrigger.OnCardMoved, "refilled_monster_adjacent_to_player", "eg_passive_bear_trap_refill");
+        BindHelpPassive(GameConfigIds.HelpHealingSpringId, SkillTrigger.OnCardMoved, "moved_to_adjacent_player", "eg_passive_healing_spring_adjacent");
+        BindHelpPassive(GameConfigIds.HelpHealingSpringId, SkillTrigger.OnAfterCombat, "in_item_slot", "eg_passive_healing_spring_combat");
+        BindHelpPassive(GameConfigIds.HelpBoulderId, SkillTrigger.OnCardMoved, "moved_to_slot_3_killable", "eg_passive_boulder_kill");
+        BindHelpPassive(GameConfigIds.HelpBearTrapId, SkillTrigger.OnCardMoved, "refilled_monster_adjacent_to_player", "eg_passive_bear_trap_refill");
     }
 
     private static void BuildPassiveEffectGraphs()
@@ -35,7 +64,7 @@ public static class SkillEffectRegistry
             PassiveGraphs.RemoveBoardSlotMonster(6),
             PassiveGraphs.ConsumeCaster());
         PassiveGraphs.Register("eg_passive_bear_trap_refill",
-            PassiveGraphs.Damage(10, DefaultGameConfigFactory.HelpBearTrapId),
+            PassiveGraphs.Damage(10, GameConfigIds.HelpBearTrapId),
             PassiveGraphs.ConsumeCaster());
         PassiveGraphs.Register("eg_skill_hard_skin_node_clear_heal",
             PassiveGraphs.Heal(10));
@@ -106,6 +135,17 @@ internal static class PassiveGraphs
         return Graphs.TryGetValue(graphId, out graph);
     }
 
+    public static IReadOnlyList<EffectGraphDefinition> ExportAllGraphs()
+    {
+        var result = new List<EffectGraphDefinition>(Graphs.Count);
+        foreach (var pair in Graphs)
+        {
+            result.Add(EffectAtomSerializationUtility.CloneGraph(pair.Value));
+        }
+
+        return result;
+    }
+
     public static EffectAtomDefinition Heal(int amount)
     {
         return Atom(EffectAtomTypes.Heal, ("amount", amount.ToString()), ("target", "player"));
@@ -136,7 +176,7 @@ internal static class PassiveGraphs
         var atom = new EffectAtomDefinition { AtomType = type };
         for (var i = 0; i < parameters.Length; i++)
         {
-            atom.Parameters[parameters[i].key] = parameters[i].value;
+            EffectAtomSerializationUtility.SetParameter(atom, parameters[i].key, parameters[i].value);
         }
 
         return atom;

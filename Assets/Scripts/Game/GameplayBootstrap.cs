@@ -6,6 +6,7 @@ using Object = UnityEngine.Object;
 public sealed class GameplayBootstrap : MonoBehaviour
 {
     [SerializeField] private TableNineUIPanelRegistry mUIPanelRegistry;
+    [SerializeField] private TableNineGameConfig mGameConfig;
     [SerializeField] private bool mOpenLegacyHudOnBoot;
     [SerializeField] private bool mAutoStartLegacyRun;
 
@@ -28,6 +29,11 @@ public sealed class GameplayBootstrap : MonoBehaviour
 
         ResKit.Init();
         TableNine.ConfigureRuntimePersistence();
+        if (mGameConfig != null)
+        {
+            TableNine.ConfigureGameConfig(mGameConfig);
+        }
+
         TableNine.InitArchitecture();
         SetupUIKit();
 

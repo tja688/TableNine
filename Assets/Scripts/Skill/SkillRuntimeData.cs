@@ -2,11 +2,13 @@ using System.Collections.Generic;
 
 public enum SkillTrigger
 {
+    OnComputeEffectiveStats,
     OnNodeStart,
     OnBeforeCombat,
     OnModifyDamage,
     OnAfterDamage,
     OnAfterCombat,
+    OnCardPlaced,
     OnCardMoved,
     OnMonsterKilled,
     OnNodeClear,

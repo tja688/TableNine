@@ -455,6 +455,10 @@ public interface IConfigModel : IModel
     IReadOnlyList<RelicDefinition> GetAllRelicDefinitions();
     RoomDefinition GetRoomDefinition(string roomId);
     IReadOnlyList<CardDefinition> GetCardsByType(CardType cardType);
+    bool TryGetEffectGraph(string effectGraphId, out EffectGraphDefinition graph);
+    IReadOnlyList<SkillEffectBinding> GetSkillBindings(SkillTrigger trigger);
+    IReadOnlyList<SkillBehaviorRule> GetSkillBehaviorRules(SkillTrigger trigger);
+    IReadOnlyList<SkillBehaviorRule> GetEffectiveStatBehaviorRules();
 }
 
 public sealed class ConfigModel : AbstractModel, IConfigModel
@@ -465,6 +469,9 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     private readonly Dictionary<string, MonsterDeckRuleDefinition> mMonsterRulesByKey = new Dictionary<string, MonsterDeckRuleDefinition>();
     private readonly Dictionary<string, RelicDefinition> mRelicsById = new Dictionary<string, RelicDefinition>();
     private readonly Dictionary<string, RoomDefinition> mRoomsById = new Dictionary<string, RoomDefinition>();
+    private readonly Dictionary<string, EffectGraphDefinition> mEffectGraphsById = new Dictionary<string, EffectGraphDefinition>();
+    private readonly List<SkillEffectBinding> mSkillBindings = new List<SkillEffectBinding>();
+    private readonly List<SkillBehaviorRule> mSkillBehaviorRules = new List<SkillBehaviorRule>();
     private readonly List<string> mValidationErrors = new List<string>();
 
     public bool IsLoaded { get; private set; }
@@ -472,13 +479,21 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
 
     protected override void OnInit()
     {
-        var configUtility = this.GetUtility<IConfigUtility>();
-        var database = configUtility.LoadResource<GameConfigDatabase>("Configs/GameConfigDatabase");
-        var config = database != null ? database.ToConfigSet() : DefaultGameConfigFactory.Create();
+        var gameConfig = TableNine.GameConfig
+            ?? TableNine.TestGameConfigResolver?.Invoke()
+            ?? TryLoadDefaultGameConfig();
+        if (gameConfig == null)
+        {
+            Debug.LogError("[ConfigModel] TableNineGameConfig is missing. Assign it on GameplayBootstrap or run TableNine/Game Config/Sync From Code Defaults.");
+            IsLoaded = false;
+            return;
+        }
+
+        var bundle = gameConfig.ToRuntimeBundle();
 
         mValidationErrors.Clear();
-        mValidationErrors.AddRange(ConfigValidator.Validate(config));
-        var warnings = ConfigValidator.CollectWarnings(config);
+        mValidationErrors.AddRange(ConfigValidator.Validate(bundle));
+        var warnings = ConfigValidator.CollectWarnings(bundle.Core);
         for (var i = 0; i < mValidationErrors.Count; i++)
         {
             Debug.LogWarning($"[ConfigValidator] {mValidationErrors[i]}");
@@ -495,7 +510,11 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         mMonsterRulesByKey.Clear();
         mRelicsById.Clear();
         mRoomsById.Clear();
+        mEffectGraphsById.Clear();
+        mSkillBindings.Clear();
+        mSkillBehaviorRules.Clear();
 
+        var config = bundle.Core;
         for (var i = 0; i < config.Cards.Count; i++)
         {
             mCardsById[config.Cards[i].CardId] = config.Cards[i];
@@ -527,8 +546,29 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
             mRoomsById[config.Rooms[i].RoomId] = config.Rooms[i];
         }
 
+        for (var i = 0; i < bundle.EffectGraphs.Count; i++)
+        {
+            var graph = bundle.EffectGraphs[i];
+            mEffectGraphsById[graph.EffectGraphId] = graph;
+        }
+
+        mSkillBindings.AddRange(bundle.SkillBindings);
+        mSkillBehaviorRules.AddRange(bundle.SkillBehaviorRules);
         IsLoaded = true;
     }
+
+#if UNITY_EDITOR
+    private static TableNineGameConfig TryLoadDefaultGameConfig()
+    {
+        return UnityEditor.AssetDatabase.LoadAssetAtPath<TableNineGameConfig>(
+            "Assets/ScriptableObjects/TableNineGameConfig.asset");
+    }
+#else
+    private static TableNineGameConfig TryLoadDefaultGameConfig()
+    {
+        return null;
+    }
+#endif
 
     public CardDefinition GetCardDefinition(string cardId)
     {
@@ -627,6 +667,64 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         }
 
         return result;
+    }
+
+    public bool TryGetEffectGraph(string effectGraphId, out EffectGraphDefinition graph)
+    {
+        return mEffectGraphsById.TryGetValue(effectGraphId, out graph);
+    }
+
+    public IReadOnlyList<SkillEffectBinding> GetSkillBindings(SkillTrigger trigger)
+    {
+        var result = new List<SkillEffectBinding>();
+        for (var i = 0; i < mSkillBindings.Count; i++)
+        {
+            if (mSkillBindings[i].Trigger == trigger)
+            {
+                result.Add(mSkillBindings[i]);
+            }
+        }
+
+        var skills = GetAllSkillDefinitions();
+        for (var i = 0; i < skills.Count; i++)
+        {
+            var skill = skills[i];
+            if (!skill.HasRuntimeBinding || skill.Trigger != trigger)
+            {
+                continue;
+            }
+
+            result.Add(new SkillEffectBinding
+            {
+                BindingId = $"player_skill_{skill.SkillId}_{skill.Trigger}",
+                OwnerKind = SkillOwnerKind.PlayerSkill,
+                OwnerDefinitionId = skill.SkillId,
+                Trigger = skill.Trigger,
+                ConditionKey = skill.ConditionKey,
+                EffectGraphId = skill.EffectGraphId
+            });
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<SkillBehaviorRule> GetSkillBehaviorRules(SkillTrigger trigger)
+    {
+        var result = new List<SkillBehaviorRule>();
+        for (var i = 0; i < mSkillBehaviorRules.Count; i++)
+        {
+            if (mSkillBehaviorRules[i].Trigger == trigger)
+            {
+                result.Add(mSkillBehaviorRules[i]);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<SkillBehaviorRule> GetEffectiveStatBehaviorRules()
+    {
+        return GetSkillBehaviorRules(SkillTrigger.OnComputeEffectiveStats);
     }
 
     private static string BuildRuleKey(int layer, int nodeInLayer)

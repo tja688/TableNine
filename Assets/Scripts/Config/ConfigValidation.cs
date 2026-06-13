@@ -2,7 +2,24 @@ using System.Collections.Generic;
 
 public static class ConfigValidator
 {
+    public static List<string> Validate(GameConfigRuntimeBundle bundle)
+    {
+        if (bundle == null)
+        {
+            return new List<string> { "Game config bundle is null." };
+        }
+
+        var errors = Validate(bundle.Core, bundle.EffectGraphs);
+        ValidateSkillBindings(bundle, errors);
+        return errors;
+    }
+
     public static List<string> Validate(GameConfigSet config)
+    {
+        return Validate(config, null);
+    }
+
+    private static List<string> Validate(GameConfigSet config, IReadOnlyList<EffectGraphDefinition> effectGraphs)
     {
         var errors = new List<string>();
         var cardIds = new HashSet<string>();
@@ -39,7 +56,7 @@ public static class ConfigValidator
                 {
                     errors.Add($"Skill {skill.SkillId} has runtime binding but missing EffectGraphId.");
                 }
-                else if (!SkillEffectRegistry.IsKnownEffectGraph(skill.EffectGraphId))
+                else if (!SkillEffectRegistry.IsKnownEffectGraph(skill.EffectGraphId, effectGraphs))
                 {
                     errors.Add($"Skill {skill.SkillId} references unknown EffectGraphId: {skill.EffectGraphId}.");
                 }
@@ -116,7 +133,7 @@ public static class ConfigValidator
 
             if (rule.NodeInLayer == 5)
             {
-                var eliteId = DefaultGameConfigFactory.GetEliteMonsterId(rule.Layer);
+                var eliteId = GameConfigIds.GetEliteMonsterId(rule.Layer);
                 if (!rule.MandatoryMonsterCardIds.Contains(eliteId))
                 {
                     errors.Add($"Layer {rule.Layer} node 5 must include elite monster {eliteId}.");
@@ -125,7 +142,7 @@ public static class ConfigValidator
 
             if (rule.NodeInLayer == 9)
             {
-                var bossId = DefaultGameConfigFactory.GetBossMonsterId(rule.Layer);
+                var bossId = GameConfigIds.GetBossMonsterId(rule.Layer);
                 if (!rule.MandatoryMonsterCardIds.Contains(bossId))
                 {
                     errors.Add($"Layer {rule.Layer} node 9 must include boss monster {bossId}.");
@@ -161,9 +178,9 @@ public static class ConfigValidator
             }
         }
 
-        for (var i = 0; i < DefaultGameConfigFactory.PlaytestHelpCardIds.Length; i++)
+        for (var i = 0; i < GameConfigIds.PlaytestHelpCardIds.Length; i++)
         {
-            var helpId = DefaultGameConfigFactory.PlaytestHelpCardIds[i];
+            var helpId = GameConfigIds.PlaytestHelpCardIds[i];
             if (!cardIds.Contains(helpId))
             {
                 errors.Add($"Missing playtest help card: {helpId}");
@@ -184,7 +201,7 @@ public static class ConfigValidator
                 continue;
             }
 
-            if (!EffectGraphRegistry.ContainsGraph(card.EffectGraphId))
+            if (!ContainsEffectGraph(card.EffectGraphId, effectGraphs))
             {
                 errors.Add($"Help card {card.CardId} references unknown EffectGraphId: {card.EffectGraphId}.");
             }
@@ -210,6 +227,40 @@ public static class ConfigValidator
         }
 
         return errors;
+    }
+
+    private static void ValidateSkillBindings(GameConfigRuntimeBundle bundle, List<string> errors)
+    {
+        for (var i = 0; i < bundle.SkillBindings.Count; i++)
+        {
+            var binding = bundle.SkillBindings[i];
+            if (string.IsNullOrWhiteSpace(binding.EffectGraphId))
+            {
+                errors.Add($"Skill binding {binding.BindingId} missing EffectGraphId.");
+                continue;
+            }
+
+            if (!SkillEffectRegistry.IsKnownEffectGraph(binding.EffectGraphId, bundle.EffectGraphs))
+            {
+                errors.Add($"Skill binding {binding.BindingId} references unknown EffectGraphId: {binding.EffectGraphId}.");
+            }
+        }
+    }
+
+    private static bool ContainsEffectGraph(string effectGraphId, IReadOnlyList<EffectGraphDefinition> effectGraphs)
+    {
+        if (effectGraphs != null)
+        {
+            for (var i = 0; i < effectGraphs.Count; i++)
+            {
+                if (effectGraphs[i].EffectGraphId == effectGraphId)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return EffectGraphRegistry.ContainsGraph(effectGraphId);
     }
 
     public static List<string> CollectWarnings(GameConfigSet config)

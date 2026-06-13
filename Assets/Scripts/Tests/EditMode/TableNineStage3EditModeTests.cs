@@ -22,11 +22,11 @@ public sealed class TableNineStage3EditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        AssertHelpCardTag(configModel, DefaultGameConfigFactory.HelpPotionId, HelpCardSystemTag.Recovery);
-        AssertHelpCardTag(configModel, DefaultGameConfigFactory.HelpDurableShieldId, HelpCardSystemTag.Defense);
-        AssertHelpCardTag(configModel, DefaultGameConfigFactory.HelpThrowingKnifeId, HelpCardSystemTag.DirectDamage);
-        AssertHelpCardTag(configModel, DefaultGameConfigFactory.HelpTeleportId, HelpCardSystemTag.Displacement);
-        AssertHelpCardTag(configModel, DefaultGameConfigFactory.HelpAttributeUpId, HelpCardSystemTag.Special);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpPotionId, HelpCardSystemTag.Recovery);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpDurableShieldId, HelpCardSystemTag.Defense);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpThrowingKnifeId, HelpCardSystemTag.DirectDamage);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpTeleportId, HelpCardSystemTag.Displacement);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpAttributeUpId, HelpCardSystemTag.Special);
     }
 
     [Test]
@@ -34,9 +34,9 @@ public sealed class TableNineStage3EditModeTests
     {
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
-        var character = configModel.GetCharacterDefinition(DefaultGameConfigFactory.CharacterImpId);
+        var character = configModel.GetCharacterDefinition(GameConfigIds.CharacterImpId);
 
-        CollectionAssert.DoesNotContain(character.InitialHelpCardIds, DefaultGameConfigFactory.HelpAttributeUpId);
+        CollectionAssert.DoesNotContain(character.InitialHelpCardIds, GameConfigIds.HelpAttributeUpId);
         Assert.That(character.InitialHelpCardIds.Count, Is.EqualTo(7));
     }
 
@@ -47,12 +47,12 @@ public sealed class TableNineStage3EditModeTests
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
         FillHelpDeckToCapacity(12);
 
-        Assert.That(rewardSystem.CanAddHelpCard(DefaultGameConfigFactory.HelpBlessingId), Is.False);
+        Assert.That(rewardSystem.CanAddHelpCard(GameConfigIds.HelpBlessingId), Is.False);
         Assert.That(
-            rewardSystem.CanAddHelpCard(DefaultGameConfigFactory.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity),
+            rewardSystem.CanAddHelpCard(GameConfigIds.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity),
             Is.True);
         Assert.That(
-            rewardSystem.TryAddHelpCard(DefaultGameConfigFactory.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity),
+            rewardSystem.TryAddHelpCard(GameConfigIds.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity),
             Is.True);
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
@@ -67,15 +67,15 @@ public sealed class TableNineStage3EditModeTests
         var rewardSystem = TableNine.Interface.GetSystem<IRewardSystem>();
 
         FillHelpDeckToCapacity(12);
-        Assert.That(rewardSystem.TryAddHelpCard(DefaultGameConfigFactory.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity), Is.True);
-        Assert.That(rewardSystem.TryAddHelpCard(DefaultGameConfigFactory.HelpBandageId, HelpCardAddPolicy.BypassDeckCapacity), Is.True);
+        Assert.That(rewardSystem.TryAddHelpCard(GameConfigIds.HelpBlessingId, HelpCardAddPolicy.BypassDeckCapacity), Is.True);
+        Assert.That(rewardSystem.TryAddHelpCard(GameConfigIds.HelpBandageId, HelpCardAddPolicy.BypassDeckCapacity), Is.True);
         Assert.That(deckModel.CountActiveHelpCards(), Is.EqualTo(14));
 
         rewardSystem.TrimHelpDeckOverflow();
 
         Assert.That(deckModel.CountActiveHelpCards(), Is.EqualTo(12));
-        Assert.That(deckModel.CountHelpCardsById(DefaultGameConfigFactory.HelpBlessingId), Is.EqualTo(0));
-        Assert.That(deckModel.CountHelpCardsById(DefaultGameConfigFactory.HelpBandageId), Is.EqualTo(0));
+        Assert.That(deckModel.CountHelpCardsById(GameConfigIds.HelpBlessingId), Is.EqualTo(0));
+        Assert.That(deckModel.CountHelpCardsById(GameConfigIds.HelpBandageId), Is.EqualTo(0));
     }
 
     [Test]
@@ -86,8 +86,8 @@ public sealed class TableNineStage3EditModeTests
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
 
         FillHelpDeckToCapacity(12);
-        Assert.That(relicSystem.AddRelic(DefaultGameConfigFactory.RelicGoldenChestId), Is.True);
-        Assert.That(deckModel.CountHelpCardsById(DefaultGameConfigFactory.HelpGoldChestId), Is.EqualTo(2));
+        Assert.That(relicSystem.AddRelic(GameConfigIds.RelicGoldenChestId), Is.True);
+        Assert.That(deckModel.CountHelpCardsById(GameConfigIds.HelpGoldChestId), Is.EqualTo(2));
         Assert.That(deckModel.CountActiveHelpCards(), Is.EqualTo(14));
     }
 
@@ -117,21 +117,21 @@ public sealed class TableNineStage3EditModeTests
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var fillers = new[]
         {
-            DefaultGameConfigFactory.HelpFireballId,
-            DefaultGameConfigFactory.HelpViolenceId,
-            DefaultGameConfigFactory.HelpBoulderId,
-            DefaultGameConfigFactory.HelpBombId,
-            DefaultGameConfigFactory.HelpSwapId,
-            DefaultGameConfigFactory.HelpSmasherId,
-            DefaultGameConfigFactory.HelpFoodId,
-            DefaultGameConfigFactory.HelpHealingSpringId,
-            DefaultGameConfigFactory.HelpCrashTutorialId,
-            DefaultGameConfigFactory.HelpWatchtowerId,
-            DefaultGameConfigFactory.HelpDurableShieldId,
-            DefaultGameConfigFactory.HelpTeleportId,
-            DefaultGameConfigFactory.HelpKidnapId,
-            DefaultGameConfigFactory.HelpShieldStrikeTutorialId,
-            DefaultGameConfigFactory.HelpBearTrapId
+            GameConfigIds.HelpFireballId,
+            GameConfigIds.HelpViolenceId,
+            GameConfigIds.HelpBoulderId,
+            GameConfigIds.HelpBombId,
+            GameConfigIds.HelpSwapId,
+            GameConfigIds.HelpSmasherId,
+            GameConfigIds.HelpFoodId,
+            GameConfigIds.HelpHealingSpringId,
+            GameConfigIds.HelpCrashTutorialId,
+            GameConfigIds.HelpWatchtowerId,
+            GameConfigIds.HelpDurableShieldId,
+            GameConfigIds.HelpTeleportId,
+            GameConfigIds.HelpKidnapId,
+            GameConfigIds.HelpShieldStrikeTutorialId,
+            GameConfigIds.HelpBearTrapId
         };
 
         var index = 0;

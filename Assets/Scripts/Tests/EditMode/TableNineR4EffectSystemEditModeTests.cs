@@ -21,29 +21,29 @@ public sealed class TableNineR4EffectSystemEditModeTests
     [Test]
     public void ConfigValidator_Requires_Help_Cards_To_Have_EffectGraphId()
     {
-        var config = DefaultGameConfigFactory.Create();
-        var helpGraphErrors = ConfigValidator.Validate(config)
+        var bundle = TableNineTestConfig.LoadProductionRuntimeBundle();
+        var helpGraphErrors = ConfigValidator.Validate(bundle)
             .Where(error => error.Contains("EffectGraphId"))
             .ToList();
 
         Assert.That(helpGraphErrors, Is.Empty, string.Join("\n", helpGraphErrors));
-        for (var i = 0; i < config.Cards.Count; i++)
+        for (var i = 0; i < bundle.Core.Cards.Count; i++)
         {
-            var card = config.Cards[i];
+            var card = bundle.Core.Cards[i];
             if (card.CardType != CardType.Help)
             {
                 continue;
             }
 
             Assert.That(card.EffectGraphId, Is.Not.Empty, card.CardId);
-            Assert.That(EffectGraphRegistry.ContainsGraph(card.EffectGraphId), Is.True, card.CardId);
+            Assert.That(bundle.EffectGraphs.Any(graph => graph.EffectGraphId == card.EffectGraphId), Is.True, card.CardId);
         }
     }
 
     [Test]
     public void ConfigValidator_Fails_When_Help_Card_Missing_EffectGraphId()
     {
-        var config = DefaultGameConfigFactory.Create();
+        var bundle = TableNineTestConfig.LoadProductionRuntimeBundle();
         var orphan = new CardDefinition
         {
             CardId = "help_orphan",
@@ -51,9 +51,9 @@ public sealed class TableNineR4EffectSystemEditModeTests
             CardType = CardType.Help,
             Quality = CardQuality.White
         };
-        config.Cards.Add(orphan);
+        bundle.Core.Cards.Add(orphan);
 
-        var errors = ConfigValidator.Validate(config);
+        var errors = ConfigValidator.Validate(bundle);
 
         Assert.That(errors.Exists(e => e.Contains("help_orphan") && e.Contains("EffectGraphId")), Is.True);
     }
@@ -65,7 +65,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var potionUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpPotionId);
+        var potionUid = MoveHelpCardToItemSlot(GameConfigIds.HelpPotionId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         playerRuntime.CurrentHp = 3;
 
@@ -81,7 +81,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var knifeUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpThrowingKnifeId);
+        var knifeUid = MoveHelpCardToItemSlot(GameConfigIds.HelpThrowingKnifeId);
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(1));
         var targetRuntime = collectionModel.GetCard(targetUid);
         targetRuntime.CurrentHp = 7;
@@ -100,7 +100,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpAttributeUpId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         var defenseBefore = playerRuntime.BaseDefense;
         var armorBefore = playerRuntime.CurrentArmor;
@@ -119,7 +119,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var goldBefore = playerModel.Gold.Value;
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpGoldCardId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpGoldCardId);
 
         UseItemSlotHelpCard(uid);
 
@@ -132,7 +132,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
     {
         StartRun(12345);
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBlessingId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpBlessingId);
 
         UseItemSlotHelpCard(uid);
 
@@ -146,7 +146,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpFireballId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpFireballId);
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         var targetRuntime = collectionModel.GetCard(targetUid);
         var playerAttack = collectionModel.GetCard(playerModel.PlayerCardUid).BaseAttack;
@@ -166,7 +166,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var boardModel = TableNine.Interface.GetModel<IBoardModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBombId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpBombId);
         for (var slot = 1; slot <= 9; slot++)
         {
             var boardSlot = new BoardSlotNo(slot);
@@ -201,7 +201,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpFoodId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpFoodId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         playerRuntime.CurrentHp = 1;
 
@@ -217,7 +217,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var boardModel = TableNine.Interface.GetModel<IBoardModel>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpSwapId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpSwapId);
         var monsters = CollectMonsterUids(collectionModel, boardModel);
         Assert.That(monsters.Count, Is.GreaterThanOrEqualTo(2), "Need at least two monsters on board.");
 
@@ -243,7 +243,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
     {
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpSmasherId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpSmasherId);
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(2));
         var targetRuntime = collectionModel.GetCard(targetUid);
         targetRuntime.CurrentArmor = 12;
@@ -261,7 +261,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
         var boardModel = TableNine.Interface.GetModel<IBoardModel>();
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpSpinWheelId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpSpinWheelId);
 
         boardSystem.RemoveCardAt(new BoardSlotNo(2));
         deckModel.BattleDrawPile.Clear();
@@ -290,7 +290,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
 
-        var chestUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpCommonChestId);
+        var chestUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpCommonChestId);
         UseItemSlotHelpCard(chestUid);
 
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.ChestRewardChoosing));
@@ -327,9 +327,9 @@ public sealed class TableNineR4EffectSystemEditModeTests
     {
         StartRun(12345);
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
-        var definition = configModel.GetCardDefinition(DefaultGameConfigFactory.HelpFoodId);
+        var definition = configModel.GetCardDefinition(GameConfigIds.HelpFoodId);
         definition.EffectGraphId = null;
-        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpFoodId);
+        var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpFoodId);
 
         LogAssert.Expect(UnityEngine.LogType.Error, "[UseHelpCardCommand] Help card help_food missing EffectGraphId.");
         var messages = new List<GameplayMessageEvent>();

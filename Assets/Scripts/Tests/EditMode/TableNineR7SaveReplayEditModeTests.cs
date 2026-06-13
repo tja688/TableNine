@@ -94,7 +94,7 @@ public sealed class TableNineR7SaveReplayEditModeTests
     public void CommandReplay_SameSeed_And_Commands_Preserves_Run_Hash()
     {
         StartRun(99);
-        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(DefaultGameConfigFactory.HelpPotionId));
+        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(GameConfigIds.HelpPotionId));
         var expectedHash = TableNine.Interface.SendQuery(new GetRunSnapshotHashQuery());
         var replayData = TableNine.Interface.GetUtility<ICommandReplayUtility>().Export();
 
@@ -148,7 +148,7 @@ public sealed class TableNineR7SaveReplayEditModeTests
     {
         StartRunAndClearNode();
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         var entries = TableNine.Interface.GetUtility<ICommandReplayUtility>().Entries;
         Assert.That(entries.Any(entry => entry.CommandType == nameof(ProceedToNextNodeCommand)), Is.False);
@@ -166,7 +166,7 @@ public sealed class TableNineR7SaveReplayEditModeTests
 
         var runModel = TableNine.Interface.GetModel<IRunModel>();
         var nodeBefore = runModel.NodeInLayer.Value;
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomGoldId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomGoldId));
 
         Assert.That(runModel.NodeInLayer.Value, Is.EqualTo(nodeBefore + 1));
         Assert.That(replayUtility.Entries.Count, Is.EqualTo(1));
@@ -184,7 +184,7 @@ public sealed class TableNineR7SaveReplayEditModeTests
     {
         StartRunAndClearNode();
         TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        TableNine.Interface.SendCommand(new ChooseRoomCommand(DefaultGameConfigFactory.RoomChestId));
+        TableNine.Interface.SendCommand(new ChooseRoomCommand(GameConfigIds.RoomChestId));
 
         var replayUtility = TableNine.Interface.GetUtility<ICommandReplayUtility>();
         replayUtility.Clear();
@@ -260,8 +260,8 @@ public sealed class TableNineR7SaveReplayEditModeTests
     public void RunHash_Distinguishes_ItemSlot_Positions()
     {
         StartRun(42);
-        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(DefaultGameConfigFactory.HelpPotionId));
-        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(DefaultGameConfigFactory.HelpThrowingKnifeId));
+        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(GameConfigIds.HelpPotionId));
+        TableNine.Interface.SendCommand(new DebugSpawnHelpCardCommand(GameConfigIds.HelpThrowingKnifeId));
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();

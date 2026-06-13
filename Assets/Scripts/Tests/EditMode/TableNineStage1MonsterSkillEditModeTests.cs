@@ -22,10 +22,10 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterSpade2Id, 2, 3, 1);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterHeart2Id, 4, 2, 0);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterDiamond2Id, 1, 2, 3);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterClub2Id, 2, 2, 2);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterSpade2Id, 2, 3, 1);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterHeart2Id, 4, 2, 0);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterDiamond2Id, 1, 2, 3);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterClub2Id, 2, 2, 2);
     }
 
     [Test]
@@ -34,14 +34,14 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterSpade3Id, 6, 4, 2);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterHeart3Id, 9, 3, 0);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterDiamond3Id, 3, 0, 9);
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterClub3Id, 6, 3, 3);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterSpade3Id, 6, 4, 2);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterHeart3Id, 9, 3, 0);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterDiamond3Id, 3, 0, 9);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterClub3Id, 6, 3, 3);
 
-        var club3 = configModel.GetCardDefinition(DefaultGameConfigFactory.MonsterClub3Id);
-        Assert.That(club3.SkillIds, Contains.Item(DefaultGameConfigFactory.SkillAmbushId));
-        Assert.That(club3.SkillIds, Does.Not.Contain(DefaultGameConfigFactory.SkillCallFriendsId));
+        var club3 = configModel.GetCardDefinition(GameConfigIds.MonsterClub3Id);
+        Assert.That(club3.SkillIds, Contains.Item(GameConfigIds.SkillAmbushId));
+        Assert.That(club3.SkillIds, Does.Not.Contain(GameConfigIds.SkillCallFriendsId));
     }
 
     [Test]
@@ -49,14 +49,14 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
     {
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
-        AssertMonsterStats(configModel, DefaultGameConfigFactory.MonsterHeart5Id, 30, 0, 0);
+        AssertMonsterStats(configModel, GameConfigIds.MonsterHeart5Id, 30, 0, 0);
     }
 
     [Test]
     public void SpadeCub_At_Slot6_Grants_Attack_Bonus_And_FirstStrike()
     {
         StartRun(42);
-        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterSpade2Id);
+        var monster = SpawnMonster(GameConfigIds.MonsterSpade2Id);
         PlaceMonster(monster, new BoardSlotNo(6));
 
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectiveMonsterStats(monster);
@@ -68,8 +68,8 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
     public void ClubCub_In_TopRow_Buffs_Other_Monster_Attack()
     {
         StartRun(42);
-        var clubCub = SpawnMonster(DefaultGameConfigFactory.MonsterClub2Id);
-        var spadeCub = SpawnMonster(DefaultGameConfigFactory.MonsterSpade2Id);
+        var clubCub = SpawnMonster(GameConfigIds.MonsterClub2Id);
+        var spadeCub = SpawnMonster(GameConfigIds.MonsterSpade2Id);
         PlaceMonster(clubCub, new BoardSlotNo(1));
         PlaceMonster(spadeCub, new BoardSlotNo(2));
 
@@ -86,7 +86,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         var hpBefore = player.CurrentHp;
 
-        var ambushMonster = SpawnMonster(DefaultGameConfigFactory.MonsterClub3Id);
+        var ambushMonster = SpawnMonster(GameConfigIds.MonsterClub3Id);
         PlaceMonster(ambushMonster, new BoardSlotNo(4));
 
         Assert.That(player.CurrentHp, Is.EqualTo(hpBefore - 3));
@@ -96,8 +96,8 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
     public void Revenge_Gains_Two_Attack_When_Another_Monster_Is_Killed()
     {
         StartRun(42);
-        var revengeMonster = SpawnMonster(DefaultGameConfigFactory.MonsterSpade4Id);
-        var victim = SpawnMonster(DefaultGameConfigFactory.MonsterHeart2Id);
+        var revengeMonster = SpawnMonster(GameConfigIds.MonsterSpade4Id);
+        var victim = SpawnMonster(GameConfigIds.MonsterHeart2Id);
         PlaceMonster(revengeMonster, new BoardSlotNo(2));
 
         var attackBefore = TableNine.Interface.GetModel<ICollectionModel>().GetCard(revengeMonster).BaseAttack;
@@ -114,7 +114,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         ClearBoardExceptPlayer();
         var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
-        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterHeart2Id);
+        var monster = SpawnMonster(GameConfigIds.MonsterHeart2Id);
         PlaceMonster(monster, new BoardSlotNo(9));
         var maxHpBefore = collectionModel.GetCard(monster).MaxHp;
 
@@ -131,7 +131,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         ClearBoardExceptPlayer();
         var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
-        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterDiamond2Id);
+        var monster = SpawnMonster(GameConfigIds.MonsterDiamond2Id);
         PlaceMonster(monster, new BoardSlotNo(7));
         var defenseBefore = collectionModel.GetCard(monster).BaseDefense;
 
@@ -152,7 +152,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         var armorBefore = player.CurrentArmor;
 
-        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterSpade3Id);
+        var monster = SpawnMonster(GameConfigIds.MonsterSpade3Id);
         PlaceMonster(monster, new BoardSlotNo(4));
         boardSystem.RotateClockwise();
 
@@ -166,7 +166,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         ClearBoardExceptPlayer();
         var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
-        var medic = SpawnMonster(DefaultGameConfigFactory.MonsterHeart4Id);
+        var medic = SpawnMonster(GameConfigIds.MonsterHeart4Id);
         PlaceMonster(medic, new BoardSlotNo(8));
         collectionModel.GetCard(medic).CurrentHp = 5;
 

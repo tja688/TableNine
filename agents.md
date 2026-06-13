@@ -9,6 +9,7 @@
 
 - 项目框架采用 `QFramework`。
 - 项目本地代码入口在：`Assets/Scripts`，QFramework 框架代码入口在：`Assets/QFramework`。
+- ScriptableObject 资产目录：`Assets/ScriptableObjects/`（详见上方「游戏配置（SO）」）
 - QFramework Architecture 唯一注册入口：`Assets/Scripts/TableNine.cs`。
 
 ## 设计文档
@@ -31,6 +32,9 @@
 - 以 `Assets/Docs` 中的游戏设计案为准，避免脱离现有设定自行扩展。如用户要求与设计案冲突，应停下并询问。
 - 修改或新增功能时，优先复用项目内已有的框架、模块和资源组织方式。但是如果用户的诉求明确有破坏性、侵入性，则以在基础框架编程规范下实现用户需求为第一要务。
 - 如果执行过程中发现领域层代码缺少必要事件、ActionKit 动作、状态变更或队列触发点，AI 应回到既有架构内补齐，不得绕过架构直接在表现层硬写逻辑。
+- **游戏配置（SO）**：静态数据与效果定义已 ScriptableObject 化，由 Master 汇总 5 个子库，运行时经 `GameplayBootstrap` → `TableNine.ConfigureGameConfig()` 注入 `ConfigModel`；`EffectSystem` / `SkillSystem` / `SkillBehaviorExecutor` 均读 SO，不再依赖运行时 Factory。
+- **ScriptableObject 资产目录**：`Assets/ScriptableObjects/`（游戏 SO 统一落地此处；子库在 `GameConfig/`）
+- 测试注入：`TableNineTestConfig.EnsureProductionConfigLoaded()`（EditMode 自动 resolver）
 
 ## 已知坑点
 

@@ -118,6 +118,6 @@ public sealed class CommandLogEntry
 public sealed class RunReplayData
 {
     public int Seed;
-    public string CharacterId = DefaultGameConfigFactory.CharacterImpId;
+    public string CharacterId = GameConfigIds.CharacterImpId;
     public List<CommandLogEntry> Entries = new List<CommandLogEntry>();
 }
