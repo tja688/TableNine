@@ -26,7 +26,7 @@ public static class ConfigEditorFieldLabels
             ["Price"] = ("价格", "商店或奖励中的金币价格。"),
             ["RestoreAfterNode"] = ("节点后恢复", "使用后是否在节点结束时回到卡组。"),
             ["RestoreAfterNodeAuthoritative"] = ("恢复规则权威", "是否以本字段为准覆盖旧版序列化值。"),
-            ["EffectGraphId"] = ("效果图 ID", "绑定的效果图表标识。"),
+            ["EffectGraphId"] = ("效果图表 ID", "运行时引用的效果链标识，如 eg_help_potion。"),
             ["SystemTag"] = ("系统标签", "援助卡系统分类标签。"),
             ["SkillIds"] = ("技能列表", "怪物或援助卡拥有的技能 ID。"),
 
@@ -73,9 +73,9 @@ public static class ConfigEditorFieldLabels
             ["MaxCount"] = ("最多数量", "该等级最多出现张数。"),
             ["PoolCardIds"] = ("卡池 ID", "该等级可抽取的卡牌 ID。"),
 
-            ["Atoms"] = ("效果原子", "按顺序执行的效果原子链。"),
-            ["AtomType"] = ("原子类型", "效果原子的逻辑类型名。"),
-            ["Parameters"] = ("参数列表", "原子的键值对参数。"),
+            ["Atoms"] = ("效果步骤", "按顺序执行的效果原子链。"),
+            ["AtomType"] = ("原子类型", "效果步骤的逻辑类型，如治疗、伤害、消耗援助卡。"),
+            ["Parameters"] = ("步骤参数", "当前效果步骤的键值对参数。"),
             ["Key"] = ("键", "参数名。"),
             ["Value"] = ("值", "参数值字符串。"),
             ["HelpCardEffectMappings"] = ("援助卡映射", "援助卡 ID 到效果图 ID 的映射。"),

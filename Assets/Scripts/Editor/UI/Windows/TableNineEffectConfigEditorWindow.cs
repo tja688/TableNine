@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,7 +14,7 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
 
     protected override WarmConsoleThemePalette ThemePalette => WarmConsoleThemePalette.Effect;
     protected override string WindowTitle => "效果配置";
-    protected override string WindowSubtitle => "编辑效果图表、原子链与援助卡映射。";
+    protected override string WindowSubtitle => "编辑效果图表、效果步骤链与援助卡映射。";
     protected override string EditorPrefsKey => "Effect";
     protected override string DefaultAssetPath => $"{TableNineGameConfigSync.ConfigFolderPath}/TableNineEffectConfig.asset";
 
@@ -44,31 +45,69 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
 
     protected override void BuildNavigation(VisualElement navList)
     {
+        BuildGraphNavigation();
+        BuildMappingNavigation();
+    }
+
+    private void BuildGraphNavigation()
+    {
         var graphs = GetListProperty(GraphsList);
-        if (graphs != null && graphs.arraySize > 0)
+        if (graphs == null || graphs.arraySize == 0)
         {
-            AddNavSection("效果图");
-            for (var i = 0; i < graphs.arraySize; i++)
-            {
-                var element = graphs.GetArrayElementAtIndex(i);
-                var id = GetStringProp(element, "EffectGraphId", $"graph_{i}");
-                var atomCount = element.FindPropertyRelative("Atoms").arraySize;
-                AddNavButton(id, $"{atomCount} 个原子", MakeKey(GroupGraphs, i));
-            }
+            return;
         }
 
-        var mappings = GetListProperty(MappingsList);
-        if (mappings != null && mappings.arraySize > 0)
+        var buckets = new Dictionary<string, List<(int index, string id)>>();
+        for (var i = 0; i < graphs.arraySize; i++)
         {
-            AddNavSection("援助卡映射");
-            for (var i = 0; i < mappings.arraySize; i++)
+            var element = graphs.GetArrayElementAtIndex(i);
+            var id = GetStringProp(element, "EffectGraphId", $"graph_{i}");
+            var category = EffectConfigDisplayCatalog.GetGraphCategory(id);
+            if (!buckets.TryGetValue(category, out var list))
             {
-                var element = mappings.GetArrayElementAtIndex(i);
-                AddNavButton(
-                    GetStringProp(element, "CardId", "未指定卡牌"),
-                    GetStringProp(element, "EffectGraphId", "未指定效果"),
-                    MakeKey(GroupMappings, i));
+                list = new List<(int, string)>();
+                buckets[category] = list;
             }
+
+            list.Add((i, id));
+        }
+
+        for (var c = 0; c < EffectConfigDisplayCatalog.CategoryOrder.Length; c++)
+        {
+            var category = EffectConfigDisplayCatalog.CategoryOrder[c];
+            if (!buckets.TryGetValue(category, out var items) || items.Count == 0)
+            {
+                continue;
+            }
+
+            AddNavSection(category);
+            for (var i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var info = EffectConfigDisplayCatalog.GetGraphInfo(item.id);
+                var atomCount = graphs.GetArrayElementAtIndex(item.index).FindPropertyRelative("Atoms").arraySize;
+                AddNavButton(info.DisplayName, $"{atomCount} 步 · {item.id}", MakeKey(GroupGraphs, item.index));
+            }
+        }
+    }
+
+    private void BuildMappingNavigation()
+    {
+        var mappings = GetListProperty(MappingsList);
+        if (mappings == null || mappings.arraySize == 0)
+        {
+            return;
+        }
+
+        AddNavSection("援助卡映射");
+        for (var i = 0; i < mappings.arraySize; i++)
+        {
+            var element = mappings.GetArrayElementAtIndex(i);
+            var cardId = GetStringProp(element, "CardId", string.Empty);
+            var graphId = GetStringProp(element, "EffectGraphId", string.Empty);
+            var cardName = EffectConfigDisplayCatalog.GetCardDisplayName(cardId);
+            var graphName = EffectConfigDisplayCatalog.GetGraphDisplayName(graphId);
+            AddNavButton(cardName, $"→ {graphName}", MakeKey(GroupMappings, i));
         }
     }
 
@@ -76,7 +115,7 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
     {
         if (!TryParseKey(SelectedKey, out var group, out var index))
         {
-            contentRoot.Add(Skin.CreateStatusHelpBox("请选择左侧条目。", HelpBoxMessageType.Info));
+            contentRoot.Add(Skin.CreateStatusHelpBox("请从左侧选择一条效果配置。", HelpBoxMessageType.Info));
             return;
         }
 
@@ -101,48 +140,49 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
         if (element == null) return;
 
         var graphId = GetStringProp(element, "EffectGraphId", "未命名效果");
+        var info = EffectConfigDisplayCatalog.GetGraphInfo(graphId);
         var atoms = element.FindPropertyRelative("Atoms");
 
-        contentRoot.Add(Skin.CreatePageHeader(graphId, "效果原子执行链"));
+        contentRoot.Add(Skin.CreatePageHeader(info.DisplayName, $"{info.Category} · {graphId}"));
         contentRoot.Add(Skin.CreateStatsGrid(
-            ("原子数", atoms.arraySize.ToString(), "按顺序执行的效果原子"),
-            ("图表 ID", graphId, "运行时引用键")));
+            ("效果步骤", atoms.arraySize.ToString(), "按顺序执行的原子步骤数"),
+            ("效果分类", info.Category, "对照设计文档的效果归属"),
+            ("运行时 ID", graphId, "代码与绑定引用的键名")));
+
+        if (!string.IsNullOrEmpty(info.Summary))
+        {
+            contentRoot.Add(Skin.CreateStatusHelpBox(info.Summary, HelpBoxMessageType.Info));
+        }
 
         var form = new VisualElement();
         var spritePanel = new SpritePreviewPanel(Skin);
         spritePanel.Bind(TargetSo, element.FindPropertyRelative("Image"));
 
-        form.Add(Skin.CreateSectionCard("图表标识", "效果图 ID 与展示图。", section =>
+        form.Add(Skin.CreateSectionCard("图表标识", "效果图表的运行时 ID 与展示图。", section =>
         {
             ConfigEditorPropertyBuilder.AddProperty(section, Skin, TargetSo, element.FindPropertyRelative("EffectGraphId"));
         }));
 
-        form.Add(Skin.CreateSectionCard("效果原子", "按顺序配置每个原子的类型与参数。", section =>
+        form.Add(Skin.CreateSectionCard("效果步骤链", "每一步对应一个效果原子，按从上到下顺序执行。", section =>
         {
             for (var i = 0; i < atoms.arraySize; i++)
             {
-                var atom = atoms.GetArrayElementAtIndex(i);
-                var atomType = GetStringProp(atom, "AtomType", "未指定");
-                section.Add(Skin.CreateSectionCard($"原子 {i + 1}: {atomType}", "单步效果逻辑与参数。", atomSection =>
-                {
-                    ConfigEditorPropertyBuilder.AddProperty(atomSection, Skin, TargetSo, atom.FindPropertyRelative("AtomType"));
-                    ConfigEditorPropertyBuilder.AddProperty(atomSection, Skin, TargetSo, atom.FindPropertyRelative("Parameters"));
-                }));
+                EffectConfigEditorUi.AddAtomBlock(section, Skin, TargetSo, atoms.GetArrayElementAtIndex(i), i);
             }
 
             if (atoms.arraySize == 0)
             {
-                section.Add(Skin.CreateStatusHelpBox("暂无效果原子，可在下方添加或在 Inspector 中编辑 Atoms 数组。", HelpBoxMessageType.Info));
+                section.Add(Skin.CreateStatusHelpBox("暂无效果步骤。点击下方按钮添加，或对照设计文档从代码同步。", HelpBoxMessageType.Info));
             }
 
-            var addAtomBtn = new UnityEngine.UIElements.Button(() =>
+            var addAtomBtn = new Button(() =>
             {
                 atoms.arraySize++;
                 var newAtom = atoms.GetArrayElementAtIndex(atoms.arraySize - 1);
                 newAtom.FindPropertyRelative("AtomType").stringValue = EffectAtomTypes.Damage;
                 TargetSo.ApplyModifiedProperties();
                 RefreshDetail();
-            }) { text = "添加原子" };
+            }) { text = "添加效果步骤" };
             section.Add(Skin.CreateButtonRow(addAtomBtn));
         }));
 
@@ -154,11 +194,17 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
         var element = GetListElement(MappingsList, index);
         if (element == null) return;
 
-        contentRoot.Add(Skin.CreatePageHeader(
-            GetStringProp(element, "CardId", "未指定卡牌"),
-            $"→ {GetStringProp(element, "EffectGraphId", "未指定效果")}"));
+        var cardId = GetStringProp(element, "CardId", string.Empty);
+        var graphId = GetStringProp(element, "EffectGraphId", string.Empty);
+        var cardName = EffectConfigDisplayCatalog.GetCardDisplayName(cardId);
+        var graphInfo = EffectConfigDisplayCatalog.GetGraphInfo(graphId);
 
-        contentRoot.Add(Skin.CreateSectionCard("映射关系", "援助卡 ID 与效果图表 ID 的对应。", section =>
+        contentRoot.Add(Skin.CreatePageHeader(cardName, $"映射到「{graphInfo.DisplayName}」"));
+        contentRoot.Add(Skin.CreateStatsGrid(
+            ("援助卡", cardName, cardId),
+            ("主动效果", graphInfo.DisplayName, graphId)));
+
+        contentRoot.Add(Skin.CreateSectionCard("映射关系", "援助卡使用后执行的效果图表。被动效果在技能配置的绑定中另行配置。", section =>
         {
             ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element, "CardId", "EffectGraphId");
         }));

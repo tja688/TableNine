@@ -59,7 +59,17 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
 
         var root = new VisualElement { style = { flexGrow = 1, backgroundColor = ThemePalette.RootBg } };
         root.Add(Skin.BuildHeader(WindowTitle, WindowSubtitle));
-        root.Add(Skin.BuildToolbar(
+
+        SearchField = new TextField { value = SearchFilter };
+        SearchField.tooltip = "按名称或 ID 过滤侧栏列表";
+        SearchField.RegisterValueChangedCallback(evt =>
+        {
+            SearchFilter = evt.newValue ?? string.Empty;
+            EditorPrefs.SetString(GetSearchPrefsKey(), SearchFilter);
+            RebuildNavigation();
+        });
+
+        root.Add(Skin.BuildActionBar(SearchField,
             ("保存", SaveAssets, "保存当前配置资产"),
             ("校验", ValidateConfig, "运行全局配置校验"),
             ("新增", AddItem, "新增当前分组条目"),
@@ -72,24 +82,6 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
         sidebar.style.flexGrow = 0;
         sidebar.style.backgroundColor = ThemePalette.SidebarBg;
         sidebar.style.flexDirection = FlexDirection.Column;
-
-        var searchRow = new VisualElement();
-        searchRow.style.paddingLeft = 10;
-        searchRow.style.paddingRight = 10;
-        searchRow.style.paddingTop = 10;
-        searchRow.style.paddingBottom = 8;
-        searchRow.style.borderBottomWidth = 1;
-        searchRow.style.borderBottomColor = ThemePalette.Divider;
-
-        SearchField = new TextField { value = SearchFilter };
-        SearchField.RegisterValueChangedCallback(evt =>
-        {
-            SearchFilter = evt.newValue ?? string.Empty;
-            EditorPrefs.SetString(GetSearchPrefsKey(), SearchFilter);
-            RebuildNavigation();
-        });
-        searchRow.Add(Skin.WrapControl("搜索", "按名称或 ID 过滤侧栏列表。", SearchField));
-        sidebar.Add(searchRow);
 
         var navScroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexGrow = 1 } };
         navScroll.contentContainer.style.paddingLeft = 10;

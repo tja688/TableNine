@@ -306,6 +306,38 @@ public sealed class WarmConsoleUiSkin
         return toolbar;
     }
 
+    public Toolbar BuildActionBar(
+        TextField searchField,
+        params (string text, Action click, string tooltip)[] items)
+    {
+        var toolbar = BuildToolbar(items);
+        toolbar.Add(new ToolbarSpacer());
+
+        var searchWrap = new VisualElement();
+        searchWrap.style.flexDirection = FlexDirection.Row;
+        searchWrap.style.alignItems = Align.Center;
+        searchWrap.style.flexShrink = 0;
+        searchWrap.style.paddingRight = 4;
+
+        var label = CreateTinyPathLabel("搜索");
+        label.style.marginRight = 8;
+        label.style.marginBottom = 0;
+        label.style.unityTextAlign = TextAnchor.MiddleRight;
+        label.style.minWidth = 28;
+
+        searchField.style.width = 300;
+        searchField.style.minWidth = 220;
+        searchField.style.maxWidth = 420;
+        searchField.style.flexShrink = 0;
+        searchField.style.marginLeft = 0;
+        searchField.style.marginRight = 0;
+
+        searchWrap.Add(label);
+        searchWrap.Add(searchField);
+        toolbar.Add(searchWrap);
+        return toolbar;
+    }
+
     public ScrollView CreateContentScroll(out VisualElement contentRoot)
     {
         var scroll = new ScrollView(ScrollViewMode.Vertical);
