@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public enum EffectSource
 {
@@ -14,6 +15,7 @@ public enum EffectSource
 public sealed class EffectGraphDefinition
 {
     public string EffectGraphId;
+    public Sprite Image;
     public List<EffectAtomDefinition> Atoms = new List<EffectAtomDefinition>();
 }
 

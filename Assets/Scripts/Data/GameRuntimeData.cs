@@ -339,6 +339,7 @@ public sealed class CharacterDefinition
 {
     public string CharacterId;
     public string DisplayName;
+    public Sprite Image;
     [DescriptionField]
     public string Description;
     public int BaseHp;
@@ -353,6 +354,7 @@ public sealed class CardDefinition
 {
     public string CardId;
     public string DisplayName;
+    public Sprite Image;
     [DescriptionField]
     public string Description;
     public CardType CardType;
@@ -379,6 +381,7 @@ public sealed class SkillDefinition
 {
     public string SkillId;
     public string DisplayName;
+    public Sprite Image;
     [DescriptionField]
     public string Description;
     public bool GrantsFirstStrike;
@@ -686,6 +689,7 @@ public sealed class RelicDefinition
 {
     public string RelicId;
     public string DisplayName;
+    public Sprite Image;
     public CardQuality Quality;
     public int StatAttackBonus;
     public int StatDefenseBonus;
@@ -702,6 +706,7 @@ public sealed class RoomDefinition
 {
     public string RoomId;
     public string DisplayName;
+    public Sprite Image;
     [DescriptionField]
     public string Description;
     public RoomType RoomType;

@@ -44,7 +44,11 @@ public static class EffectAtomSerializationUtility
             return null;
         }
 
-        var clone = new EffectGraphDefinition { EffectGraphId = source.EffectGraphId };
+        var clone = new EffectGraphDefinition
+        {
+            EffectGraphId = source.EffectGraphId,
+            Image = source.Image
+        };
         for (var i = 0; i < source.Atoms.Count; i++)
         {
             clone.Atoms.Add(CloneAtom(source.Atoms[i]));
