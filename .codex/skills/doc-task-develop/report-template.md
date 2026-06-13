@@ -1,6 +1,6 @@
-# R{N} 落地汇报
+# {report_slug} 落地汇报
 
-> 阶段：R{N} — {阶段名称，来自 Plan 路线图表}  
+> 任务来源：{spec_doc} — {spec_scope}  
 > 执行时间：{YYYY-MM-DD}  
 > 分支：`dev`  
 > 状态：{✅ 验收通过 / ⚠️ 部分完成 / ❌ 阻塞}
@@ -9,7 +9,7 @@
 
 ## 1. 执行摘要
 
-{2-4 句话：本阶段完成了什么、是否达到 Plan 验收标准、有无阻塞项}
+{2-4 句话：本任务完成了什么、是否达到规格验收标准、有无阻塞项}
 
 ---
 
@@ -38,26 +38,26 @@
 
 ---
 
-## 3. Plan 任务对照
+## 3. 任务规格对照
 
-来源：[Plan.md §{N+2} R{N}](Plan.md)
+来源：{spec_doc} — {spec_scope}
 
 | 任务项 | 状态 | 落点 |
 |--------|------|------|
-| {Plan 中的任务 1} | ✅ / ⚠️ / ❌ | `{文件或类}` |
+| {规格中的任务 1} | ✅ / ⚠️ / ❌ | `{文件或类}` |
 | {任务 2} | ... | ... |
 
 ### 验收项
 
 | 验收条件 | 结果 | 证据 |
 |----------|------|------|
-| {Plan 验收条目} | 通过/未通过 | {测试名或 Console 截图说明} |
+| {规格验收条目} | 通过/未通过 | {测试名或 Console 说明} |
 
 ---
 
 ## 4. 架构符合性
 
-对照 [ArchitectureDesign.md](ArchitectureDesign.md) 相关章节：
+对照 [ArchitectureDesign.md](ArchitectureDesign.md) / [architecture.md](QframeworkNotes/architecture.md) 相关章节：
 
 - {不变量 1}：{满足方式}
 - {不变量 2}：{满足方式}
@@ -68,12 +68,12 @@
 
 ```
 EditMode：{passed}/{total} 通过
-PlayMode：{passed}/{total} 通过（若本阶段未要求则写 N/A）
+PlayMode：{passed}/{total} 通过（若本任务未要求则写 N/A）
 Unity Console：{0 error / N error}，{warning 摘要或「无新增 warning」}
 验证方式：{Unity MCP / 本地替代，若 MCP 不可用说明原因}
 ```
 
-**本阶段新增/改动测试：**
+**本任务新增/改动测试：**
 
 - `{TestClass.TestMethod}` — {断言什么}
 
@@ -94,7 +94,7 @@ Unity Console：{0 error / N error}，{warning 摘要或「无新增 warning」}
 2. **数据结构**：`{路径}` — 查 {字段/DTO 迁移}
 3. **测试**：`{路径}` — 查 {场景与期望}
 4. **场景/配置**：`{路径}` — 查 {ScriptableObject 或场景绑定}
-5. **已知排除项**：{本阶段故意未做的 Plan 子项}
+5. **已知排除项**：{本任务故意未做的规格子项}
 
 ---
 
@@ -106,11 +106,11 @@ Unity Console：{0 error / N error}，{warning 摘要或「无新增 warning」}
 
 ### 已知问题 / 技术债
 
-- {问题} — 建议 R{N+1} 处理
+- {问题} — 建议后续任务处理
 
-### 对下一阶段的建议
+### 对后续任务的建议
 
-- {R{N+1} 实施时注意点}
+- {下一相关任务实施时注意点}
 
 ---
 
