@@ -15,7 +15,6 @@ public sealed class TableNineR8PresentationEditModeTests
     [TearDown]
     public void TearDown()
     {
-        TableNineUIRuntimeTestRecorder.Reset();
         TableNine.ResetForTests();
     }
 
@@ -87,36 +86,6 @@ public sealed class TableNineR8PresentationEditModeTests
         removeRegister.UnRegister();
         healRegister.UnRegister();
         effectRegister.UnRegister();
-    }
-
-    [Test]
-    public void UIRuntime_Emits_Overlay_Events_With_Blocking_Metadata()
-    {
-        StartRun(44);
-        TableNineUIRuntimeTestRecorder.SkipActualPanelOpen = true;
-        var registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-        var router = new TableNineUIRouter(registry);
-        var opened = new List<OverlayOpenedEvent>();
-        var closed = new List<OverlayClosedEvent>();
-        var openRegister = TableNine.Interface.RegisterEvent<OverlayOpenedEvent>(opened.Add);
-        var closeRegister = TableNine.Interface.RegisterEvent<OverlayClosedEvent>(closed.Add);
-        router.Start();
-
-        RemoveAllMonstersAndBattlePile();
-        TableNine.Interface.SendCommand(new CheckClearConditionCommand());
-        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-
-        Assert.That(opened.Count, Is.EqualTo(2));
-        Assert.That(opened[0].UiKey, Is.EqualTo(TableNineUIKeys.HelpReward));
-        Assert.That(opened[0].BlocksGameplayInput, Is.True);
-        Assert.That(opened[1].UiKey, Is.EqualTo(TableNineUIKeys.RoomChoice));
-        Assert.That(opened[1].BlocksGameplayInput, Is.False);
-        Assert.That(closed.Exists(e => e.UiKey == TableNineUIKeys.HelpReward), Is.True);
-
-        router.Dispose();
-        openRegister.UnRegister();
-        closeRegister.UnRegister();
-        Object.DestroyImmediate(registry);
     }
 
     [Test]

@@ -2544,9 +2544,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: beb0e5275b5e90f4d8bc7a04afeb22ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mUIPanelRegistry: {fileID: 11400000, guid: 2819622a13cf0e9439c9801e71d0b337, type: 2}
   mGameConfig: {fileID: 0}
-  mOpenLegacyHudOnBoot: 0
   mAutoStartLegacyRun: 0
 --- !u!4 &1921541180
 Transform:

@@ -1,105 +1,11 @@
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-[CreateAssetMenu(fileName = "TableNineDescriptionPanelConfig", menuName = "TableNine/Description Panel Config")]
-public sealed class TableNineDescriptionPanelConfig : ScriptableObject
+public sealed class DescriptionPanelTextEntry
 {
-    [Serializable]
-    public sealed class TextEntry
-    {
-        public string Key;
-        public string Label;
-        public string Text;
-        public string UsageNote;
-    }
-
-    [SerializeField] private List<TextEntry> mEntries = new List<TextEntry>();
-
-    public IReadOnlyList<TextEntry> Entries => mEntries;
-
-    public string GetText(string key)
-    {
-        if (string.IsNullOrEmpty(key))
-        {
-            return string.Empty;
-        }
-
-        for (var i = 0; i < mEntries.Count; i++)
-        {
-            if (mEntries[i].Key == key)
-            {
-                return mEntries[i].Text ?? string.Empty;
-            }
-        }
-
-        return DescriptionPanelTextDefaults.GetFallback(key);
-    }
-
-    public string Format(string key, params object[] args)
-    {
-        return DescriptionPanelTextRules.Clamp(DescriptionPanelTextRules.Format(GetText(key), args));
-    }
-
-    public void ApplyRecommendedDefaults(bool replaceExistingText = false)
-    {
-        var defaults = DescriptionPanelTextDefaults.CreateRecommendedEntries();
-        var indexByKey = new Dictionary<string, int>();
-
-        for (var i = 0; i < mEntries.Count; i++)
-        {
-            if (!string.IsNullOrEmpty(mEntries[i].Key) && !indexByKey.ContainsKey(mEntries[i].Key))
-            {
-                indexByKey.Add(mEntries[i].Key, i);
-            }
-        }
-
-        foreach (var defaultEntry in defaults)
-        {
-            if (indexByKey.TryGetValue(defaultEntry.Key, out var index))
-            {
-                var existing = mEntries[index];
-                existing.Label = defaultEntry.Label;
-                existing.UsageNote = defaultEntry.UsageNote;
-                if (replaceExistingText || string.IsNullOrWhiteSpace(existing.Text))
-                {
-                    existing.Text = defaultEntry.Text;
-                }
-
-                mEntries[index] = existing;
-                continue;
-            }
-
-            mEntries.Add(CloneEntry(defaultEntry));
-        }
-
-        mEntries.Sort((a, b) => string.CompareOrdinal(a.Key, b.Key));
-    }
-
-    public int CountOverLimitEntries()
-    {
-        var count = 0;
-        for (var i = 0; i < mEntries.Count; i++)
-        {
-            if (!DescriptionPanelTextRules.IsWithinLimit(mEntries[i].Text))
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private static TextEntry CloneEntry(TextEntry source)
-    {
-        return new TextEntry
-        {
-            Key = source.Key,
-            Label = source.Label,
-            Text = source.Text,
-            UsageNote = source.UsageNote
-        };
-    }
+    public string Key;
+    public string Label;
+    public string Text;
+    public string UsageNote;
 }
 
 public static class DescriptionPanelTextDefaults
@@ -118,9 +24,9 @@ public static class DescriptionPanelTextDefaults
         return string.Empty;
     }
 
-    public static List<TableNineDescriptionPanelConfig.TextEntry> CreateRecommendedEntries()
+    public static List<DescriptionPanelTextEntry> CreateRecommendedEntries()
     {
-        return new List<TableNineDescriptionPanelConfig.TextEntry>
+        return new List<DescriptionPanelTextEntry>
         {
             Entry(DescriptionPanelTextKeys.HudDefaultHint, "默认引导", "相邻格交互，帮助卡点道具槽", "UIGameplayPanel 初始提示"),
             Entry(DescriptionPanelTextKeys.HudPreparing, "准备节点", "正在准备首个可玩节点。", "Run 未激活时"),
@@ -149,9 +55,9 @@ public static class DescriptionPanelTextDefaults
         };
     }
 
-    private static TableNineDescriptionPanelConfig.TextEntry Entry(string key, string label, string text, string usageNote)
+    private static DescriptionPanelTextEntry Entry(string key, string label, string text, string usageNote)
     {
-        return new TableNineDescriptionPanelConfig.TextEntry
+        return new DescriptionPanelTextEntry
         {
             Key = key,
             Label = label,

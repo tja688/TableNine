@@ -1,40 +1,35 @@
-using QFramework;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public sealed class UIPopupPanelData : UIPanelData
-{
-    public string Message;
-}
-
-public sealed class UIPopupPanel : UIPanel
+public sealed class UIPopupPanel : MonoBehaviour
 {
     [SerializeField] private TMP_Text mInfoText;
     [SerializeField] private Button mCloseButton;
 
-    protected override void OnInit(IUIData uiData = null)
+    private void Awake()
     {
         AutoBind();
         if (mCloseButton != null)
         {
             mCloseButton.onClick.RemoveAllListeners();
-            mCloseButton.onClick.AddListener(CloseSelf);
+            mCloseButton.onClick.AddListener(Hide);
         }
     }
 
-    protected override void OnOpen(IUIData uiData = null)
+    public void Show(string message)
     {
-        var data = uiData as UIPopupPanelData;
-        var requestData = uiData as TableNineUIRequestPanelData;
         if (mInfoText != null)
         {
-            mInfoText.text = requestData != null ? requestData.Message : data != null ? data.Message : string.Empty;
+            mInfoText.text = message ?? string.Empty;
         }
+
+        gameObject.SetActive(true);
     }
 
-    protected override void OnClose()
+    public void Hide()
     {
+        gameObject.SetActive(false);
     }
 
     private void AutoBind()

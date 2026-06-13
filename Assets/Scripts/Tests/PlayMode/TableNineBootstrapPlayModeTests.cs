@@ -54,7 +54,7 @@ public sealed class TableNineBootstrapPlayModeTests
             ?.gameObject;
 
         Assert.That(TableNine.Interface.GetModel<IRunModel>().IsRunActive.Value, Is.False);
-        Assert.That(UIKit.GetPanel<UIGameplayPanel>(), Is.Null);
+        Assert.That(Object.FindObjectOfType<UIGameplayPanel>(true), Is.Not.Null);
         Assert.That(legacyBoardRoot, Is.Not.Null);
         Assert.That(legacyBoardRoot.activeSelf, Is.False);
         Assert.That(GameObject.Find("DeckCountText"), Is.Null);

@@ -2,8 +2,7 @@
   "name": "TableNine.Editor",
   "references": [
     "TableNine.Runtime",
-    "QFramework",
-    "UIKit"
+    "QFramework"
   ],
   "includePlatforms": [
     "Editor"

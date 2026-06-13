@@ -2,8 +2,7 @@
   "name": "TableNine.Tests.PlayMode",
   "references": [
     "TableNine.Runtime",
-    "QFramework",
-    "UIKit"
+    "QFramework"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

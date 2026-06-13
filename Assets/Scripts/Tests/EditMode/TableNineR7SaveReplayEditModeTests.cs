@@ -207,56 +207,6 @@ public sealed class TableNineR7SaveReplayEditModeTests
     }
 
     [Test]
-    public void Load_In_HelpReward_Phase_Restores_Overlay_UI()
-    {
-        StartRunAndClearNode();
-        var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
-        Assert.That(rewardModel.HelpRewardCardIds.Count, Is.GreaterThan(0));
-
-        var save = TableNine.Interface.GetSystem<ISaveSystem>().CaptureCurrentRun(SaveRunReason.Manual);
-        TableNine.ResetForTests();
-        TableNine.InitArchitecture();
-
-        TableNineUIRuntimeTestRecorder.Reset();
-        TableNineUIRuntimeTestRecorder.SkipActualPanelOpen = true;
-        var registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-        var router = new TableNineUIRouter(registry);
-        router.Start();
-        TableNine.Interface.GetSystem<ISaveSystem>().ApplySaveData(save);
-
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Contain(TableNineUIKeys.HelpReward));
-
-        router.Dispose();
-        Object.DestroyImmediate(registry);
-        TableNineUIRuntimeTestRecorder.Reset();
-    }
-
-    [Test]
-    public void Load_In_RoomChoosing_Phase_Restores_Overlay_UI()
-    {
-        StartRunAndClearNode();
-        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-        Assert.That(TableNine.Interface.GetModel<IRewardModel>().RoomCandidateIds.Count, Is.GreaterThan(0));
-
-        var save = TableNine.Interface.GetSystem<ISaveSystem>().CaptureCurrentRun(SaveRunReason.Manual);
-        TableNine.ResetForTests();
-        TableNine.InitArchitecture();
-
-        TableNineUIRuntimeTestRecorder.Reset();
-        TableNineUIRuntimeTestRecorder.SkipActualPanelOpen = true;
-        var registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-        var router = new TableNineUIRouter(registry);
-        router.Start();
-        TableNine.Interface.GetSystem<ISaveSystem>().ApplySaveData(save);
-
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Contain(TableNineUIKeys.RoomChoice));
-
-        router.Dispose();
-        Object.DestroyImmediate(registry);
-        TableNineUIRuntimeTestRecorder.Reset();
-    }
-
-    [Test]
     public void RunHash_Distinguishes_ItemSlot_Positions()
     {
         StartRun(42);
@@ -358,12 +308,4 @@ public sealed class TableNineR7SaveReplayEditModeTests
         TableNine.Interface.SendCommand(new CheckClearConditionCommand());
     }
 
-    private static TableNineUIRouter CreateUIRouterForTests(out TableNineUIPanelRegistry registry)
-    {
-        registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-        TableNineUIRuntimeTestRecorder.SkipActualPanelOpen = true;
-        var router = new TableNineUIRouter(registry);
-        router.Start();
-        return router;
-    }
 }

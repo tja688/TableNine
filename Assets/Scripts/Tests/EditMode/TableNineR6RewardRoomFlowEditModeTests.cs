@@ -22,48 +22,6 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
     }
 
     [Test]
-    public void HelpRewardSkipped_UIRouter_Opens_RoomChoice_Not_NextNodePrompt()
-    {
-        TableNineUIRuntimeTestRecorder.Reset();
-        var router = CreateUIRouterForTests(out var registry);
-        TableNineUIRuntimeTestRecorder.OpenedKeys.Clear();
-        TableNineUIRuntimeTestRecorder.ClosedKeys.Clear();
-
-        StartRunAndClearNode();
-        TableNine.Interface.SendCommand(new SkipHelpRewardCommand());
-
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Contain(TableNineUIKeys.RoomChoice));
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Not.Contain(TableNineUIKeys.NextNodePrompt));
-        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
-
-        router.Dispose();
-        Object.DestroyImmediate(registry);
-        TableNineUIRuntimeTestRecorder.Reset();
-    }
-
-    [Test]
-    public void HelpRewardPicked_UIRouter_Opens_RoomChoice_Not_NextNodePrompt()
-    {
-        TableNineUIRuntimeTestRecorder.Reset();
-        var router = CreateUIRouterForTests(out var registry);
-        TableNineUIRuntimeTestRecorder.OpenedKeys.Clear();
-        TableNineUIRuntimeTestRecorder.ClosedKeys.Clear();
-
-        StartRunAndClearNode();
-        var rewardModel = TableNine.Interface.GetModel<IRewardModel>();
-        var cardId = rewardModel.HelpRewardCardIds[0];
-        TableNine.Interface.SendCommand(new PickHelpCardRewardCommand(cardId));
-
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Contain(TableNineUIKeys.RoomChoice));
-        Assert.That(TableNineUIRuntimeTestRecorder.OpenedKeys, Does.Not.Contain(TableNineUIKeys.NextNodePrompt));
-        Assert.That(TableNine.Interface.GetModel<IFlowModel>().Phase.Value, Is.EqualTo(FlowPhase.RoomChoosing));
-
-        router.Dispose();
-        Object.DestroyImmediate(registry);
-        TableNineUIRuntimeTestRecorder.Reset();
-    }
-
-    [Test]
     public void Clear_To_HelpReward_To_Room_To_NextNode()
     {
         StartRunAndClearNode();
@@ -286,16 +244,6 @@ public sealed class TableNineR6RewardRoomFlowEditModeTests
         }
 
         TableNine.Interface.SendCommand(new CheckClearConditionCommand());
-    }
-
-    private static TableNineUIRouter CreateUIRouterForTests(out TableNineUIPanelRegistry registry)
-    {
-        registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-        TableNineUIRuntimeTestRecorder.SkipActualPanelOpen = true;
-
-        var router = new TableNineUIRouter(registry);
-        router.Start();
-        return router;
     }
 
     private static CardUid FindFirstActiveHelpCard()

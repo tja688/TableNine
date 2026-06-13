@@ -30,7 +30,8 @@ isProject: false
 
 - 静态数据（角色/卡牌/技能/遗物/房间/恶魔卡组规则）不再由运行时 C# 工厂生成，改为 **Inspector 可编辑 SO 资产**。
 - 效果定义（帮助卡效果图、被动绑定、被动图）同样 SO 化；**StatSystem 中按 skillId 写死的怪物技能事件逻辑** 一并数据驱动化。
-- 资产统一落地：`Assets/ScriptableObjects/GameConfig/`（Master 在 `Assets/ScriptableObjects/` 根目录，与现有 UI SO 并列）。
+- 资产统一落地：`Assets/ScriptableObjects/GameConfig/`（Master 在 `Assets/ScriptableObjects/` 根目录）。
+- **现行对照文档**：见 `Assets/Notes/SO配置与设计文档对照.md`（SO ↔ 设计案 ↔ 表现层，含 UI Prefab 现状）。
 
 ## SO 拆分方案（5 类 + 1 Master）
 
@@ -39,7 +40,7 @@ isProject: false
 
 | 资产         | 路径                                                   | 内容                                                                        |
 | ---------- | ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Master** | `Assets/ScriptableObjects/TableNineGameConfig.asset` | 引用下述 5 个子 SO；提供 `ToConfigSet()`                                           |
+| **Master** | `Assets/ScriptableObjects/TableNineGameConfig.asset` | 引用下述 5 个子 SO；提供 `ToRuntimeBundle()`                                       |
 | Characters | `.../TableNineCharacterConfig.asset`                 | `CharacterDefinition` 列表                                                  |
 | Cards      | `.../TableNineCardConfig.asset`                      | `CardDefinition` 列表 + `MonsterDeckRuleDefinition` 列表（27 条规则一并烘焙）          |
 | Skills     | `.../TableNineSkillConfig.asset`                     | `SkillDefinition` + `SkillEffectBinding` + **新增** `SkillBehaviorRule`（见下） |
@@ -55,7 +56,7 @@ flowchart LR
     Master --> SkillSO["SkillConfig"]
     Master --> RelicSO["RelicConfig"]
     Master --> EffectSO["EffectConfig"]
-    Master -->|"ToConfigSet()"| ConfigModel["ConfigModel"]
+    Master -->|"ToRuntimeBundle()"| ConfigModel["ConfigModel"]
     EffectSO --> EffectSystem["EffectSystem"]
     SkillSO --> SkillSystem["SkillSystem"]
     SkillSO --> StatSystem["StatSystem"]

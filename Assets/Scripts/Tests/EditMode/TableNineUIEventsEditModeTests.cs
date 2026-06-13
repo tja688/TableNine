@@ -122,23 +122,6 @@ public sealed class TableNineUIEventsEditModeTests
         Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
     }
 
-    [Test]
-    public void UIPanelRegistry_Resolves_Default_Fallback_Entries()
-    {
-        var registry = ScriptableObject.CreateInstance<TableNineUIPanelRegistry>();
-
-        var helpRewardEntry = registry.GetEntryOrDefault(TableNineUIKeys.HelpReward);
-        var roomChoiceEntry = registry.GetEntryOrDefault(TableNineUIKeys.RoomChoice);
-
-        Assert.That(helpRewardEntry.PanelName, Is.EqualTo("UIHelpRewardPanel"));
-        Assert.That(helpRewardEntry.FallbackStrategy, Is.EqualTo(TableNineUIFallbackStrategy.AtomicChoiceList));
-        Assert.That(helpRewardEntry.BlocksGameplayInput, Is.True);
-        Assert.That(roomChoiceEntry.FallbackStrategy, Is.EqualTo(TableNineUIFallbackStrategy.AtomicRoomChoice));
-        Assert.That(roomChoiceEntry.BlocksGameplayInput, Is.False);
-
-        Object.DestroyImmediate(registry);
-    }
-
     private static void StartRun(int seed)
     {
         TableNine.InitArchitecture();

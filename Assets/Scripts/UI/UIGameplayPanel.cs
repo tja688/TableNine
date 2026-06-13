@@ -3,11 +3,7 @@ using QFramework;
 using TMPro;
 using UnityEngine;
 
-public sealed class UIGameplayPanelData : UIPanelData
-{
-}
-
-public sealed class UIGameplayPanel : UIPanel, IController
+public sealed class UIGameplayPanel : MonoBehaviour, IController
 {
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
@@ -19,38 +15,28 @@ public sealed class UIGameplayPanel : UIPanel, IController
     [SerializeField] private TMP_Text mDescriptionText;
 
     private string mLastMessage;
+    private bool mEventsRegistered;
 
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
     }
 
-    protected override void OnInit(IUIData uiData = null)
+    private void Awake()
     {
         mLastMessage = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.HudDefaultHint);
         AutoBind();
+    }
+
+    private void OnEnable()
+    {
         RegisterEvents();
         RefreshAll();
     }
 
-    protected override void OnOpen(IUIData uiData = null)
+    private void OnDisable()
     {
-        RefreshAll();
-    }
-
-    protected override void OnClose()
-    {
-    }
-
-    protected override void OnBeforeDestroy()
-    {
-        for (var i = 0; i < mEventRegisters.Count; i++)
-        {
-            mEventRegisters[i].UnRegister();
-        }
-
-        mEventRegisters.Clear();
-        base.OnBeforeDestroy();
+        UnregisterEvents();
     }
 
     private void Update()
@@ -73,6 +59,12 @@ public sealed class UIGameplayPanel : UIPanel, IController
 
     private void RegisterEvents()
     {
+        if (mEventsRegistered || !TableNine.IsInitialized)
+        {
+            return;
+        }
+
+        mEventsRegistered = true;
         mEventRegisters.Add(this.RegisterEvent<GameplayMessageEvent>(evt =>
         {
             mLastMessage = DescriptionPanelTexts.Sanitize(evt.Message);
@@ -97,6 +89,17 @@ public sealed class UIGameplayPanel : UIPanel, IController
         mEventRegisters.Add(this.RegisterEvent<BattleDeckChangedEvent>(_ => RefreshAll()));
         mEventRegisters.Add(this.RegisterEvent<DamageAppliedEvent>(_ => RefreshAll()));
         mEventRegisters.Add(this.RegisterEvent<ItemSlotChangedEvent>(_ => RefreshAll()));
+    }
+
+    private void UnregisterEvents()
+    {
+        for (var i = 0; i < mEventRegisters.Count; i++)
+        {
+            mEventRegisters[i].UnRegister();
+        }
+
+        mEventRegisters.Clear();
+        mEventsRegistered = false;
     }
 
     private void RefreshAll()

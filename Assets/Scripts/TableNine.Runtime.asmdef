@@ -3,8 +3,6 @@
   "references": [
     "QFramework",
     "QFramework.CoreKit",
-    "ResKit",
-    "UIKit",
     "Unity.ugui",
     "Unity.TextMeshPro",
     "Sirenix.OdinInspector.Attributes",

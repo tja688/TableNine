@@ -1,17 +1,13 @@
 using QFramework;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using Object = UnityEngine.Object;
 
 public sealed class GameplayBootstrap : MonoBehaviour
 {
-    [SerializeField] private TableNineUIPanelRegistry mUIPanelRegistry;
     [SerializeField] private TableNineGameConfig mGameConfig;
-    [SerializeField] private bool mOpenLegacyHudOnBoot;
     [SerializeField] private bool mAutoStartLegacyRun;
 
     private bool mBootstrapped;
-    private TableNineUIRouter mUIRouter;
 
     private void Awake()
     {
@@ -27,7 +23,6 @@ public sealed class GameplayBootstrap : MonoBehaviour
 
         mBootstrapped = true;
 
-        ResKit.Init();
         TableNine.ConfigureRuntimePersistence();
         if (mGameConfig != null)
         {
@@ -35,44 +30,13 @@ public sealed class GameplayBootstrap : MonoBehaviour
         }
 
         TableNine.InitArchitecture();
-        SetupUIKit();
+        EnsureDebugPanel();
 
         if (mAutoStartLegacyRun &&
             !this.GetArchitecture().GetModel<IRunModel>().IsRunActive.Value)
         {
             this.GetArchitecture().SendCommand(new StartNewRunCommand());
         }
-    }
-
-    private void OnDestroy()
-    {
-        mUIRouter?.Dispose();
-        mUIRouter = null;
-    }
-
-    private void SetupUIKit()
-    {
-        if (mUIPanelRegistry == null)
-        {
-            Debug.LogError("GameplayBootstrap requires a TableNineUIPanelRegistry.");
-            return;
-        }
-
-        UIKit.Config = new TableNineUIKitConfig(mUIPanelRegistry);
-        DescriptionPanelTexts.Initialize(mUIPanelRegistry != null ? mUIPanelRegistry.DescriptionPanelConfig : null);
-        DisableSceneEventSystemBeforeUIKitRoot();
-        UIKit.Root.SetResolution(426, 240, 0.5f);
-        UIKit.Root.ScreenSpaceOverlayRenderMode();
-        UIKit.CloseAllPanel();
-        if (mOpenLegacyHudOnBoot)
-        {
-            UIKit.OpenPanel<UIGameplayPanel>(UILevel.Common);
-        }
-
-        mUIRouter?.Dispose();
-        mUIRouter = new TableNineUIRouter(mUIPanelRegistry);
-        mUIRouter.Start();
-        EnsureDebugPanel();
     }
 
     private static void EnsureDebugPanel()
@@ -164,18 +128,6 @@ public sealed class GameplayBootstrap : MonoBehaviour
         text.alignment = TextAnchor.MiddleCenter;
         text.color = Color.white;
         text.text = label;
-    }
-
-    private static void DisableSceneEventSystemBeforeUIKitRoot()
-    {
-        var eventSystems = FindObjectsOfType<EventSystem>();
-        for (var i = 0; i < eventSystems.Length; i++)
-        {
-            if (eventSystems[i] != null && eventSystems[i].transform.root.name != "UIRoot")
-            {
-                eventSystems[i].gameObject.SetActive(false);
-            }
-        }
     }
 
     private IArchitecture GetArchitecture()

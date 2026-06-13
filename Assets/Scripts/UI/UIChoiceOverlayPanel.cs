@@ -9,12 +9,7 @@ public enum ChoiceOverlayMode
     AttributeUpgrade
 }
 
-public sealed class UIChoiceOverlayPanelData : UIPanelData
-{
-    public ChoiceOverlayMode Mode;
-}
-
-public sealed class UIChoiceOverlayPanel : UIPanel, IController
+public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
 {
     private const string ThreeOrTwoWindowName = "3or2for1ChoiseWindow";
     private const string ShopWindowName = "ShopChoiseWindow";
@@ -30,44 +25,61 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
     private Transform mShopWindow;
     private Transform mDeleteCardWindow;
     private Transform mActiveSubWindow;
-
-    private ChoiceOverlayMode mMode;
-    private TableNineUIRequestPanelData mRequestData;
+    private ChoiceOverlayMode mMode = ChoiceOverlayMode.AttributeUpgrade;
+    private bool mEventsRegistered;
 
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
     }
 
-    protected override void OnInit(IUIData uiData = null)
+    private void Awake()
     {
         CacheSubWindows();
-        mEventRegisters.Add(this.RegisterEvent<AttributeChoiceResolvedEvent>(_ => CloseSelf()));
     }
 
-    protected override void OnOpen(IUIData uiData = null)
+    private void OnEnable()
     {
-        mRequestData = uiData as TableNineUIRequestPanelData;
-        var data = uiData as UIChoiceOverlayPanelData;
-        mMode = data != null ? data.Mode : ChoiceOverlayMode.AttributeUpgrade;
-
-        ApplySubWindowVisibility(ResolveSubWindowKey());
+        RegisterEvents();
+        ShowAttributeUpgradeLayout();
         AutoBind(mActiveSubWindow);
-        BindButtons();
+        BindAttributeButtons();
     }
 
-    protected override void OnClose()
+    private void OnDisable()
     {
+        UnregisterEvents();
         ClearButtonListeners();
         HideAllSubWindows();
-        mRequestData = null;
         mActiveSubWindow = null;
         mChoiceButtons = null;
         mPassButton = null;
         mPassText = null;
     }
 
-    protected override void OnBeforeDestroy()
+    public void Show(ChoiceOverlayMode mode = ChoiceOverlayMode.AttributeUpgrade)
+    {
+        mMode = mode;
+        gameObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        gameObject.SetActive(false);
+    }
+
+    private void RegisterEvents()
+    {
+        if (mEventsRegistered || !TableNine.IsInitialized)
+        {
+            return;
+        }
+
+        mEventsRegistered = true;
+        mEventRegisters.Add(this.RegisterEvent<AttributeChoiceResolvedEvent>(_ => Hide()));
+    }
+
+    private void UnregisterEvents()
     {
         for (var i = 0; i < mEventRegisters.Count; i++)
         {
@@ -75,7 +87,7 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         }
 
         mEventRegisters.Clear();
-        base.OnBeforeDestroy();
+        mEventsRegistered = false;
     }
 
     private void CacheSubWindows()
@@ -85,45 +97,12 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         mDeleteCardWindow = transform.Find(DeleteCardWindowName);
     }
 
-    private string ResolveSubWindowKey()
+    private void ShowAttributeUpgradeLayout()
     {
-        if (mRequestData != null && !string.IsNullOrWhiteSpace(mRequestData.Key))
-        {
-            return mRequestData.Key;
-        }
-
-        return TableNineUIKeys.AttributeChoice;
-    }
-
-    private void ApplySubWindowVisibility(string uiKey)
-    {
-        var showThreeOrTwo = uiKey == TableNineUIKeys.AttributeChoice
-            || uiKey == TableNineUIKeys.HelpReward
-            || uiKey == TableNineUIKeys.TutorSkillChoice;
-        var showShop = uiKey == TableNineUIKeys.ShopMain;
-        var showDelete = uiKey == TableNineUIKeys.DeleteHelpCardConfirm;
-
-        if (!showThreeOrTwo && !showShop && !showDelete)
-        {
-            showThreeOrTwo = true;
-        }
-
-        SetWindowActive(mThreeOrTwoWindow, showThreeOrTwo);
-        SetWindowActive(mShopWindow, showShop);
-        SetWindowActive(mDeleteCardWindow, showDelete);
-
-        if (showThreeOrTwo)
-        {
-            mActiveSubWindow = mThreeOrTwoWindow;
-        }
-        else if (showShop)
-        {
-            mActiveSubWindow = mShopWindow;
-        }
-        else if (showDelete)
-        {
-            mActiveSubWindow = mDeleteCardWindow;
-        }
+        SetWindowActive(mThreeOrTwoWindow, true);
+        SetWindowActive(mShopWindow, false);
+        SetWindowActive(mDeleteCardWindow, false);
+        mActiveSubWindow = mThreeOrTwoWindow;
     }
 
     private void HideAllSubWindows()
@@ -166,15 +145,9 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         mPassText = FindDeep(searchRoot, "PassText")?.GetComponent<TMP_Text>();
     }
 
-    private void BindButtons()
+    private void BindAttributeButtons()
     {
         ClearButtonListeners();
-
-        if (mRequestData != null)
-        {
-            BindRequestButtons();
-            return;
-        }
 
         if (mPassButton != null)
         {
@@ -194,88 +167,6 @@ public sealed class UIChoiceOverlayPanel : UIPanel, IController
         mChoiceButtons[0].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Attack)));
         mChoiceButtons[1].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Defense)));
         mChoiceButtons[2].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.MaxHp)));
-    }
-
-    private void BindRequestButtons()
-    {
-        if (mPassText != null)
-        {
-            mPassText.text = string.IsNullOrWhiteSpace(mRequestData.Message)
-                ? mRequestData.Title
-                : mRequestData.Message;
-        }
-
-        if (mChoiceButtons != null)
-        {
-            for (var i = 0; i < mChoiceButtons.Length; i++)
-            {
-                var button = mChoiceButtons[i];
-                if (button == null)
-                {
-                    continue;
-                }
-
-                var hasChoice = i < mRequestData.Choices.Count;
-                button.gameObject.SetActive(hasChoice);
-                if (!hasChoice)
-                {
-                    continue;
-                }
-
-                var choice = mRequestData.Choices[i];
-                var capturedChoice = choice;
-                var label = button.GetComponentInChildren<TMP_Text>();
-                if (label != null)
-                {
-                    label.text = string.IsNullOrWhiteSpace(capturedChoice.MetaText)
-                        ? capturedChoice.Label
-                        : $"{capturedChoice.Label}\n{capturedChoice.MetaText}";
-                }
-
-                button.interactable = capturedChoice.IsEnabled;
-                button.onClick.AddListener(() =>
-                {
-                    if (!capturedChoice.IsEnabled)
-                    {
-                        return;
-                    }
-
-                    capturedChoice.Action?.Invoke(this);
-                    if (mRequestData.CloseOnChoice && capturedChoice.CloseAfterClick)
-                    {
-                        CloseSelf();
-                    }
-                });
-            }
-        }
-
-        if (mPassButton == null)
-        {
-            return;
-        }
-
-        var hasCloseAction = !string.IsNullOrWhiteSpace(mRequestData.CloseLabel) || mRequestData.CloseAction != null;
-        mPassButton.gameObject.SetActive(hasCloseAction);
-        if (!hasCloseAction)
-        {
-            return;
-        }
-
-        if (mPassText != null)
-        {
-            mPassText.text = string.IsNullOrWhiteSpace(mRequestData.CloseLabel)
-                ? mPassText.text
-                : mRequestData.CloseLabel;
-        }
-
-        mPassButton.onClick.AddListener(() =>
-        {
-            mRequestData.CloseAction?.Invoke(this);
-            if (mRequestData.CloseAction == null)
-            {
-                CloseSelf();
-            }
-        });
     }
 
     private void ClearButtonListeners()
