@@ -63,3 +63,6 @@ IUtility 接口，负责提供基础设施，比如存储方法、序列化方�
 ## 文件保护规则
 
 - **严禁改动 .unity 文件**：在任何情况、以任何理由直接修改 `.unity` 后缀的场景文件。相关改动需求应通过 Unity MCP 进行落地，不得手动或通过文本方式编辑 `.unity` 文件。
+
+## 其他
+- AbstractCommand / AbstractSystem / IController 中禁止裸调架构能力方法**：在 `AbstractCommand.OnExecute()`、`AbstractSystem.OnInit()`、`IController` 实现类等上下文中，访问 Model、System、Command、Event、Query 时，必须通过 `this.` 调用 QFramework 扩展方法（如 `this.GetModel<T>()`、`this.SendCommand()`、`this.SendEvent()`）。
