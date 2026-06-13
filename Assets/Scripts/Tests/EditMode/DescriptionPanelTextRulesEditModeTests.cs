@@ -46,6 +46,31 @@ public sealed class DescriptionPanelTextRulesEditModeTests
     }
 
     [Test]
+    public void TrySanitize_RejectsLineBreakAndTruncation()
+    {
+        var longText = new string('测', DescriptionPanelTextRules.MaxLength + 3);
+        Assert.That(
+            DescriptionPanelTextRules.TrySanitize(
+                $"前\n{longText}",
+                out var sanitized,
+                out var wasTruncated,
+                out var hadLineBreak),
+            Is.False);
+        Assert.That(hadLineBreak, Is.True);
+        Assert.That(wasTruncated, Is.True);
+        Assert.That(sanitized.Length, Is.EqualTo(DescriptionPanelTextRules.MaxLength));
+    }
+
+    [Test]
+    public void SanitizeForStorage_RemovesLineBreaksAndClamps()
+    {
+        var sanitized = DescriptionPanelTextRules.SanitizeForStorage("行1\n行2", out var wasModified);
+        Assert.That(wasModified, Is.True);
+        Assert.That(sanitized, Is.EqualTo("行1行2"));
+        Assert.That(DescriptionPanelTextRules.IsWithinLimit(sanitized), Is.True);
+    }
+
+    [Test]
     public void Clamp_TruncatesOverLimitText()
     {
         var longText = new string('测', DescriptionPanelTextRules.MaxLength + 5);

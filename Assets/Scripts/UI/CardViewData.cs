@@ -132,7 +132,7 @@ public static class CardViewDataFactory
             DisplayName = runtime.DisplayName,
             Type = runtime.CardType,
             Quality = definition != null ? definition.Quality : CardQuality.White,
-            Description = definition != null ? definition.DisplayName : runtime.DisplayName,
+            Description = definition != null ? definition.Description : string.Empty,
             SystemTagText = definition != null ? HelpCardSystemTagUtility.ToDisplayName(definition.SystemTag) : string.Empty,
             SpriteId = runtime.DefinitionId,
             StatusIconIds = definition != null ? new List<string>(definition.SkillIds) : new List<string>(),

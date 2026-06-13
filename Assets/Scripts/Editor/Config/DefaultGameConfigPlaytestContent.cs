@@ -142,103 +142,103 @@ public static partial class DefaultGameConfigFactory
         {
             SkillId = SkillArmorBreakerId,
             DisplayName = "破防专家",
-            Description = "移动到格1、格2、格3时，减少玩家护甲2点。"
+            Description = "到上排时减玩家2护甲"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillLovingBodyId,
             DisplayName = "爱之躯",
-            Description = "处于格7、格8、格9时，每次与玩家战斗恢复1点血量。"
+            Description = "下排战斗时恢复1生命"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillSharpShieldId,
             DisplayName = "尖盾",
-            Description = "处于格1、格4、格7时，每次与玩家战斗对玩家造成等同于本卡损失护甲值的伤害。"
+            Description = "左列战斗按损甲伤人"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillAmbushId,
             DisplayName = "预先伏击",
-            Description = "被打出到格2、格4、格6、格8时，对玩家造成3点伤害。"
+            Description = "到十字格时对玩家3伤"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillCallFriendsId,
             DisplayName = "叫人！",
-            Description = "每移动3次，将一张等级2的怪物卡加入战斗牌组。"
+            Description = "每移动3次加入2级怪"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillRevengeId,
             DisplayName = "复仇",
-            Description = "在九宫格战场上时，每有一张怪物卡被移除，本牌攻击力+2。"
+            Description = "怪被移除时攻击+2"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillMedicId,
             DisplayName = "医疗兵",
-            Description = "移动到格7、格8、格9时，恢复全体怪物卡4点血量。"
+            Description = "到下排时全体怪回4血"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillProtectionAuraId,
             DisplayName = "防护光环",
-            Description = "处于格1、格4、格7时，其他怪物卡获得2点护甲。"
+            Description = "左列时其他怪+2护甲"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillRelentlessPursuitId,
             DisplayName = "不休追击",
-            Description = "每次移动到玩家正交相邻格时，与玩家卡战斗一次。"
+            Description = "邻接玩家时触发战斗"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillSideStrikeId,
             DisplayName = "侧方打击",
-            Description = "移动到格1、格3、格7、格9时，对玩家造成3点伤害。"
+            Description = "到角格时对玩家3伤"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillHeartMotherId,
             DisplayName = "红桃之母",
-            Description = "每累计损失满10点血量触发一次，将一张随机红桃怪物卡洗入战斗卡组。"
+            Description = "损满10血洗入红桃怪"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillUnbreakableId,
             DisplayName = "牢不可破",
-            Description = "移动到格1、格3、格7、格9时，场上随机一张怪物卡获得技能庇佑。"
+            Description = "到角格时随机怪获庇佑"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillVerticalLeverId,
             DisplayName = "竖向拉杆",
-            Description = "移动到格7时格1/4/7轮换；移动到格3时格3/6/9轮换。"
+            Description = "到格7或3时列轮换"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillDuelId,
             DisplayName = "决斗",
-            Description = "当与玩家战斗后，直到本牌移除，所有卡牌不再移动。"
+            Description = "战斗后全场停止移动"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillWarDanceId,
             DisplayName = "战舞",
-            Description = "每移动1次，本牌攻击+1。"
+            Description = "每移动1次攻击+1"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillViolenceId,
             DisplayName = "暴力",
-            Description = "每移动4次，若处于格2、格4、格6、格8时，则与玩家卡战斗一次。"
+            Description = "每4移在十字格触发战斗"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillSpadeRoyaltyId,
             DisplayName = "黑桃皇室",
-            Description = "每移动4次，九宫格战场上所有黑桃卡攻击+1。"
+            Description = "每4移全体黑桃攻击+1"
         });
     }
 
@@ -272,12 +272,13 @@ public static partial class DefaultGameConfigFactory
         }
     }
 
-    private static CardDefinition HelpCard(string id, string name, CardQuality quality, int price, bool permanentRemove)
+    private static CardDefinition HelpCard(string id, string name, CardQuality quality, int price, bool permanentRemove, string description = null)
     {
         return new CardDefinition
         {
             CardId = id,
             DisplayName = name,
+            Description = description ?? name,
             CardType = CardType.Help,
             Quality = quality,
             Price = price,
@@ -291,80 +292,80 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicLuckyCoinId,
             DisplayName = "幸运硬币",
-            Quality = CardQuality.White,
-            TriggerDescription = "击败精英或层主时将金币卡加入战斗牌组"
+            Description = "击败精英层主加金币卡",
+            Quality = CardQuality.White
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicIronShieldId,
             DisplayName = "铁盾",
+            Description = "受到伤害减少1点",
             Quality = CardQuality.Blue,
-            StatDefenseBonus = 1,
-            TriggerDescription = "受到的所有伤害减少1点"
+            StatDefenseBonus = 1
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicSharpSwordId,
             DisplayName = "锐利长剑",
+            Description = "本关每移除怪攻击+1",
             Quality = CardQuality.Blue,
-            StatAttackBonus = 1,
-            TriggerDescription = "本关卡每移除一张怪物卡攻击+1"
+            StatAttackBonus = 1
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicVitalityCharmId,
             DisplayName = "活力护符",
+            Description = "每关结束恢复6生命",
             Quality = CardQuality.Blue,
-            StatMaxHpBonus = 6,
-            TriggerDescription = "每个关卡结束时恢复6血量"
+            StatMaxHpBonus = 6
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicBloodFangId,
             DisplayName = "嗜血之牙",
+            Description = "移除怪物时恢复2生命",
             Quality = CardQuality.Blue,
-            StatAttackBonus = 1,
-            TriggerDescription = "每次移除怪物卡时恢复2点生命"
+            StatAttackBonus = 1
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicGoldSwordId,
             DisplayName = "金剑",
+            Description = "每战一次攻击加成-1",
             Quality = CardQuality.Gold,
-            StatAttackBonus = 8,
-            TriggerDescription = "每进行一次战斗，本遗物提供的攻击-1"
+            StatAttackBonus = 8
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicDragonArmorId,
             DisplayName = "龙鳞甲",
+            Description = "所有怪物攻击-1",
             Quality = CardQuality.Gold,
             StatDefenseBonus = 1,
-            StatMaxHpBonus = 6,
-            TriggerDescription = "所有怪物卡的攻击-1"
+            StatMaxHpBonus = 6
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicGoldenChestId,
             DisplayName = "金色宝箱",
+            Description = "获取时加两张金宝箱卡",
             Quality = CardQuality.Gold,
-            ExcludeFromPool = true,
-            TriggerDescription = "获取时将两张金色宝箱卡加入帮助卡组"
+            ExcludeFromPool = true
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicBerserkerAxeId,
             DisplayName = "狂战士斧",
+            Description = "半血以下时攻击+3",
             Quality = CardQuality.Gold,
-            StatAttackBonus = 1,
-            TriggerDescription = "当前血量低于50%时攻击+3"
+            StatAttackBonus = 1
         });
 
         var livingFlesh = FindRelic(config, RelicLivingFleshId);
         if (livingFlesh != null)
         {
             livingFlesh.DisplayName = "活着的肉";
-            livingFlesh.TriggerDescription = "使用帮助卡时恢复1血量";
+            livingFlesh.Description = "用帮助卡时恢复1生命";
         }
 
         var woodShield = FindRelic(config, RelicWoodShieldId);
@@ -389,7 +390,7 @@ public static partial class DefaultGameConfigFactory
         if (phoenix != null)
         {
             phoenix.StatMaxHpBonus = 8;
-            phoenix.TriggerDescription = "受到致命伤害时恢复50%血量并消耗";
+            phoenix.Description = "致命伤恢复半血并消耗";
         }
     }
 
@@ -442,6 +443,7 @@ public static partial class DefaultGameConfigFactory
             {
                 CardId = source.CardId + suffix,
                 DisplayName = source.DisplayName + (suffix == "_l2" ? "·二层" : "·三层"),
+                Description = BuildScaledMonsterDescription(source, suffix),
                 CardType = CardType.Monster,
                 MonsterLevel = level,
                 Suit = source.Suit,
@@ -452,6 +454,13 @@ public static partial class DefaultGameConfigFactory
                 SkillIds = new List<string>(source.SkillIds)
             });
         }
+    }
+
+    private static string BuildScaledMonsterDescription(CardDefinition source, string suffix)
+    {
+        var baseDescription = string.IsNullOrEmpty(source.Description) ? source.DisplayName : source.Description;
+        var layerTag = suffix == "_l2" ? "·二层" : "·三层";
+        return DescriptionPanelTextRules.Clamp(baseDescription + layerTag);
     }
 
     private static CardDefinition FindCard(GameConfigSet config, string cardId)
@@ -483,6 +492,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterHeartEliteId,
             DisplayName = "红桃A",
+            Description = "红桃精英怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Elite,
             Suit = Suit.Heart,
@@ -496,6 +506,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterHeartBossId,
             DisplayName = "红桃J",
+            Description = "红桃层主怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Boss,
             Suit = Suit.Heart,
@@ -509,6 +520,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterDiamondEliteId,
             DisplayName = "方块A",
+            Description = "方块精英怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Elite,
             Suit = Suit.Diamond,
@@ -522,6 +534,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterDiamondBossId,
             DisplayName = "方块J",
+            Description = "方块层主怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Boss,
             Suit = Suit.Diamond,

@@ -22,22 +22,7 @@
 类型定义：`Assets/Scripts/Config/TableNineGameConfigAssets.cs`  
 稳定 ID 常量：`Assets/Scripts/Config/GameConfigIds.cs`
 
-### 1.2 UI（非 SO，预制体 + MonoBehaviour）
-
-UIKit / UI Registry / DescriptionPanel SO **已移除**（2026-06-13）。当前仅保留场景/Prefab 级 UI：
-
-| 预制体 | 路径 | 脚本 | 设计文档区域 |
-|--------|------|------|--------------|
-| UIGameplayPanel | `Assets/Prefabs/UI/UIGameplayPanel.prefab` | `UIGameplayPanel` | 玩家信息、技能/遗物占位、DescriptionPanel 子节点 |
-| DescriptionPanel | `Assets/Prefabs/UI/DescriptionPanel.prefab` | （无脚本，纯 TMP） | 介绍区单行描述 |
-| UIChoiceOverlayPanel | `Assets/Prefabs/UI/UIChoiceOverlayPanel.prefab` | `UIChoiceOverlayPanel` | 覆盖层（选卡/商店/删卡等子窗口） |
-| UIPopupPanel | `Assets/Prefabs/UI/UIPopupPanel.prefab` | `UIPopupPanel` | 居中弹窗 |
-
-HUD 文案键：`DescriptionPanelTextKeys`；内置默认文案：`DescriptionPanelTextDefaults`；运行时入口：`DescriptionPanelTexts`。
-
-布局设计案：`Assets/Docs/06-UI/界面布局.md`
-
-### 1.3 遗留类型（勿在新功能中使用）
+### 1.2 遗留类型（勿在新功能中使用）
 
 | 类型 | 说明 |
 |------|------|

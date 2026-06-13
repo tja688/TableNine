@@ -339,6 +339,8 @@ public sealed class CharacterDefinition
 {
     public string CharacterId;
     public string DisplayName;
+    [DescriptionField]
+    public string Description;
     public int BaseHp;
     public int BaseAttack;
     public int BaseDefense;
@@ -351,6 +353,8 @@ public sealed class CardDefinition
 {
     public string CardId;
     public string DisplayName;
+    [DescriptionField]
+    public string Description;
     public CardType CardType;
     public CardQuality Quality;
     public MonsterLevel MonsterLevel;
@@ -375,6 +379,7 @@ public sealed class SkillDefinition
 {
     public string SkillId;
     public string DisplayName;
+    [DescriptionField]
     public string Description;
     public bool GrantsFirstStrike;
     public bool HasRuntimeBinding;
@@ -687,7 +692,9 @@ public sealed class RelicDefinition
     public int StatMaxHpBonus;
     public bool IsOneShot;
     public bool ExcludeFromPool;
-    public string TriggerDescription;
+    [DescriptionField]
+    [FormerlySerializedAs("TriggerDescription")]
+    public string Description;
 }
 
 [Serializable]
@@ -695,6 +702,8 @@ public sealed class RoomDefinition
 {
     public string RoomId;
     public string DisplayName;
+    [DescriptionField]
+    public string Description;
     public RoomType RoomType;
     public int RewardGold;
     public int StatMaxHpBonus;

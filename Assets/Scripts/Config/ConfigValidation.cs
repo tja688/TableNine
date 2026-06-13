@@ -226,6 +226,8 @@ public static class ConfigValidator
             }
         }
 
+        DescriptionPanelConfigValidation.CollectErrors(config, errors);
+
         return errors;
     }
 

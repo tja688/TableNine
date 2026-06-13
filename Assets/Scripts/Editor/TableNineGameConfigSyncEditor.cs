@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -100,12 +101,24 @@ public static class TableNineGameConfigSync
     private static TableNineGameConfig LoadOrCreateMaster()
     {
         var master = AssetDatabase.LoadAssetAtPath<TableNineGameConfig>(MasterAssetPath);
+        if (master == null && AssetDatabase.LoadMainAssetAtPath(MasterAssetPath) != null)
+        {
+            AssetDatabase.DeleteAsset(MasterAssetPath);
+            master = null;
+        }
+
         if (master != null)
         {
             return master;
         }
 
         master = ScriptableObject.CreateInstance<TableNineGameConfig>();
+        if (master == null)
+        {
+            throw new InvalidOperationException(
+                "Failed to create TableNineGameConfig. Fix compile errors, wait for domain reload, then run Sync again.");
+        }
+
         AssetDatabase.CreateAsset(master, MasterAssetPath);
         return master;
     }
@@ -114,12 +127,24 @@ public static class TableNineGameConfigSync
     {
         var path = $"{ConfigFolderPath}/{fileName}";
         var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+        if (asset == null && AssetDatabase.LoadMainAssetAtPath(path) != null)
+        {
+            AssetDatabase.DeleteAsset(path);
+            asset = null;
+        }
+
         if (asset != null)
         {
             return asset;
         }
 
         asset = ScriptableObject.CreateInstance<T>();
+        if (asset == null)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create {typeof(T).Name}. Fix compile errors, wait for domain reload, then run Sync again.");
+        }
+
         AssetDatabase.CreateAsset(asset, path);
         return asset;
     }

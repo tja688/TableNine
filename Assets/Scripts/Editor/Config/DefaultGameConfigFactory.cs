@@ -49,6 +49,7 @@ public static partial class DefaultGameConfigFactory
         {
             CharacterId = CharacterImpId,
             DisplayName = "小鬼",
+            Description = "关卡结束白帮助卡三选一",
             BaseHp = 10,
             BaseAttack = 3,
             BaseDefense = 1,
@@ -65,37 +66,38 @@ public static partial class DefaultGameConfigFactory
             }
         });
 
-        config.Skills.Add(new SkillDefinition { SkillId = SkillLightFootedId, DisplayName = "轻车熟路", Description = "每次关卡结束，进行一次白色帮助卡三选一。" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillFirstStrikeId, DisplayName = "先攻", Description = "战斗时优先出手。", GrantsFirstStrike = true });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillLightFootedId, DisplayName = "轻车熟路", Description = "关卡结束白帮助卡三选一" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillFirstStrikeId, DisplayName = "先攻", Description = "战斗时优先出手", GrantsFirstStrike = true });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillSpadeCubId,
             DisplayName = "黑桃幼崽",
-            Description = "处于格6时，本牌攻击力+2并获得先攻技能。"
+            Description = "格6时攻击+2并获得先攻"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillHeartCubId,
             DisplayName = "红桃幼崽",
-            Description = "移动到格8时，本牌永久获得2点血量上限和血量。"
+            Description = "到格8永久+2生命上限"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillDiamondCubId,
             DisplayName = "方块幼崽",
-            Description = "移动到格4时，本牌永久获得2点护甲。"
+            Description = "到格4永久+2护甲"
         });
         config.Skills.Add(new SkillDefinition
         {
             SkillId = SkillClubCubId,
             DisplayName = "梅花幼崽",
-            Description = "处于格1、格2、格3时，场上所有其他怪物攻击+2。效果不可叠加。"
+            Description = "格1-3时其他怪攻击+2"
         });
 
         config.Cards.Add(new CardDefinition
         {
             CardId = HelpPotionId,
             DisplayName = "恢复药水",
+            Description = "恢复10点生命",
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 30,
@@ -105,6 +107,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpThrowingKnifeId,
             DisplayName = "飞刀",
+            Description = "对怪物造成6点伤害",
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 20,
@@ -114,6 +117,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpCommonChestId,
             DisplayName = "普通宝箱卡",
+            Description = "开启普通宝箱奖励",
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 100,
@@ -123,6 +127,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpAttributeUpId,
             DisplayName = "属性提升卡",
+            Description = "选择一项属性提升",
             CardType = CardType.Help,
             Quality = CardQuality.Gold,
             Price = 100,
@@ -133,6 +138,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpGoldCardId,
             DisplayName = "金币卡",
+            Description = "获得金币奖励",
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 30,
@@ -142,6 +148,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpChestCardId,
             DisplayName = "宝箱卡",
+            Description = "开启宝箱奖励",
             CardType = CardType.Help,
             Quality = CardQuality.Blue,
             Price = 100,
@@ -151,6 +158,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpBlessingId,
             DisplayName = "祝福",
+            Description = "获得随机正面增益",
             CardType = CardType.Help,
             Quality = CardQuality.Gold,
             Price = 200,
@@ -160,6 +168,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpBandageId,
             DisplayName = "绷带",
+            Description = "恢复少量生命",
             CardType = CardType.Help,
             Quality = CardQuality.White,
             Price = 15,
@@ -170,6 +179,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterColorlessId,
             DisplayName = "无色卡",
+            Description = "无花色普通怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Level1,
             BaseHp = 6,
@@ -180,6 +190,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterSpade2Id,
             DisplayName = "黑桃2",
+            Description = "黑桃幼崽怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Spade,
@@ -193,6 +204,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterHeart2Id,
             DisplayName = "红桃2",
+            Description = "红桃幼崽怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Heart,
@@ -206,6 +218,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterDiamond2Id,
             DisplayName = "方块2",
+            Description = "方块幼崽怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Diamond,
@@ -219,6 +232,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterClub2Id,
             DisplayName = "梅花2",
+            Description = "梅花幼崽怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Club,
@@ -238,6 +252,7 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicWoodShieldId,
             DisplayName = "木盾",
+            Description = "防御+2",
             Quality = CardQuality.White,
             StatAttackBonus = 0,
             StatDefenseBonus = 2,
@@ -247,6 +262,7 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicWoodSwordId,
             DisplayName = "木剑",
+            Description = "攻击+2",
             Quality = CardQuality.White,
             StatAttackBonus = 2,
             StatDefenseBonus = 0,
@@ -256,6 +272,7 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicWoodArmorId,
             DisplayName = "木甲",
+            Description = "生命上限+3",
             Quality = CardQuality.White,
             StatAttackBonus = 0,
             StatDefenseBonus = 0,
@@ -265,6 +282,7 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicLivingFleshId,
             DisplayName = "活肉",
+            Description = "生命上限+5",
             Quality = CardQuality.Blue,
             StatAttackBonus = 0,
             StatDefenseBonus = 0,
@@ -274,22 +292,22 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicThornArmorId,
             DisplayName = "荆棘甲",
+            Description = "受击反弹1点伤害",
             Quality = CardQuality.Blue,
             StatAttackBonus = 0,
             StatDefenseBonus = 1,
-            StatMaxHpBonus = 0,
-            TriggerDescription = "受到攻击时反弹1点伤害"
+            StatMaxHpBonus = 0
         });
         config.Relics.Add(new RelicDefinition
         {
             RelicId = RelicPhoenixFeatherId,
             DisplayName = "凤凰羽毛",
+            Description = "致命伤防止死亡并消耗",
             Quality = CardQuality.Gold,
             StatAttackBonus = 0,
             StatDefenseBonus = 0,
             StatMaxHpBonus = 0,
-            IsOneShot = true,
-            TriggerDescription = "受到致命伤害时防止死亡，然后消耗"
+            IsOneShot = true
         });
 
         // Room definitions
@@ -297,6 +315,7 @@ public static partial class DefaultGameConfigFactory
         {
             RoomId = RoomGoldId,
             DisplayName = "金币房间",
+            Description = "获得50金币",
             RoomType = RoomType.Gold,
             RewardGold = 50
         });
@@ -304,6 +323,7 @@ public static partial class DefaultGameConfigFactory
         {
             RoomId = RoomChestId,
             DisplayName = "宝箱房间",
+            Description = "注入宝箱卡奖励",
             RoomType = RoomType.Chest,
             InjectCardId = HelpChestCardId
         });
@@ -311,6 +331,7 @@ public static partial class DefaultGameConfigFactory
         {
             RoomId = RoomAttributeId,
             DisplayName = "温泉房",
+            Description = "生命上限提升并回满",
             RoomType = RoomType.Attribute,
             StatMaxHpBonus = RewardConstants.AttributeRoomMaxHpBonus
         });
@@ -318,6 +339,7 @@ public static partial class DefaultGameConfigFactory
         {
             RoomId = RoomShopId,
             DisplayName = "商店房间",
+            Description = "购买卡牌与遗物",
             RoomType = RoomType.Shop
         });
 

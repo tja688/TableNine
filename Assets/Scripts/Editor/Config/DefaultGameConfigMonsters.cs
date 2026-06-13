@@ -84,7 +84,7 @@ public static partial class DefaultGameConfigFactory
         {
             SkillId = SkillThornSkinId,
             DisplayName = "刺皮",
-            Description = "每次被攻击，对攻击者造成等同于攻击者攻击力的伤害。",
+            Description = "被攻击时反弹攻击者攻击力",
             HasRuntimeBinding = true,
             Trigger = SkillTrigger.OnModifyDamage,
             ConditionKey = "player_defender_monster_attacks",
@@ -94,22 +94,23 @@ public static partial class DefaultGameConfigFactory
         {
             SkillId = SkillHardSkinId,
             DisplayName = "硬皮",
-            Description = "获得10点血量上限；每次清空关卡时恢复10点血量。",
+            Description = "+10生命上限，清空关卡回血",
             HasRuntimeBinding = true,
             Trigger = SkillTrigger.OnNodeClear,
             ConditionKey = "always",
             EffectGraphId = "eg_skill_hard_skin_node_clear_heal",
             MaxHpOnAcquire = 10
         });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillBattleHardenedId, DisplayName = "历战", Description = "每次与敌人战斗时，攻击+1；与新敌人战斗时复原历战加成。" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillArmoryId, DisplayName = "军械库", Description = "每次关卡结束，选择飞刀、爆弹、破击锤之一加入帮助卡组。" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillEvenHateId, DisplayName = "偶数仇恨", Description = "与名字带偶数的怪物战斗时，造成双倍伤害。" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillTowerChildId, DisplayName = "塔之子", Description = "每次关卡开始时，将一张倍增塔放入道具牌格。" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillBattleHardenedId, DisplayName = "历战", Description = "与敌战斗攻击+1，换敌复原" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillArmoryId, DisplayName = "军械库", Description = "关卡结束选飞刀爆弹破击锤" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillEvenHateId, DisplayName = "偶数仇恨", Description = "对战偶数怪造成双倍伤害" });
+        config.Skills.Add(new SkillDefinition { SkillId = SkillTowerChildId, DisplayName = "塔之子", Description = "关卡开始放入倍增塔" });
 
         config.Cards.Add(new CardDefinition
         {
             CardId = HelpBlueChestId,
             DisplayName = "蓝色宝箱卡",
+            Description = "开启蓝色宝箱奖励",
             CardType = CardType.Help,
             Quality = CardQuality.Gold,
             Price = 150,
@@ -119,6 +120,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = HelpGoldChestId,
             DisplayName = "金色宝箱卡",
+            Description = "开启金色宝箱奖励",
             CardType = CardType.Help,
             Quality = CardQuality.Red,
             Price = 400,
@@ -144,6 +146,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterSpadeEliteId,
             DisplayName = "黑桃A",
+            Description = "黑桃精英怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Elite,
             Suit = Suit.Spade,
@@ -156,6 +159,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = MonsterSpadeBossId,
             DisplayName = "黑桃J",
+            Description = "黑桃层主怪物",
             CardType = CardType.Monster,
             MonsterLevel = MonsterLevel.Boss,
             Suit = Suit.Spade,
@@ -181,6 +185,7 @@ public static partial class DefaultGameConfigFactory
         {
             CardId = cardId,
             DisplayName = displayName,
+            Description = displayName + "怪物",
             CardType = CardType.Monster,
             MonsterLevel = level,
             Suit = suit,
