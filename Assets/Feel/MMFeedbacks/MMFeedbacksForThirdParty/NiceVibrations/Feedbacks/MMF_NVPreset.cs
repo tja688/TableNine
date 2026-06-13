@@ -1,0 +1,80 @@
+using UnityEngine;
+using MoreMountains.Feedbacks;
+#if MOREMOUNTAINS_NICEVIBRATIONS_INSTALLED
+using Lofelt.NiceVibrations;
+#endif
+using UnityEngine.Scripting.APIUpdating;
+
+namespace MoreMountains.FeedbacksForThirdParty
+{
+	/// <summary>
+	/// 使用这个反馈可播放预设 haptic。它的能力较有限，但胜在非常简单，适合快速使用预定义的触觉模式。
+	/// </summary>
+	[AddComponentMenu("")]
+	[System.Serializable]
+	#if MOREMOUNTAINS_NICEVIBRATIONS_INSTALLED
+	[FeedbackPath("Haptics/Haptic Preset")]
+	#endif    
+	[MovedFrom(false, null, "MoreMountains.Feedbacks.NiceVibrations")]
+	[FeedbackHelp("使用这个反馈可播放预设 haptic。它的能力较有限，但胜在非常简单，适合快速使用预定义的触觉模式。")]
+	public class MMF_NVPreset : MMF_Feedback
+	{
+		#if MOREMOUNTAINS_NICEVIBRATIONS_INSTALLED
+		/// a static bool used to disable all feedbacks of this type at once
+		public static bool FeedbackTypeAuthorized = true;
+		#if UNITY_EDITOR
+		public override bool HasCustomInspectors => true;
+		public override Color FeedbackColor { get { return MMFeedbacksInspectorColors.HapticsColor; } }
+		public override string RequiredTargetText { get { return Preset.ToString();  } }
+		#endif
+    
+		[MMFInspectorGroup("Haptic Preset", true, 21)]
+		/// 此反馈要播放的 preset。
+		[Tooltip("此反馈要播放的预设。")]
+		public HapticPatterns.PresetType Preset = HapticPatterns.PresetType.LightImpact;
+		/// a debug button that lets you test the haptic file from its inspector
+		public MMF_Button PlayPresetButton;
+
+		[MMFInspectorGroup("Settings", true, 16)]
+		/// 一组可调设置，用来精确控制这个 haptic 何时播放以及如何播放。
+		[Tooltip("一组可调设置，用来精确控制这个 haptic 何时播放以及如何播放。")]
+		public MMFeedbackNVSettings HapticSettings;
+		
+		/// <summary>
+		/// Initializes custom buttons
+		/// </summary>
+		public override void InitializeCustomAttributes()
+		{
+			base.InitializeCustomAttributes();
+			PlayPresetButton = new MMF_Button("Test Preset", PlayPreset);
+		}
+        
+		/// <summary>
+		/// On play we play our preset haptic
+		/// </summary>
+		/// <param name="position"></param>
+		/// <param name="feedbacksIntensity"></param>
+		protected override void CustomPlayFeedback(Vector3 position, float feedbacksIntensity = 1.0f)
+		{
+			if (!Active || !FeedbackTypeAuthorized || HapticSettings == null || !HapticSettings.CanPlay())
+			{
+				return;
+			}
+
+			PlayPreset();
+		}
+
+		/// <summary>
+		/// Plays the target preset
+		/// </summary>
+		protected virtual void PlayPreset()
+		{
+			HapticSettings.SetGamepad();
+			HapticPatterns.PlayPreset(Preset);
+		}
+		
+		#else
+		protected override void CustomPlayFeedback(Vector3 position, float feedbacksIntensity = 1.0f) { }
+		#endif
+	}    
+}
