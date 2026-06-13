@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 8977160220495051474}
   - component: {fileID: 2722621212982204834}
   - component: {fileID: 2828814971279056746}
-  - component: {fileID: 3048441259918011141}
   m_Layer: 5
   m_Name: UIPopupPanel
   m_TagString: Untagged
@@ -103,20 +102,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 55
---- !u!114 &3048441259918011141
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 625411929159349806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c41410b2187279f4d8ed843cedc359b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mInfoText: {fileID: 0}
-  mCloseButton: {fileID: 0}
 --- !u!1 &6329875654986022779
 GameObject:
   m_ObjectHideFlags: 0

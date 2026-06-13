@@ -100,7 +100,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
-        var cardUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         var defenseBefore = playerRuntime.BaseDefense;
         var armorBefore = playerRuntime.CurrentArmor;

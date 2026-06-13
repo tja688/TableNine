@@ -39,7 +39,10 @@ MonoBehaviour:
     - Febucci.TextAnimatorForUnity.Input.Runtime
     - Febucci.TextAnimatorForUnity.Runtime
     - Febucci.TextAnimatorForUnity.TMP.Runtime
+    - Lofelt.NiceVibrations
+    - Lofelt.NiceVibrations.Demo
     - MCPForUnity.Runtime
+    - MoreMountains.Tools
     - QFramework
     - QFramework.CoreKit
     - ResKit

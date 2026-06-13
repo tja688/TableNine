@@ -26,7 +26,7 @@ public sealed class TableNineUIEventsEditModeTests
         var resolved = new List<AttributeChoiceResolvedEvent>();
         var requestRegister = TableNine.Interface.RegisterEvent<AttributeChoiceRequestedEvent>(requested.Add);
         var resolveRegister = TableNine.Interface.RegisterEvent<AttributeChoiceResolvedEvent>(resolved.Add);
-        var cardUid = PickHelpCardToFirstItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
 
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(0));
 
@@ -150,6 +150,22 @@ public sealed class TableNineUIEventsEditModeTests
         var uid = FindHelpCard(cardId);
         TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(uid));
         return uid;
+    }
+
+    private static CardUid SpawnHelpCardToItemSlot(string definitionId)
+    {
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var runtime = collectionModel.CreateCard(configModel.GetCardDefinition(definitionId));
+        deckModel.OwnedHelpCards.Add(runtime.Uid);
+        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        {
+            Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId
+        };
+        TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(runtime.Uid));
+        return runtime.Uid;
     }
 
     private static CardUid FindHelpCard(string cardId)

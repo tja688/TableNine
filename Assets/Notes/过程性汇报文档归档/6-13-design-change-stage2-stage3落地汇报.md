@@ -3,7 +3,68 @@
 > 任务来源：[6-13 docs 设计变更.md](6-13%20docs%20设计变更.md) — stage 2 + stage 3  
 > 执行时间：2026-06-13  
 > 分支：工作区未提交  
-> 状态：✅ 验收通过（EditMode）
+> 状态：⚠️ 部分完成（待复检）
+
+---
+
+## 质检记录
+
+> 来源：用户质检结论（2026-06-13）
+
+### 判定
+
+❌ 未通过 — stage2/3 窄范围通过，stage1 行为偏差、stage2 两张卡未落完、旧回归基线未收敛。
+
+### 整改条目
+
+| # | 类别 | 严重度 | 要求 | 当前实现现状 | 建议落点 |
+|---|------|--------|------|--------------|----------|
+| 1 | 怪物技能 | P1 | 预先伏击对玩家固定 3 点 HP 伤害（无视护甲） | 走 ApplyDamageCommand 普通结算 | `RuntimeSystems.cs` |
+| 2 | 帮助卡 | P1 | 捕熊陷阱、血液转换补 EffectGraph + 运行时 | 仅有配置/标签 | `EffectGraphRegistry` / `SkillEffectRegistry` / `EffectSystem` |
+| 3 | 测试基线 | P2 | 旧 EditMode 对齐小鬼新初始卡组 | 仍假设属性提升卡开局存在 | M1 / R4 / UIEvents 测试 |
+| 4 | 测试覆盖 | P2 | stage1 未覆盖技能 + stage2 两卡行为测试 | 缺断言 | Stage1/Stage2 EditMode |
+
+### 验收复验表
+
+| 验收条件 | 整改前 | 整改后（返工时填） |
+|----------|--------|-------------------|
+| 预先伏击 3 点固定伤害 | ❌ 吃护甲 | ✅ `Ambush_Deals_Three_Damage_When_Monster_Placed_On_Ambush_Slot` |
+| 捕熊陷阱 / 血液转换 EffectGraph | ❌ ConfigValidator 红 | ✅ 映射 + 被动/主动逻辑 + EditMode |
+| 旧回归基线 | ❌ M1/R4/UIEvents 失败 | ✅ 改为 SpawnHelpCardToItemSlot |
+| 受影响 EditMode 全绿 | ❌ | ✅ 63/63 通过（Unity MCP） |
+| Console 无 help_bear_trap/blood_convert 警告 | ❌ | ✅ 复验无此警告 |
+
+---
+
+## 返工记录
+
+- **日期**：2026-06-13
+- **执行**：返工代理（doc-task-rework）
+- **范围**：整改条目 #1–#4
+- **状态**：✅ 全部完成
+- **验证**：EditMode 63/63；Console 0 error；无 help_bear_trap/help_blood_convert 警告；Unity MCP
+
+### 逐条修复情况
+
+| # | 严重度 | 要求（摘要） | 修复措施 | 验证证据 | 状态 |
+|---|--------|--------------|----------|----------|------|
+| 1 | P1 | 预先伏击固定 3 HP | `RuntimeSystems.cs` ApplyDamage 使用 `IgnoreArmor=true` | `TableNineStage1MonsterSkillEditModeTests.Ambush_Deals_Three_Damage_When_Monster_Placed_On_Ambush_Slot` | ✅ |
+| 2 | P1 | 捕熊陷阱 + 血液转换 | `EffectGraphRegistry` 映射与图；`SkillEffectRegistry` 捕熊被动；`ApplyBloodConvertRewardCommand` | `Bear_Trap_Damages_Refilled_Adjacent_Monster_And_Consumes` / `Blood_Convert_Reduces_MaxHp_And_Consumes` | ✅ |
+| 3 | P2 | 测试基线对齐新初始卡组 | M1/R4/UIEvents 属性提升卡改为 `SpawnHelpCardToItemSlot`；M1 帮助卡数量 7、战斗池 9 | 相关 M1/R4/UIEvents 用例 | ✅ |
+| 4 | P2 | 补 stage1/stage2 行为测试 | Stage1 增 heart/diamond/armor breaker/medic；Stage2 增 bear trap/blood convert | Stage1/Stage2 EditMode 全过 | ✅ |
+
+### 新增/变更文件（返工增量）
+
+| 路径 | 说明 |
+|------|------|
+| `Assets/Scripts/Command/EffectAtomCommands.cs` | `ApplyBloodConvertRewardCommand` |
+| `Assets/Scripts/Skill/SkillRuntimeData.cs` | `TriggerContext` 补 `TriggerCardUid` / `PlacementSource` |
+| `Assets/Scripts/System/SkillSystem.cs` | 捕熊陷阱 refill 条件与怪物补牌触发 |
+| 各 Stage1/Stage2/M1/R4/UIEvents 测试 | 基线与行为覆盖 |
+
+### 下一步
+
+请执行 **「质检 6-13-design-change-stage2-stage3」** 重新验收。通过前勿归档本汇报。
 
 ---
 

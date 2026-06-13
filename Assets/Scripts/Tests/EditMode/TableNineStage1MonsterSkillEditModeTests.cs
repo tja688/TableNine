@@ -107,6 +107,103 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         Assert.That(attackAfter, Is.EqualTo(attackBefore + 2));
     }
 
+    [Test]
+    public void HeartCub_Gains_MaxHp_When_Rotated_Into_Slot8()
+    {
+        StartRun(42);
+        ClearBoardExceptPlayer();
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterHeart2Id);
+        PlaceMonster(monster, new BoardSlotNo(9));
+        var maxHpBefore = collectionModel.GetCard(monster).MaxHp;
+
+        boardSystem.RotateClockwise();
+
+        Assert.That(collectionModel.GetCard(monster).BoardSlot.Value.Value, Is.EqualTo(8));
+        Assert.That(collectionModel.GetCard(monster).MaxHp, Is.EqualTo(maxHpBefore + 2));
+    }
+
+    [Test]
+    public void DiamondCub_Gains_Defense_When_Rotated_Into_Slot4()
+    {
+        StartRun(42);
+        ClearBoardExceptPlayer();
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterDiamond2Id);
+        PlaceMonster(monster, new BoardSlotNo(7));
+        var defenseBefore = collectionModel.GetCard(monster).BaseDefense;
+
+        boardSystem.RotateClockwise();
+
+        Assert.That(collectionModel.GetCard(monster).BoardSlot.Value.Value, Is.EqualTo(4));
+        Assert.That(collectionModel.GetCard(monster).BaseDefense, Is.EqualTo(defenseBefore + 2));
+    }
+
+    [Test]
+    public void ArmorBreaker_Reduces_Player_Armor_When_Moved_To_Top_Row()
+    {
+        StartRun(42);
+        ClearBoardExceptPlayer();
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var player = collectionModel.GetCard(playerModel.PlayerCardUid);
+        var armorBefore = player.CurrentArmor;
+
+        var monster = SpawnMonster(DefaultGameConfigFactory.MonsterSpade3Id);
+        PlaceMonster(monster, new BoardSlotNo(4));
+        boardSystem.RotateClockwise();
+
+        Assert.That(player.CurrentArmor, Is.EqualTo(System.Math.Max(0, armorBefore - 2)));
+    }
+
+    [Test]
+    public void Medic_Heals_All_Monsters_When_Moved_To_Bottom_Row()
+    {
+        StartRun(42);
+        ClearBoardExceptPlayer();
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var medic = SpawnMonster(DefaultGameConfigFactory.MonsterHeart4Id);
+        PlaceMonster(medic, new BoardSlotNo(8));
+        collectionModel.GetCard(medic).CurrentHp = 5;
+
+        boardSystem.RotateClockwise();
+
+        Assert.That(collectionModel.GetCard(medic).BoardSlot.Value.Value, Is.EqualTo(7));
+        Assert.That(collectionModel.GetCard(medic).CurrentHp, Is.EqualTo(9));
+    }
+
+    private static void ClearBoardExceptPlayer()
+    {
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+
+        for (var i = 1; i <= 9; i++)
+        {
+            var slot = new BoardSlotNo(i);
+            if (slot.Value == boardModel.PlayerSlot.Value)
+            {
+                continue;
+            }
+
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue)
+            {
+                continue;
+            }
+
+            boardSystem.RemoveCardAt(slot);
+            if (collectionModel.TryGetCard(uid.Value, out var runtime) && runtime.CardType == CardType.Monster)
+            {
+                collectionModel.RemoveCard(uid.Value);
+            }
+        }
+    }
+
     private static void AssertMonsterStats(
         IConfigModel configModel,
         string cardId,

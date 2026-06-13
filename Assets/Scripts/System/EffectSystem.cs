@@ -79,6 +79,9 @@ public sealed class EffectSystem : AbstractSystem, IEffectSystem
             case EffectAtomTypes.ApplyStatus:
                 DispatchApplyStatus(atom, context, commandSender);
                 break;
+            case EffectAtomTypes.BloodConvertReward:
+                commandSender.SendCommand(new ApplyBloodConvertRewardCommand());
+                break;
             default:
                 Debug.LogWarning($"[EffectSystem] Unknown atom type: {atom.AtomType}");
                 break;

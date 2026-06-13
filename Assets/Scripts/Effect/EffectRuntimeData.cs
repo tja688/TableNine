@@ -49,6 +49,7 @@ public static class EffectAtomTypes
     public const string SwapCards = "SwapCardsAtom";
     public const string RemoveCard = "RemoveCardAtom";
     public const string ApplyStatus = "ApplyStatusAtom";
+    public const string BloodConvertReward = "BloodConvertRewardAtom";
 }
 
 internal static class EffectAtomParams

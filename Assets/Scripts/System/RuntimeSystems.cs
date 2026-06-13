@@ -740,9 +740,15 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         }
 
         var playerModel = this.GetModel<IPlayerModel>();
-        SendArchitectureCommand(new ApplyDamageCommand(
-            playerModel.PlayerCardUid,
-            3));
+        SendArchitectureCommand(new ApplyDamageCommand(new DamageContext
+        {
+            Target = playerModel.PlayerCardUid,
+            CauseId = DefaultGameConfigFactory.SkillAmbushId,
+            Type = DamageType.Skill,
+            RawAttack = 3,
+            DamageBeforeArmor = 3,
+            IgnoreArmor = true
+        }));
     }
 
     private void OnMonsterSkillCardMoved(CardMovedEvent moved)

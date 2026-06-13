@@ -66,6 +66,8 @@ public static class EffectGraphRegistry
         Map(DefaultGameConfigFactory.HelpShieldStrikeTutorialId, "eg_help_shield_strike_tutorial");
         Map(DefaultGameConfigFactory.HelpTeleportId, "eg_help_teleport");
         Map(DefaultGameConfigFactory.HelpKidnapId, "eg_help_kidnap");
+        Map(DefaultGameConfigFactory.HelpBearTrapId, "eg_help_bear_trap");
+        Map(DefaultGameConfigFactory.HelpBloodConvertId, "eg_help_blood_convert");
     }
 
     private static void Map(string cardId, string graphId)
@@ -168,6 +170,14 @@ public static class EffectGraphRegistry
 
         Register("eg_help_multiplier_tower",
             Status("tower_multiplier"),
+            Consume());
+
+        Register("eg_help_bear_trap",
+            Consume());
+
+        Register("eg_help_blood_convert",
+            Modify(StatType.MaxHp, -5),
+            Atom(EffectAtomTypes.BloodConvertReward),
             Consume());
     }
 

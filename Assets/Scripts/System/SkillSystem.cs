@@ -127,20 +127,39 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
     private void OnCardMoved(CardMovedEvent moved)
     {
         var collectionModel = this.GetModel<ICollectionModel>();
-        if (!collectionModel.TryGetCard(moved.Uid, out var runtime) || runtime.CardType != CardType.Help)
+        if (!collectionModel.TryGetCard(moved.Uid, out var runtime))
         {
             return;
         }
 
-        var context = new TriggerContext
+        if (runtime.CardType == CardType.Help)
         {
-            OwnerUid = moved.Uid,
-            OwnerDefinitionId = runtime.DefinitionId,
-            CardSlot = moved.NewSlot,
-            PreviousSlot = moved.PreviousSlot,
-            IsBoardMovement = moved.IsBoardMovement
-        };
-        SendSkillCommand(new TriggerSkillSystemCommand(SkillTrigger.OnCardMoved, context));
+            var helpContext = new TriggerContext
+            {
+                OwnerUid = moved.Uid,
+                OwnerDefinitionId = runtime.DefinitionId,
+                CardSlot = moved.NewSlot,
+                PreviousSlot = moved.PreviousSlot,
+                IsBoardMovement = moved.IsBoardMovement,
+                TriggerCardUid = moved.Uid,
+                PlacementSource = moved.Source
+            };
+            SendSkillCommand(new TriggerSkillSystemCommand(SkillTrigger.OnCardMoved, helpContext));
+            return;
+        }
+
+        if (runtime.CardType == CardType.Monster && moved.Source == CardPlacementSource.Refill)
+        {
+            var refillContext = new TriggerContext
+            {
+                TriggerCardUid = moved.Uid,
+                CardSlot = moved.NewSlot,
+                PreviousSlot = moved.PreviousSlot,
+                IsBoardMovement = moved.IsBoardMovement,
+                PlacementSource = moved.Source
+            };
+            SendSkillCommand(new TriggerSkillSystemCommand(SkillTrigger.OnCardMoved, refillContext));
+        }
     }
 
     private void SendSkillCommand(ICommand command)
@@ -348,6 +367,28 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
                 }
 
                 return collectionModel.TryGetCard(owner.Uid.Value, out var runtime) && runtime.ItemSlotIndex.HasValue;
+            case "refilled_monster_adjacent_to_player":
+                if (!context.TriggerCardUid.HasValue ||
+                    !context.CardSlot.HasValue ||
+                    !owner.Uid.HasValue ||
+                    context.PlacementSource != CardPlacementSource.Refill)
+                {
+                    return false;
+                }
+
+                if (!boardSystem.IsOrthogonalAdjacentToPlayer(context.CardSlot.Value))
+                {
+                    return false;
+                }
+
+                if (!collectionModel.TryGetCard(context.TriggerCardUid.Value, out var placedRuntime) ||
+                    placedRuntime.CardType != CardType.Monster)
+                {
+                    return false;
+                }
+
+                return collectionModel.TryGetCard(owner.Uid.Value, out var trapRuntime) &&
+                       trapRuntime.ItemSlotIndex.HasValue;
             default:
                 return false;
         }
@@ -375,6 +416,12 @@ public sealed class SkillSystem : AbstractSystem, ISkillSystem
                 TryGetKillableMonsterAtSlot(new BoardSlotNo(6), out var monsterUid))
             {
                 effectContext.Targets.Add(monsterUid);
+            }
+
+            if (binding.EffectGraphId == "eg_passive_bear_trap_refill" &&
+                context.TriggerCardUid.HasValue)
+            {
+                effectContext.Targets.Add(context.TriggerCardUid.Value);
             }
 
             var effectSystem = this.GetSystem<IEffectSystem>();

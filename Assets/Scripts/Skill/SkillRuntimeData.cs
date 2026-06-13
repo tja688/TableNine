@@ -44,6 +44,8 @@ public sealed class TriggerContext
     public CardUid? PrimaryAttacker;
     public CardUid? PrimaryDefender;
     public CardUid? HelpCardUsedUid;
+    public CardUid? TriggerCardUid;
+    public CardPlacementSource? PlacementSource;
     public List<DamageContext> ParallelDamage = new List<DamageContext>();
 }
 

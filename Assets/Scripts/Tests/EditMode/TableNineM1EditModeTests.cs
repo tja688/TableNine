@@ -24,13 +24,13 @@ public sealed class TableNineM1EditModeTests
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var unique = new HashSet<int>();
 
-        Assert.That(deckModel.OwnedHelpCards.Count, Is.EqualTo(8));
+        Assert.That(deckModel.OwnedHelpCards.Count, Is.EqualTo(7));
         for (var i = 0; i < deckModel.OwnedHelpCards.Count; i++)
         {
             unique.Add(deckModel.OwnedHelpCards[i].Value);
         }
 
-        Assert.That(unique.Count, Is.EqualTo(8));
+        Assert.That(unique.Count, Is.EqualTo(7));
     }
 
     [Test]
@@ -60,7 +60,7 @@ public sealed class TableNineM1EditModeTests
         Assert.That(CountPlacements(placements, CardPlacementSource.OpeningBattle), Is.EqualTo(2));
 
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
-        Assert.That(deckModel.BattleDrawPile.Count, Is.EqualTo(10));
+        Assert.That(deckModel.BattleDrawPile.Count, Is.EqualTo(9));
         Assert.That(deckModel.NextBattleCardPreview.Value.IsEmpty, Is.False);
     }
 
@@ -281,7 +281,7 @@ public sealed class TableNineM1EditModeTests
         var deckModel = TableNine.Interface.GetModel<IDeckModel>();
         var flowModel = TableNine.Interface.GetModel<IFlowModel>();
         var playerRuntime = collectionModel.GetCard(TableNine.Interface.GetModel<IPlayerModel>().PlayerCardUid);
-        var cardUid = MoveHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
+        var cardUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpAttributeUpId);
 
         TableNine.Interface.SendCommand(new ClickItemSlotCommand(collectionModel.GetCard(cardUid).ItemSlotIndex.Value));
 
@@ -395,6 +395,22 @@ public sealed class TableNineM1EditModeTests
 
         Assert.Fail($"Could not find help card {definitionId}.");
         return default;
+    }
+
+    private static CardUid SpawnHelpCardToItemSlot(string definitionId)
+    {
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var runtime = collectionModel.CreateCard(configModel.GetCardDefinition(definitionId));
+        deckModel.OwnedHelpCards.Add(runtime.Uid);
+        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        {
+            Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId
+        };
+        TableNine.Interface.SendCommand(new PickHelpCardToItemSlotCommand(runtime.Uid));
+        return runtime.Uid;
     }
 
     private static CardUid MoveAnyMonsterToSlot(BoardSlotNo targetSlot)

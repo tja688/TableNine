@@ -20,6 +20,7 @@ public static class SkillEffectRegistry
         BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnCardMoved, "moved_to_adjacent_player", "eg_passive_healing_spring_adjacent");
         BindHelpPassive(DefaultGameConfigFactory.HelpHealingSpringId, SkillTrigger.OnAfterCombat, "in_item_slot", "eg_passive_healing_spring_combat");
         BindHelpPassive(DefaultGameConfigFactory.HelpBoulderId, SkillTrigger.OnCardMoved, "moved_to_slot_3_killable", "eg_passive_boulder_kill");
+        BindHelpPassive(DefaultGameConfigFactory.HelpBearTrapId, SkillTrigger.OnCardMoved, "refilled_monster_adjacent_to_player", "eg_passive_bear_trap_refill");
     }
 
     private static void BuildPassiveEffectGraphs()
@@ -32,6 +33,9 @@ public static class SkillEffectRegistry
             PassiveGraphs.Heal(1));
         PassiveGraphs.Register("eg_passive_boulder_kill",
             PassiveGraphs.RemoveBoardSlotMonster(6),
+            PassiveGraphs.ConsumeCaster());
+        PassiveGraphs.Register("eg_passive_bear_trap_refill",
+            PassiveGraphs.Damage(10, DefaultGameConfigFactory.HelpBearTrapId),
             PassiveGraphs.ConsumeCaster());
         PassiveGraphs.Register("eg_skill_hard_skin_node_clear_heal",
             PassiveGraphs.Heal(10));
@@ -110,6 +114,14 @@ internal static class PassiveGraphs
     public static EffectAtomDefinition ConsumeCaster()
     {
         return Atom(EffectAtomTypes.ConsumeHelpCard);
+    }
+
+    public static EffectAtomDefinition Damage(int amount, string causeId)
+    {
+        return Atom(EffectAtomTypes.Damage,
+            ("amount", amount.ToString()),
+            ("scope", "targets"),
+            ("causeId", causeId));
     }
 
     public static EffectAtomDefinition RemoveBoardSlotMonster(int slot)

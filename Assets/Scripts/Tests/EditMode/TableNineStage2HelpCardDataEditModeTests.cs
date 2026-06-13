@@ -70,6 +70,63 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         Assert.That(
             EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpKidnapId).EffectGraphId),
             Is.True);
+        Assert.That(
+            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBearTrapId).EffectGraphId),
+            Is.True);
+        Assert.That(
+            EffectGraphRegistry.ContainsGraph(configModel.GetCardDefinition(DefaultGameConfigFactory.HelpBloodConvertId).EffectGraphId),
+            Is.True);
+    }
+
+    [Test]
+    public void Bear_Trap_Damages_Refilled_Adjacent_Monster_And_Consumes()
+    {
+        StartRun(42);
+        var boardSystem = TableNine.Interface.GetSystem<IBoardSystem>();
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var trapUid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBearTrapId);
+
+        var adjacentSlot = new BoardSlotNo(2);
+        if (boardModel.GetCardAt(adjacentSlot).HasValue)
+        {
+            boardSystem.RemoveCardAt(adjacentSlot);
+        }
+
+        var monsterUid = SpawnMonster(DefaultGameConfigFactory.MonsterHeart2Id);
+        var monster = collectionModel.GetCard(monsterUid);
+        monster.CurrentHp = 20;
+        monster.CurrentArmor = 0;
+
+        boardSystem.PlaceCard(monsterUid, adjacentSlot, CardPlacementSource.Refill);
+
+        Assert.That(monster.CurrentHp, Is.EqualTo(10));
+        Assert.That(deckModel.HelpCardStates[trapUid.Value].IsPermanentlyRemoved, Is.True);
+    }
+
+    [Test]
+    public void Blood_Convert_Reduces_MaxHp_And_Consumes()
+    {
+        StartRun(4242);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var player = collectionModel.GetCard(playerModel.PlayerCardUid);
+        var maxHpBefore = player.MaxHp;
+        var attackBefore = player.BaseAttack;
+
+        var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpBloodConvertId);
+        UseItemSlotHelpCard(uid);
+
+        Assert.That(player.MaxHp, Is.EqualTo(maxHpBefore - 5));
+        Assert.That(deckModel.HelpCardStates[uid.Value].IsPermanentlyRemoved, Is.True);
+        Assert.That(
+            player.BaseAttack > attackBefore ||
+            player.BaseDefense > 1 ||
+            playerModel.Gold.Value >= 50 ||
+            playerModel.Relics.Count > 0,
+            Is.True);
     }
 
     [Test]
@@ -187,6 +244,13 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         Assert.That(definition.Quality, Is.EqualTo(quality), cardId);
         Assert.That(definition.Price, Is.EqualTo(price), cardId);
         Assert.That(definition.RestoreAfterNode, Is.False, cardId);
+    }
+
+    private static CardUid SpawnMonster(string definitionId)
+    {
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        return collectionModel.CreateCard(configModel.GetCardDefinition(definitionId)).Uid;
     }
 
     private static void StartRun(int seed)

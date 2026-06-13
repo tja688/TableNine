@@ -83,6 +83,65 @@ public sealed class ApplyEffectGoldCommand : AbstractCommand
     }
 }
 
+public sealed class ApplyBloodConvertRewardCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        var randomUtility = this.GetUtility<IRandomUtility>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var playerUid = playerModel.PlayerCardUid;
+        var causeId = DefaultGameConfigFactory.HelpBloodConvertId;
+
+        switch (randomUtility.Range(0, 4))
+        {
+            case 0:
+                this.SendCommand(new ApplyStatChangeCommand(playerUid, StatType.Attack, 1, causeId));
+                break;
+            case 1:
+                this.SendCommand(new ApplyStatChangeCommand(playerUid, StatType.Defense, 1, causeId));
+                break;
+            case 2:
+                this.SendCommand(new ApplyEffectGoldCommand(50));
+                break;
+            default:
+                GrantRandomRelic();
+                break;
+        }
+    }
+
+    private void GrantRandomRelic()
+    {
+        var configModel = this.GetModel<IConfigModel>();
+        var playerModel = this.GetModel<IPlayerModel>();
+        var relicSystem = this.GetSystem<IRelicSystem>();
+        if (playerModel.Relics.Count >= playerModel.MaxRelicCount)
+        {
+            this.SendCommand(new ApplyEffectGoldCommand(50));
+            return;
+        }
+
+        var randomUtility = this.GetUtility<IRandomUtility>();
+        var candidates = new List<string>();
+        foreach (var relic in configModel.GetAllRelicDefinitions())
+        {
+            if (relic.ExcludeFromPool || playerModel.HasRelic(relic.RelicId))
+            {
+                continue;
+            }
+
+            candidates.Add(relic.RelicId);
+        }
+
+        if (candidates.Count == 0)
+        {
+            this.SendCommand(new ApplyEffectGoldCommand(50));
+            return;
+        }
+
+        relicSystem.AddRelic(candidates[randomUtility.Range(0, candidates.Count)]);
+    }
+}
+
 public sealed class OpenAttributeChoiceOverlayCommand : AbstractCommand
 {
     public OpenAttributeChoiceOverlayCommand(CardUid helpCardUid)
