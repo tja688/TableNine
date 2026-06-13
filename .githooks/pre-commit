@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+
+# TableNine authority docs guard
+# Rule:
+# If staged changes touch Assets/Scripts/,
+# at least one authority document under Assets/Notes/QframeworkNotes/ must also be staged.
+
+changed_files="$(git diff --cached --name-only --diff-filter=ACMRD)"
+
+scripts_changed="$(printf '%s\n' "$changed_files" \
+  | grep -E '^Assets/Scripts/' \
+  | grep -Ev '\.meta$' \
+  || true)"
+
+authority_docs_changed="$(printf '%s\n' "$changed_files" \
+  | grep -E '^Assets/Notes/QframeworkNotes/(architecture|commands|systems|models|events|controllers)\.md$' \
+  || true)"
+
+if [ -n "$scripts_changed" ] && [ -z "$authority_docs_changed" ]; then
+  echo ""
+  echo "❌ TableNine 文档同步检查失败"
+  echo ""
+  echo "检测到本次提交修改了 Assets/Scripts/ 下的业务代码："
+  echo "$scripts_changed"
+  echo ""
+  echo "但没有同步修改任何分层权威文档。"
+  echo ""
+  echo "请至少同步维护以下文档之一："
+  echo "  - Assets/Notes/QframeworkNotes/architecture.md"
+  echo "  - Assets/Notes/QframeworkNotes/commands.md"
+  echo "  - Assets/Notes/QframeworkNotes/systems.md"
+  echo "  - Assets/Notes/QframeworkNotes/models.md"
+  echo "  - Assets/Notes/QframeworkNotes/events.md"
+  echo "  - Assets/Notes/QframeworkNotes/controllers.md"
+  echo ""
+  echo "如果这次代码改动确实不需要更新文档，也请在对应权威文档中记录“无结构性变更 / 无需更新”的维护痕迹。"
+  echo ""
+  exit 1
+fi
+
+exit 0
