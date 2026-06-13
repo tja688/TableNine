@@ -60,7 +60,9 @@ public sealed class EffectSystem : AbstractSystem, IEffectSystem
                 DispatchOpenTargeting(atom, context, commandSender);
                 break;
             case EffectAtomTypes.AddCardToHelpDeck:
-                commandSender.SendCommand(new PickHelpCardRewardCommand(EffectAtomParams.Get(atom, "cardId")));
+                commandSender.SendCommand(new AddHelpCardCommand(
+                    EffectAtomParams.Get(atom, "cardId"),
+                    HelpCardAddPolicy.BypassDeckCapacity));
                 break;
             case EffectAtomTypes.InjectCardToBattleDeck:
                 commandSender.SendCommand(new InjectHelpCardsToBattleDeckCommand(EffectAtomParams.Get(atom, "cardId")));

@@ -239,19 +239,19 @@ public sealed class TableNineR4EffectSystemEditModeTests
     }
 
     [Test]
-    public void Smasher_Reduces_Target_Armor_By_5()
+    public void Smasher_Reduces_Target_Armor_By_10()
     {
         StartRun(12345);
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var uid = SpawnHelpCardToItemSlot(DefaultGameConfigFactory.HelpSmasherId);
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(2));
         var targetRuntime = collectionModel.GetCard(targetUid);
-        targetRuntime.CurrentArmor = 8;
+        targetRuntime.CurrentArmor = 12;
 
         UseItemSlotHelpCard(uid);
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(2)));
 
-        Assert.That(targetRuntime.CurrentArmor, Is.EqualTo(3));
+        Assert.That(targetRuntime.CurrentArmor, Is.EqualTo(2));
     }
 
     [Test]

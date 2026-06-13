@@ -192,6 +192,25 @@ public enum HelpCardConsumeReason
     Debug
 }
 
+public enum HelpCardAddPolicy
+{
+    Normal,
+    BypassDeckCapacity
+}
+
+public enum HelpCardSystemTag
+{
+    None,
+    DirectDamage,
+    Defense,
+    Recovery,
+    Displacement,
+    Attack,
+    Economy,
+    Hp,
+    Special
+}
+
 public enum StatType
 {
     Attack,
@@ -347,6 +366,7 @@ public sealed class CardDefinition
     public bool RestoreAfterNode;
     public bool RestoreAfterNodeAuthoritative;
     public string EffectGraphId;
+    public HelpCardSystemTag SystemTag;
     public List<string> SkillIds = new List<string>();
 }
 
@@ -709,6 +729,40 @@ public sealed class RelicInstance
             HasTriggered = false,
             IsConsumed = false
         };
+    }
+}
+
+public static class HelpDeckMessages
+{
+    public const string CapacityOrSameNameBlocked = "已达卡组上限或同名卡达到上限。";
+    public const string OverflowTrimmed = "关卡结束：超出卡组上限，已移除最后加入的帮助卡。";
+}
+
+public static class HelpCardSystemTagUtility
+{
+    public static string ToDisplayName(HelpCardSystemTag tag)
+    {
+        switch (tag)
+        {
+            case HelpCardSystemTag.DirectDamage:
+                return "直伤";
+            case HelpCardSystemTag.Defense:
+                return "防御";
+            case HelpCardSystemTag.Recovery:
+                return "恢复";
+            case HelpCardSystemTag.Displacement:
+                return "位移";
+            case HelpCardSystemTag.Attack:
+                return "攻击";
+            case HelpCardSystemTag.Economy:
+                return "经济";
+            case HelpCardSystemTag.Hp:
+                return "血量";
+            case HelpCardSystemTag.Special:
+                return "特殊";
+            default:
+                return string.Empty;
+        }
     }
 }
 

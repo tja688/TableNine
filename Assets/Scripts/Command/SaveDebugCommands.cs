@@ -143,25 +143,19 @@ public sealed class DebugSpawnHelpCardCommand : AbstractCommand
 
     protected override void OnExecute()
     {
-        var configModel = this.GetModel<IConfigModel>();
-        var deckModel = this.GetModel<IDeckModel>();
-        var collectionModel = this.GetModel<ICollectionModel>();
         var rewardSystem = this.GetSystem<IRewardSystem>();
 
         if (!rewardSystem.CanAddHelpCard(CardId))
         {
-            this.SendEvent(new PopupRequestedEvent("无法添加帮助卡（容量或同名上限）。"));
+            this.SendEvent(new PopupRequestedEvent(HelpDeckMessages.CapacityOrSameNameBlocked));
             return;
         }
 
-        var definition = configModel.GetCardDefinition(CardId);
-        var runtime = collectionModel.CreateCard(definition);
-        deckModel.OwnedHelpCards.Add(runtime.Uid);
-        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        if (!rewardSystem.TryAddHelpCard(CardId))
         {
-            Uid = runtime.Uid,
-            DefinitionId = runtime.DefinitionId
-        };
+            return;
+        }
+
         this.SendEvent(new HelpCardPurchasedEvent(CardId, 0));
     }
 }

@@ -62,6 +62,10 @@ public static class EffectGraphRegistry
         Map(DefaultGameConfigFactory.HelpCrashTutorialId, "eg_help_crash_tutorial");
         Map(DefaultGameConfigFactory.HelpWatchtowerId, "eg_help_watchtower");
         Map(DefaultGameConfigFactory.HelpMultiplierTowerId, "eg_help_multiplier_tower");
+        Map(DefaultGameConfigFactory.HelpDurableShieldId, "eg_help_durable_shield");
+        Map(DefaultGameConfigFactory.HelpShieldStrikeTutorialId, "eg_help_shield_strike_tutorial");
+        Map(DefaultGameConfigFactory.HelpTeleportId, "eg_help_teleport");
+        Map(DefaultGameConfigFactory.HelpKidnapId, "eg_help_kidnap");
     }
 
     private static void Map(string cardId, string graphId)
@@ -134,7 +138,22 @@ public static class EffectGraphRegistry
             Consume());
 
         Register("eg_help_smasher",
-            TargetingReduceArmor(5, DefaultGameConfigFactory.HelpSmasherId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+            TargetingReduceArmor(10, DefaultGameConfigFactory.HelpSmasherId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+
+        Register("eg_help_durable_shield",
+            ModifyArmor(5),
+            Consume());
+
+        Register("eg_help_shield_strike_tutorial",
+            TargetingPlayerCurrentArmor(
+                DefaultGameConfigFactory.HelpShieldStrikeTutorialId,
+                DescriptionPanelTextKeys.MsgThrowingKnifeSelect));
+
+        Register("eg_help_teleport",
+            Targeting(0, DefaultGameConfigFactory.HelpTeleportId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "teleport_to_deck"));
+
+        Register("eg_help_kidnap",
+            Targeting(0, DefaultGameConfigFactory.HelpKidnapId, DescriptionPanelTextKeys.MsgThrowingKnifeSelect, "kidnap"));
 
         Register("eg_help_violence",
             Status("violence_attack"),
@@ -249,6 +268,23 @@ public static class EffectGraphRegistry
             ("damage", armorReduction.ToString()),
             ("causeId", causeId),
             ("messageKey", messageKey));
+    }
+
+    private static EffectAtomDefinition TargetingPlayerCurrentArmor(string causeId, string messageKey)
+    {
+        return Atom(EffectAtomTypes.OpenTargeting,
+            ("mode", "player_current_armor"),
+            ("damage", "0"),
+            ("causeId", causeId),
+            ("messageKey", messageKey));
+    }
+
+    private static EffectAtomDefinition ModifyArmor(int delta)
+    {
+        return Atom(EffectAtomTypes.ModifyStat,
+            ("stat", nameof(StatType.Armor)),
+            ("delta", delta.ToString()),
+            ("target", "player"));
     }
 
     private static EffectAtomDefinition Move(string mode)

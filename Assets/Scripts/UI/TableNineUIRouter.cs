@@ -264,7 +264,10 @@ public sealed class TableNineUIRouter : IController, IDisposable
     {
         if (card.CardType == CardType.Help)
         {
-            return $"帮助卡 / {card.Quality}";
+            var tagText = HelpCardSystemTagUtility.ToDisplayName(card.SystemTag);
+            return string.IsNullOrEmpty(tagText)
+                ? $"帮助卡 / {card.Quality}"
+                : $"帮助卡 / {card.Quality} / {tagText}";
         }
 
         if (card.CardType == CardType.Monster)

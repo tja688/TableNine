@@ -1362,11 +1362,64 @@ public sealed class ResolveTargetingCommand : AbstractCommand
                 return;
             }
 
-            var armorDelta = pending.TargetingDamage != 0 ? -Math.Abs(pending.TargetingDamage) : -5;
+            var armorDelta = pending.TargetingDamage != 0 ? -Math.Abs(pending.TargetingDamage) : -10;
             deckModel.PendingHelpCardAction.Clear();
             this.SendCommand(new ChangeArmorCommand(targetUid.Value, armorDelta, causeId));
             this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
             this.SendCommand(new CheckClearConditionCommand());
+            return;
+        }
+
+        if (mode == "teleport_to_deck")
+        {
+            if (targetUid.Value.Equals(playerModel.PlayerCardUid))
+            {
+                return;
+            }
+
+            deckModel.PendingHelpCardAction.Clear();
+            this.GetSystem<IDeckSystem>().ShuffleExistingCardIntoBattleDeck(targetUid.Value);
+            this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
+            this.SendCommand(new CheckClearConditionCommand());
+            return;
+        }
+
+        if (mode == "kidnap")
+        {
+            if (targetUid.Value.Equals(playerModel.PlayerCardUid) ||
+                targetRuntime.CardType != CardType.Monster ||
+                targetRuntime.MonsterLevel == MonsterLevel.Elite ||
+                targetRuntime.MonsterLevel == MonsterLevel.Boss)
+            {
+                return;
+            }
+
+            var armorGain = targetRuntime.CurrentArmor;
+            deckModel.PendingHelpCardAction.Clear();
+
+            var boardSystem = this.GetSystem<IBoardSystem>();
+            if (targetRuntime.BoardSlot.HasValue)
+            {
+                boardSystem.RemoveCardAt(targetRuntime.BoardSlot.Value, RemoveReason.Effect);
+            }
+            else
+            {
+                boardSystem.RemoveCardAt(Slot, RemoveReason.Effect);
+            }
+
+            collectionModel.RemoveCard(targetUid.Value);
+            this.SendEvent(new MonsterKilledEvent(targetUid.Value, targetRuntime.DefinitionId));
+
+            if (armorGain > 0)
+            {
+                this.SendCommand(new ChangeArmorCommand(
+                    playerModel.PlayerCardUid,
+                    armorGain,
+                    causeId));
+            }
+
+            this.SendCommand(new ConsumeHelpCardCommand(helpCardUid, HelpCardConsumeReason.Used));
+            this.SendCommand(new RequestRefillBoardCommand());
             return;
         }
 
@@ -1426,6 +1479,8 @@ public sealed class ResolveTargetingCommand : AbstractCommand
                 return playerRuntime.BaseAttack;
             case "player_current_hp":
                 return playerRuntime.CurrentHp;
+            case "player_current_armor":
+                return playerRuntime.CurrentArmor;
             default:
                 return pending.TargetingDamage > 0 ? pending.TargetingDamage : 6;
         }
@@ -1597,6 +1652,7 @@ public sealed class SettleNodeEndCommand : AbstractCommand
 
         rewardSystem.SettleUnusedHelpCards();
         rewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode();
+        rewardSystem.TrimHelpDeckOverflow();
         deckModel.ClearNodeState();
     }
 }
@@ -1711,6 +1767,34 @@ public sealed class GenerateHelpRewardCommand : AbstractCommand
     }
 }
 
+public sealed class AddHelpCardCommand : AbstractCommand
+{
+    public AddHelpCardCommand(string cardId, HelpCardAddPolicy policy = HelpCardAddPolicy.Normal, bool showBlockedPopup = true)
+    {
+        CardId = cardId;
+        Policy = policy;
+        ShowBlockedPopup = showBlockedPopup;
+    }
+
+    public string CardId { get; }
+    public HelpCardAddPolicy Policy { get; }
+    public bool ShowBlockedPopup { get; }
+
+    protected override void OnExecute()
+    {
+        var rewardSystem = this.GetSystem<IRewardSystem>();
+        if (rewardSystem.TryAddHelpCard(CardId, Policy))
+        {
+            return;
+        }
+
+        if (ShowBlockedPopup)
+        {
+            this.SendEvent(new PopupRequestedEvent(HelpDeckMessages.CapacityOrSameNameBlocked));
+        }
+    }
+}
+
 public sealed class PickHelpCardRewardCommand : AbstractCommand
 {
     public PickHelpCardRewardCommand(string cardId)
@@ -1723,26 +1807,20 @@ public sealed class PickHelpCardRewardCommand : AbstractCommand
     protected override void OnExecute()
     {
         var configModel = this.GetModel<IConfigModel>();
-        var collectionModel = this.GetModel<ICollectionModel>();
-        var deckModel = this.GetModel<IDeckModel>();
         var rewardSystem = this.GetSystem<IRewardSystem>();
-        var inputLockSystem = this.GetSystem<IInputLockSystem>();
-        var flowModel = this.GetModel<IFlowModel>();
 
         if (!rewardSystem.CanAddHelpCard(CardId))
         {
-            this.SendEvent(new PopupRequestedEvent("帮助卡组已满或同名卡达到上限。"));
+            this.SendEvent(new PopupRequestedEvent(HelpDeckMessages.CapacityOrSameNameBlocked));
+            return;
+        }
+
+        if (!rewardSystem.TryAddHelpCard(CardId))
+        {
             return;
         }
 
         var definition = configModel.GetCardDefinition(CardId);
-        var runtime = collectionModel.CreateCard(definition);
-        deckModel.OwnedHelpCards.Add(runtime.Uid);
-        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
-        {
-            Uid = runtime.Uid,
-            DefinitionId = runtime.DefinitionId
-        };
 
         this.SendEvent(new HelpRewardPickedEvent(CardId));
         this.SendEvent(new GameplayMessageEvent(DescriptionPanelTexts.Format(

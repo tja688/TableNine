@@ -74,7 +74,7 @@
 ### 7. SettleNodeEndCommand
 
 **文件**：`Command/RuntimeCommands.cs`  
-**职责**：结算节点结束——处理未用帮助卡，按 RestoreAfterNode 规则恢复快照，清除节点状态。  
+**职责**：结算节点结束——处理未用帮助卡，按 RestoreAfterNode 规则恢复快照，裁减超限卡组，清除节点状态。  
 **依赖**：`IDeckModel`, `IRewardSystem`  
 **派发子命令**：无  
 **发送事件**：无
@@ -226,6 +226,12 @@
 ---
 
 ## 四、帮助卡 / 效果 Command
+
+### 24. AddHelpCardCommand
+
+**文件**：`Command/RuntimeCommands.cs`  
+**职责**：向帮助卡组加入一张卡；`HelpCardAddPolicy.BypassDeckCapacity` 供遗物/技能效果突破容量。  
+**依赖**：`IRewardSystem`
 
 ### 25. UseHelpCardCommand
 

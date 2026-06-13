@@ -184,6 +184,8 @@
 | `GetRoomDefinition(string roomId)` | 查询房间定义 |
 | `GetCardsByType(CardType cardType)` | 按类型筛选卡牌 |
 
+**`CardDefinition` 关键字段（帮助卡）**：`SystemTag`（`HelpCardSystemTag` 枚举，体系标签：直伤/防御/恢复/位移等）、`RestoreAfterNode`、`EffectGraphId`。
+
 ---
 
 ## 7. IFlowModel / FlowModel

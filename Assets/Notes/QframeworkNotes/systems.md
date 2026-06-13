@@ -46,7 +46,7 @@
 ## 3. IBoardSystem / BoardSystem
 
 **文件**：`System/RuntimeSystems.cs`  
-**职责**：管理 3×3 棋盘布局——卡牌放置、移除、顺/逆时针旋转外环。
+**职责**：管理 3×3 棋盘布局——卡牌放置、移除、旋转（顺时针/逆时针移动外环一格）。
 
 ### 核心 API
 
@@ -57,7 +57,7 @@
 | `IReadOnlyList<BoardSlotNo> GetEmptySlots()` | 获取所有空位 |
 | `void PlaceCard(CardUid uid, BoardSlotNo slot, CardPlacementSource source)` | 放置卡牌 |
 | `CardUid? RemoveCardAt(BoardSlotNo slot, RemoveReason reason)` | 移除指定格卡牌 |
-| `void RotateClockwise(BoardMoveReason reason)` | 顺时针旋转外环 |
+| `void RotateClockwise(BoardMoveReason reason)` | 顺时针旋转外环（机制术语：**旋转**） |
 | `void RotateCounterclockwise(BoardMoveReason reason)` | 逆时针旋转外环 |
 
 ### 事件
@@ -203,7 +203,9 @@
 | `void GenerateTutorSkillCandidates()` | 生成导师技能候选（排除已拥有） |
 | `void SettleUnusedHelpCards()` | 结算未用帮助卡（+10 金币/张） |
 | `void RestoreHelpDeckSnapshotByRestoreAfterNode()` | 按快照恢复帮助卡组 |
-| `bool CanAddHelpCard(string cardId)` | 检查是否可添加帮助卡（容量+同名上限） |
+| `bool CanAddHelpCard(string cardId, HelpCardAddPolicy policy = Normal)` | 检查是否可添加帮助卡（容量+同名上限；`BypassDeckCapacity` 可突破容量） |
+| `bool TryAddHelpCard(string cardId, HelpCardAddPolicy policy = Normal)` | 创建并加入帮助卡实例 |
+| `void TrimHelpDeckOverflow()` | 节点结束时裁减超出当前层卡组上限的卡牌（移除最后加入的） |
 
 ### 事件
 
@@ -225,7 +227,7 @@
 
 | 方法 | 说明 |
 |------|------|
-| `bool AddRelic(string relicId)` | 添加遗物（容量/重复检查） |
+| `bool AddRelic(string relicId)` | 添加遗物（容量/重复检查）；金色宝箱获取时 bypass 容量注入 2 张金色宝箱卡 |
 | `bool DiscardRelic(string relicId)` | 丢弃遗物（获金币补偿） |
 | `void GenerateChestRewardCandidates(ChestTier chestTier)` | 按宝箱品质生成遗物候选 |
 | `bool HasRelic(string relicId)` | 检查是否拥有指定遗物 |

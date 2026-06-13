@@ -59,7 +59,6 @@ public static partial class DefaultGameConfigFactory
                 HelpPotionId,
                 HelpPotionId,
                 HelpCommonChestId,
-                HelpAttributeUpId,
                 HelpThrowingKnifeId,
                 HelpThrowingKnifeId,
                 HelpThrowingKnifeId
@@ -125,7 +124,7 @@ public static partial class DefaultGameConfigFactory
             CardId = HelpAttributeUpId,
             DisplayName = "属性提升卡",
             CardType = CardType.Help,
-            Quality = CardQuality.Blue,
+            Quality = CardQuality.Gold,
             Price = 100,
             RestoreAfterNode = false
         });
@@ -135,7 +134,7 @@ public static partial class DefaultGameConfigFactory
             CardId = HelpGoldCardId,
             DisplayName = "金币卡",
             CardType = CardType.Help,
-            Quality = CardQuality.White,
+            Quality = CardQuality.Blue,
             Price = 30,
             RestoreAfterNode = false
         });
@@ -323,6 +322,7 @@ public static partial class DefaultGameConfigFactory
         });
 
         CardDefinitionMigration.MarkAuthoritativeRestoreAfterNode(config.Cards);
+        HelpCardSystemTagConfig.Apply(config);
         EffectGraphRegistry.AssignToConfig(config);
         return config;
     }

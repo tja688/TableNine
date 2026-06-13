@@ -168,7 +168,7 @@ Assets/Scripts/
 | `EffectiveStats` (struct) | 有效属性：HP、护甲、攻击、防御、伤害减免、先攻 |
 | `DamageContext` | 伤害上下文：来源、目标、减免、护甲吸收、HP 伤害、ignoreArmor |
 | `CombatContext` | 战斗上下文：双方 UID、属性、先手判断、先手/反击伤害组 |
-| `CardDefinition` | 卡牌静态配置：ID、类型、品质、属性、效果图 ID、技能等 |
+| `CardDefinition` | 卡牌静态配置：ID、类型、品质、属性、体系标签（`SystemTag`）、效果图 ID、技能等 |
 | `SkillDefinition` | 技能配置：触发器、条件、效果图、先攻、MaxHp 加成 |
 | `RelicDefinition` / `RelicInstance` | 遗物配置与运行态实例 |
 | `RoomDefinition` | 房间配置：类型、奖励金币、属性加成、注入卡牌 |
@@ -235,6 +235,7 @@ ValidateCombat → BuildCombatContext → PopulateCombatStats
   → false: IsPermanentlyRemoved (永久移除)
 节点结束：RewardSystem.SettleUnusedHelpCards (未用 +10 金币)
   → RewardSystem.RestoreHelpDeckSnapshotByRestoreAfterNode
+  → RewardSystem.TrimHelpDeckOverflow（超出卡组上限时移除最后加入的卡）
 ```
 
 ---

@@ -17,6 +17,7 @@ public sealed class CardViewData
     public int DamageReduction;
     public bool HasFirstStrike;
     public string Description;
+    public string SystemTagText;
     public string SpriteId;
     public List<string> StatusIconIds = new List<string>();
     public Color Tint;
@@ -132,6 +133,7 @@ public static class CardViewDataFactory
             Type = runtime.CardType,
             Quality = definition != null ? definition.Quality : CardQuality.White,
             Description = definition != null ? definition.DisplayName : runtime.DisplayName,
+            SystemTagText = definition != null ? HelpCardSystemTagUtility.ToDisplayName(definition.SystemTag) : string.Empty,
             SpriteId = runtime.DefinitionId,
             StatusIconIds = definition != null ? new List<string>(definition.SkillIds) : new List<string>(),
             Tint = ResolveHelpColor(definition != null ? definition.Quality : CardQuality.White)

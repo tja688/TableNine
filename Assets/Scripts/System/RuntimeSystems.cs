@@ -212,6 +212,7 @@ public interface IDeckSystem : ISystem
 {
     void GenerateDemonDeck(int layer, int nodeInLayer);
     void InjectHelpCardsToBattleDeck(IReadOnlyList<string> cardIds);
+    void ShuffleExistingCardIntoBattleDeck(CardUid uid);
     void SnapshotHelpDeck();
     void UpdateNextBattlePreview();
     bool HasMonsterRemaining();
@@ -281,6 +282,40 @@ public sealed class DeckSystem : AbstractSystem, IDeckSystem
 
         UpdateNextBattlePreview();
         this.SendEvent(new BattleDeckCardsInjectedEvent(injectedIds));
+    }
+
+    public void ShuffleExistingCardIntoBattleDeck(CardUid uid)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var boardSystem = this.GetSystem<IBoardSystem>();
+        var randomUtility = this.GetUtility<IRandomUtility>();
+        if (!collectionModel.TryGetCard(uid, out var runtime))
+        {
+            return;
+        }
+
+        if (runtime.BoardSlot.HasValue)
+        {
+            boardSystem.RemoveCardAt(runtime.BoardSlot.Value, RemoveReason.Effect);
+        }
+
+        runtime.BoardSlot = null;
+        runtime.ItemSlotIndex = null;
+
+        var pile = new List<CardUid> { uid };
+        while (deckModel.BattleDrawPile.Count > 0)
+        {
+            pile.Add(deckModel.BattleDrawPile.Dequeue());
+        }
+
+        randomUtility.Shuffle(pile);
+        for (var i = 0; i < pile.Count; i++)
+        {
+            deckModel.BattleDrawPile.Enqueue(pile[i]);
+        }
+
+        UpdateNextBattlePreview();
     }
 
     private static List<string> ComposeLegacyDeck(MonsterDeckRuleDefinition rule, IRandomUtility randomUtility)
@@ -997,7 +1032,9 @@ public interface IRewardSystem : ISystem
     void GenerateTutorSkillCandidates();
     void SettleUnusedHelpCards();
     void RestoreHelpDeckSnapshotByRestoreAfterNode();
-    bool CanAddHelpCard(string cardId);
+    bool CanAddHelpCard(string cardId, HelpCardAddPolicy policy = HelpCardAddPolicy.Normal);
+    bool TryAddHelpCard(string cardId, HelpCardAddPolicy policy = HelpCardAddPolicy.Normal);
+    void TrimHelpDeckOverflow();
 }
 
 public sealed class RewardSystem : AbstractSystem, IRewardSystem
@@ -1208,7 +1245,7 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         this.SendEvent(new HelpDeckRestoredEvent(restoredCount, permanentlyRemovedUids.Count, newCards.Count));
     }
 
-    public bool CanAddHelpCard(string cardId)
+    public bool CanAddHelpCard(string cardId, HelpCardAddPolicy policy = HelpCardAddPolicy.Normal)
     {
         var deckModel = this.GetModel<IDeckModel>();
         var configModel = this.GetModel<IConfigModel>();
@@ -1216,7 +1253,7 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         var capacity = deckModel.GetHelpDeckCapacity(runModel.Layer.Value);
         var currentCount = CountActiveHelpCards(deckModel);
 
-        if (currentCount >= capacity)
+        if (policy == HelpCardAddPolicy.Normal && currentCount >= capacity)
         {
             return false;
         }
@@ -1228,6 +1265,95 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
         }
 
         return true;
+    }
+
+    public bool TryAddHelpCard(string cardId, HelpCardAddPolicy policy = HelpCardAddPolicy.Normal)
+    {
+        if (!CanAddHelpCard(cardId, policy))
+        {
+            return false;
+        }
+
+        var configModel = this.GetModel<IConfigModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var deckModel = this.GetModel<IDeckModel>();
+        var definition = configModel.GetCardDefinition(cardId);
+        var runtime = collectionModel.CreateCard(definition);
+        deckModel.OwnedHelpCards.Add(runtime.Uid);
+        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        {
+            Uid = runtime.Uid,
+            DefinitionId = runtime.DefinitionId
+        };
+        return true;
+    }
+
+    public void TrimHelpDeckOverflow()
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        var runModel = this.GetModel<IRunModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var capacity = deckModel.GetHelpDeckCapacity(runModel.Layer.Value);
+        var trimmedCount = 0;
+
+        while (CountActiveHelpCards(deckModel) > capacity)
+        {
+            CardUid? uidToRemove = null;
+            for (var i = deckModel.OwnedHelpCards.Count - 1; i >= 0; i--)
+            {
+                var uid = deckModel.OwnedHelpCards[i];
+                if (deckModel.HelpCardStates.TryGetValue(uid.Value, out var state) && !state.IsPermanentlyRemoved)
+                {
+                    uidToRemove = uid;
+                    break;
+                }
+            }
+
+            if (!uidToRemove.HasValue)
+            {
+                break;
+            }
+
+            PermanentlyRemoveOverflowHelpCard(uidToRemove.Value);
+            trimmedCount++;
+        }
+
+        if (trimmedCount > 0)
+        {
+            this.SendEvent(new GameplayMessageEvent(HelpDeckMessages.OverflowTrimmed));
+        }
+    }
+
+    private void PermanentlyRemoveOverflowHelpCard(CardUid helpCardUid)
+    {
+        var deckModel = this.GetModel<IDeckModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(helpCardUid, out var runtime))
+        {
+            return;
+        }
+
+        if (deckModel.HelpCardStates.TryGetValue(helpCardUid.Value, out var state))
+        {
+            state.IsPermanentlyRemoved = true;
+            state.IsOnBoard = false;
+            state.IsInItemSlot = false;
+        }
+
+        if (runtime.BoardSlot.HasValue)
+        {
+            this.GetSystem<IBoardSystem>().RemoveCardAt(runtime.BoardSlot.Value, RemoveReason.HelpCard);
+        }
+
+        if (runtime.ItemSlotIndex.HasValue)
+        {
+            deckModel.ItemSlots[runtime.ItemSlotIndex.Value] = null;
+            this.SendEvent(new ItemSlotChangedEvent(runtime.ItemSlotIndex.Value, null));
+        }
+
+        deckModel.OwnedHelpCards.Remove(helpCardUid);
+        deckModel.HelpCardStates.Remove(helpCardUid.Value);
+        collectionModel.RemoveCard(helpCardUid);
     }
 
     // ---- Instance helper methods (converted from static) ----
@@ -1375,6 +1501,14 @@ public sealed class RelicSystem : AbstractSystem, IRelicSystem
 
         ApplyRelicStats();
         this.SendEvent(new RelicAddedEvent(relicId));
+
+        if (relicId == DefaultGameConfigFactory.RelicGoldenChestId)
+        {
+            var rewardSystem = this.GetSystem<IRewardSystem>();
+            rewardSystem.TryAddHelpCard(DefaultGameConfigFactory.HelpGoldChestId, HelpCardAddPolicy.BypassDeckCapacity);
+            rewardSystem.TryAddHelpCard(DefaultGameConfigFactory.HelpGoldChestId, HelpCardAddPolicy.BypassDeckCapacity);
+        }
+
         return true;
     }
 
@@ -1560,19 +1694,16 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
 
         if (!rewardSystem.CanAddHelpCard(cardId))
         {
-            this.SendEvent(new PopupRequestedEvent("帮助卡组已满或同名卡达到上限。"));
+            this.SendEvent(new PopupRequestedEvent(HelpDeckMessages.CapacityOrSameNameBlocked));
             return false;
         }
 
-        // [S2 FIX] Use RewardConstants + send GoldChangedEvent
-        this.ChangeGold(playerModel, -definition.Price);
-        var runtime = collectionModel.CreateCard(definition);
-        deckModel.OwnedHelpCards.Add(runtime.Uid);
-        deckModel.HelpCardStates[runtime.Uid.Value] = new HelpCardState
+        if (!rewardSystem.TryAddHelpCard(cardId))
         {
-            Uid = runtime.Uid,
-            DefinitionId = runtime.DefinitionId
-        };
+            return false;
+        }
+
+        this.ChangeGold(playerModel, -definition.Price);
 
         // [S2 FIX] Remove purchased card from shop display
         rewardModel.RemoveShopCardId(cardId);

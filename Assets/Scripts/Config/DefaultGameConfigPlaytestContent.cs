@@ -14,6 +14,12 @@ public static partial class DefaultGameConfigFactory
     public const string HelpCrashTutorialId = "help_crash_tutorial";
     public const string HelpWatchtowerId = "help_watchtower";
     public const string HelpMultiplierTowerId = "help_multiplier_tower";
+    public const string HelpDurableShieldId = "help_durable_shield";
+    public const string HelpBearTrapId = "help_bear_trap";
+    public const string HelpTeleportId = "help_teleport";
+    public const string HelpBloodConvertId = "help_blood_convert";
+    public const string HelpShieldStrikeTutorialId = "help_shield_strike_tutorial";
+    public const string HelpKidnapId = "help_kidnap";
 
     public const string RelicIronShieldId = "relic_iron_shield";
     public const string RelicSharpSwordId = "relic_sharp_sword";
@@ -64,7 +70,13 @@ public static partial class DefaultGameConfigFactory
         HelpBlueChestId,
         HelpWatchtowerId,
         HelpMultiplierTowerId,
-        HelpGoldChestId
+        HelpGoldChestId,
+        HelpDurableShieldId,
+        HelpBearTrapId,
+        HelpTeleportId,
+        HelpBloodConvertId,
+        HelpShieldStrikeTutorialId,
+        HelpKidnapId
     };
 
     public static string GetEliteMonsterId(int layer)
@@ -244,6 +256,12 @@ public static partial class DefaultGameConfigFactory
         config.Cards.Add(HelpCard(HelpCrashTutorialId, "撞击教程", CardQuality.Blue, 80, true));
         config.Cards.Add(HelpCard(HelpWatchtowerId, "瞭望塔", CardQuality.Gold, 150, true));
         config.Cards.Add(HelpCard(HelpMultiplierTowerId, "倍增塔", CardQuality.Gold, 150, true));
+        config.Cards.Add(HelpCard(HelpDurableShieldId, "耐用盾牌", CardQuality.White, 50, true));
+        config.Cards.Add(HelpCard(HelpBearTrapId, "捕熊陷阱", CardQuality.White, 50, true));
+        config.Cards.Add(HelpCard(HelpTeleportId, "传送卡", CardQuality.White, 30, true));
+        config.Cards.Add(HelpCard(HelpBloodConvertId, "血液转换", CardQuality.White, 50, true));
+        config.Cards.Add(HelpCard(HelpShieldStrikeTutorialId, "盾击教程", CardQuality.Blue, 80, true));
+        config.Cards.Add(HelpCard(HelpKidnapId, "绑票", CardQuality.Blue, 100, true));
 
         var blessing = config.Cards.Find(c => c.CardId == HelpBlessingId);
         if (blessing != null)
