@@ -35,18 +35,8 @@ public sealed class TableNineR1DataMigrationEditModeTests
     [Test]
     public void RestoreAfterNode_Migrates_From_IsPermanentRemoveOnUse()
     {
-        var permanent = new CardDefinition
-        {
-            CardId = "help_permanent",
-            CardType = CardType.Help,
-            IsPermanentRemoveOnUse = true
-        };
-        var legacyRestore = new CardDefinition
-        {
-            CardId = "help_legacy_restore",
-            CardType = CardType.Help,
-            IsPermanentRemoveOnUse = false
-        };
+        var permanent = CardDefinitionMigration.CreateLegacyHelpCardDefinition("help_permanent", isPermanentRemoveOnUse: true);
+        var legacyRestore = CardDefinitionMigration.CreateLegacyHelpCardDefinition("help_legacy_restore", isPermanentRemoveOnUse: false);
         var newPermanent = new CardDefinition
         {
             CardId = "help_new_permanent",
@@ -96,24 +86,18 @@ public sealed class TableNineR1DataMigrationEditModeTests
         var config = DefaultGameConfigFactory.Create();
         var warnings = ConfigValidator.CollectWarnings(config);
 
-        Assert.That(warnings.Exists(w => w.Contains("IsPermanentRemoveOnUse")), Is.False,
-            "Default config should not rely on deprecated IsPermanentRemoveOnUse");
+        Assert.That(warnings.Exists(w => w.Contains("legacy IsPermanentRemoveOnUse")), Is.False,
+            "Default config should not rely on deprecated legacy IsPermanentRemoveOnUse");
     }
 
     [Test]
     public void ConfigValidator_Warns_On_Deprecated_IsPermanentRemoveOnUse()
     {
         var config = new GameConfigSet();
-        config.Cards.Add(new CardDefinition
-        {
-            CardId = "help_legacy",
-            CardType = CardType.Help,
-            IsPermanentRemoveOnUse = true,
-            RestoreAfterNode = false
-        });
+        config.Cards.Add(CardDefinitionMigration.CreateLegacyHelpCardDefinition("help_legacy", isPermanentRemoveOnUse: true));
 
         var warnings = ConfigValidator.CollectWarnings(config);
-        Assert.That(warnings.Exists(w => w.Contains("IsPermanentRemoveOnUse")), Is.True);
+        Assert.That(warnings.Exists(w => w.Contains("legacy IsPermanentRemoveOnUse")), Is.True);
     }
 
     [Test]

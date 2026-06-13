@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public enum CardType
 {
@@ -340,7 +341,9 @@ public sealed class CardDefinition
     public int BaseHp;
     public int BaseAttack;
     public int BaseDefense;
-    public bool IsPermanentRemoveOnUse;
+    [FormerlySerializedAs("IsPermanentRemoveOnUse")]
+    [SerializeField]
+    internal bool LegacyIsPermanentRemoveOnUse;
     public bool RestoreAfterNode;
     public bool RestoreAfterNodeAuthoritative;
     public string EffectGraphId;

@@ -17,7 +17,7 @@ public static class CardDefinitionMigration
             return;
         }
 
-        card.RestoreAfterNode = !card.IsPermanentRemoveOnUse;
+        card.RestoreAfterNode = !card.LegacyIsPermanentRemoveOnUse;
     }
 
     public static void MarkAuthoritativeRestoreAfterNode(IList<CardDefinition> cards)
@@ -36,5 +36,19 @@ public static class CardDefinitionMigration
         }
 
         card.RestoreAfterNodeAuthoritative = true;
+    }
+
+    /// <summary>
+    /// Builds a help card that still carries the legacy IsPermanentRemoveOnUse serialized value.
+    /// New configs should set RestoreAfterNode directly instead.
+    /// </summary>
+    public static CardDefinition CreateLegacyHelpCardDefinition(string cardId, bool isPermanentRemoveOnUse)
+    {
+        return new CardDefinition
+        {
+            CardId = cardId,
+            CardType = CardType.Help,
+            LegacyIsPermanentRemoveOnUse = isPermanentRemoveOnUse
+        };
     }
 }

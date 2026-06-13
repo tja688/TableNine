@@ -224,16 +224,16 @@ public static class ConfigValidator
                 continue;
             }
 
-            if (!card.IsPermanentRemoveOnUse)
+            if (!card.LegacyIsPermanentRemoveOnUse)
             {
                 continue;
             }
 
-            warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse is deprecated; configure RestoreAfterNode instead.");
+            warnings.Add($"Card {card.CardId}: legacy IsPermanentRemoveOnUse is deprecated; configure RestoreAfterNode instead.");
 
             if (card.RestoreAfterNode)
             {
-                warnings.Add($"Card {card.CardId}: IsPermanentRemoveOnUse conflicts with RestoreAfterNode.");
+                warnings.Add($"Card {card.CardId}: legacy IsPermanentRemoveOnUse conflicts with RestoreAfterNode.");
             }
         }
 
