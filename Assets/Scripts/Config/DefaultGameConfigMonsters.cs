@@ -125,20 +125,20 @@ public static partial class DefaultGameConfigFactory
             RestoreAfterNode = false
         });
 
-        AddMonster(config, MonsterSpade3Id, "黑桃3", MonsterLevel.Level2, Suit.Spade, 3, 9, 3, 1);
-        AddMonster(config, MonsterHeart3Id, "红桃3", MonsterLevel.Level2, Suit.Heart, 3, 12, 3, 1);
-        AddMonster(config, MonsterDiamond3Id, "方块3", MonsterLevel.Level2, Suit.Diamond, 3, 9, 1, 3);
-        AddMonster(config, MonsterClub3Id, "梅花3", MonsterLevel.Level2, Suit.Club, 3, 9, 3, 1);
+        AddMonster(config, MonsterSpade3Id, "黑桃3", MonsterLevel.Level2, Suit.Spade, 3, 6, 4, 2);
+        AddMonster(config, MonsterHeart3Id, "红桃3", MonsterLevel.Level2, Suit.Heart, 3, 9, 3, 0);
+        AddMonster(config, MonsterDiamond3Id, "方块3", MonsterLevel.Level2, Suit.Diamond, 3, 3, 0, 9);
+        AddMonster(config, MonsterClub3Id, "梅花3", MonsterLevel.Level2, Suit.Club, 3, 6, 3, 3);
 
-        AddMonster(config, MonsterSpade4Id, "黑桃4", MonsterLevel.Level3, Suit.Spade, 4, 16, 4, 2);
-        AddMonster(config, MonsterHeart4Id, "红桃4", MonsterLevel.Level3, Suit.Heart, 4, 20, 4, 2);
-        AddMonster(config, MonsterDiamond4Id, "方块4", MonsterLevel.Level3, Suit.Diamond, 4, 16, 2, 4);
-        AddMonster(config, MonsterClub4Id, "梅花4", MonsterLevel.Level3, Suit.Club, 4, 16, 4, 2);
+        AddMonster(config, MonsterSpade4Id, "黑桃4", MonsterLevel.Level3, Suit.Spade, 4, 12, 6, 2);
+        AddMonster(config, MonsterHeart4Id, "红桃4", MonsterLevel.Level3, Suit.Heart, 4, 16, 4, 0);
+        AddMonster(config, MonsterDiamond4Id, "方块4", MonsterLevel.Level3, Suit.Diamond, 4, 8, 4, 8);
+        AddMonster(config, MonsterClub4Id, "梅花4", MonsterLevel.Level3, Suit.Club, 4, 12, 4, 4);
 
-        AddMonster(config, MonsterSpade5Id, "黑桃5", MonsterLevel.Level4, Suit.Spade, 5, 25, 5, 3);
-        AddMonster(config, MonsterHeart5Id, "红桃5", MonsterLevel.Level4, Suit.Heart, 5, 30, 5, 3);
-        AddMonster(config, MonsterDiamond5Id, "方块5", MonsterLevel.Level4, Suit.Diamond, 5, 25, 3, 5);
-        AddMonster(config, MonsterClub5Id, "梅花5", MonsterLevel.Level4, Suit.Club, 5, 25, 5, 3);
+        AddMonster(config, MonsterSpade5Id, "黑桃5", MonsterLevel.Level4, Suit.Spade, 5, 20, 7, 3);
+        AddMonster(config, MonsterHeart5Id, "红桃5", MonsterLevel.Level4, Suit.Heart, 5, 30, 0, 0);
+        AddMonster(config, MonsterDiamond5Id, "方块5", MonsterLevel.Level4, Suit.Diamond, 5, 12, 5, 13);
+        AddMonster(config, MonsterClub5Id, "梅花5", MonsterLevel.Level4, Suit.Club, 5, 20, 5, 5);
 
         config.Cards.Add(new CardDefinition
         {

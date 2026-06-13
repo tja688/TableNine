@@ -68,10 +68,30 @@ public static partial class DefaultGameConfigFactory
 
         config.Skills.Add(new SkillDefinition { SkillId = SkillLightFootedId, DisplayName = "轻车熟路", Description = "每次关卡结束，进行一次白色帮助卡三选一。" });
         config.Skills.Add(new SkillDefinition { SkillId = SkillFirstStrikeId, DisplayName = "先攻", Description = "战斗时优先出手。", GrantsFirstStrike = true });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillSpadeCubId, DisplayName = "黑桃幼崽" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillHeartCubId, DisplayName = "红桃幼崽" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillDiamondCubId, DisplayName = "方块幼崽" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillClubCubId, DisplayName = "梅花幼崽" });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillSpadeCubId,
+            DisplayName = "黑桃幼崽",
+            Description = "处于格6时，本牌攻击力+2并获得先攻技能。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillHeartCubId,
+            DisplayName = "红桃幼崽",
+            Description = "移动到格8时，本牌永久获得2点血量上限和血量。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillDiamondCubId,
+            DisplayName = "方块幼崽",
+            Description = "移动到格4时，本牌永久获得2点护甲。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillClubCubId,
+            DisplayName = "梅花幼崽",
+            Description = "处于格1、格2、格3时，场上所有其他怪物攻击+2。效果不可叠加。"
+        });
 
         config.Cards.Add(new CardDefinition
         {
@@ -165,9 +185,9 @@ public static partial class DefaultGameConfigFactory
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Spade,
             Rank = 2,
-            BaseHp = 4,
-            BaseAttack = 2,
-            BaseDefense = 0,
+            BaseHp = 2,
+            BaseAttack = 3,
+            BaseDefense = 1,
             SkillIds = new List<string> { SkillSpadeCubId }
         });
         config.Cards.Add(new CardDefinition
@@ -178,7 +198,7 @@ public static partial class DefaultGameConfigFactory
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Heart,
             Rank = 2,
-            BaseHp = 6,
+            BaseHp = 4,
             BaseAttack = 2,
             BaseDefense = 0,
             SkillIds = new List<string> { SkillHeartCubId }
@@ -191,9 +211,9 @@ public static partial class DefaultGameConfigFactory
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Diamond,
             Rank = 2,
-            BaseHp = 4,
+            BaseHp = 1,
             BaseAttack = 2,
-            BaseDefense = 0,
+            BaseDefense = 3,
             SkillIds = new List<string> { SkillDiamondCubId }
         });
         config.Cards.Add(new CardDefinition
@@ -204,10 +224,10 @@ public static partial class DefaultGameConfigFactory
             MonsterLevel = MonsterLevel.Level1,
             Suit = Suit.Club,
             Rank = 2,
-            BaseHp = 4,
+            BaseHp = 2,
             BaseAttack = 2,
-            BaseDefense = 0,
-            SkillIds = new List<string> { SkillClubCubId, SkillFirstStrikeId }
+            BaseDefense = 2,
+            SkillIds = new List<string> { SkillClubCubId }
         });
 
         AddLayer1MonstersAndSkills(config);

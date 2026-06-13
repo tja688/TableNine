@@ -70,7 +70,7 @@ TableNine 是一款九宫格棋盘驱动的 2D 卡牌 Roguelike。核心循环�
 | `IBoardSystem` | `BoardSystem` | 棋盘放置/移除/旋转 | [systems.md](systems.md#3-iboardsystem--boardsystem) |
 | `IDeckSystem` | `DeckSystem` | 恶魔牌组生成/帮助卡注入/快照 | [systems.md](systems.md#4-idecksystem--decksystem) |
 | `ICombatSystem` | `CombatSystem` | 战斗上下文/先手/伤害计算 | [systems.md](systems.md#5-icombatsystem--combatsystem) |
-| `IStatSystem` | `StatSystem` | 有效属性计算/护甲填充 | [systems.md](systems.md#6-istatsystem--statsystem) |
+| `IStatSystem` | `StatSystem` | 有效属性计算、护甲填充、怪物被动技能事件链 | [systems.md](systems.md#6-istatsystem--statsystem) |
 | `IEffectSystem` | `EffectSystem` | 效果图解析引擎（13 种 Atom） | [systems.md](systems.md#11-ieffectsystem--effectsystem) |
 | `ISkillSystem` | `SkillSystem` | 技能触发/防递归/条件评估 | [systems.md](systems.md#12-iskillsystem--skillsystem) |
 | `IInputLockSystem` | `InputLockSystem` | 输入锁管理 | [systems.md](systems.md#7-iinputlocksystem--inputlocksystem) |

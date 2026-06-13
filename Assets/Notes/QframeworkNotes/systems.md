@@ -129,24 +129,44 @@
 ## 6. IStatSystem / StatSystem
 
 **文件**：`System/RuntimeSystems.cs`  
-**职责**：计算玩家和怪物的有效属性（含遗物加成、套装效果、位置技能加成），执行护甲初始化。
+**职责**：计算玩家和怪物的有效属性（含遗物加成、套装效果、位置技能加成），执行护甲初始化；并作为 Stage1 怪物被动技能的运行时入口（监听移动/放置/击杀/战斗事件，派发伤害、治疗与永久属性变更 Command）。
 
 ### 核心 API
 
 | 方法 | 说明 |
 |------|------|
 | `EffectiveStats GetEffectivePlayerStats()` | 获取玩家有效属性（含遗物/套装加成） |
-| `EffectiveStats GetEffectiveMonsterStats(CardUid monsterUid)` | 获取怪物有效属性（含位置加成） |
+| `EffectiveStats GetEffectiveMonsterStats(CardUid monsterUid)` | 获取怪物有效属性（含位置加成、光环、动态先攻） |
 | `void FillArmorFromDefenseAtNodeStart()` | 节点开始时用防御填充护甲 |
+
+### 怪物有效属性加成（位置/光环）
+
+| 技能 | 触发条件 | 效果 |
+|------|----------|------|
+| 黑桃幼崽 | 自身处于格6 | 攻击+2；获得先攻 |
+| 梅花幼崽 | 场上有梅花幼崽处于格1/2/3 | 其他怪物攻击+2（不可叠加） |
+| 防护光环 | 场上有防护光环处于格1/4/7 | 其他怪物防御+2 |
+
+### 怪物被动事件链（`OnInit` 注册）
+
+| 事件 | 处理技能 | 行为 |
+|------|----------|------|
+| `CardPlacedEvent` | 预先伏击 | 怪物被打出到格2/4/6/8 时对玩家造成 3 点伤害 |
+| `CardMovedEvent`（`IsBoardMovement`） | 红桃幼崽 / 方块幼崽 / 破防专家 / 医疗兵 | 旋转移动到格8 → 永久+2 血；格4 → 永久+2 防；格1/2/3 → 玩家护甲-2；格7/8/9 → 全体场上怪物回血 4 |
+| `MonsterKilledEvent` | 复仇 | 场上持有复仇技能的怪物攻击+2 |
+| `CombatAfterResolvedEvent` | 尖盾 / 爱之躯 | 格1/4/7 战斗后按损失护甲反弹伤害；格7/8/9 战斗后自愈 1 血 |
+
+派发 Command：`ApplyDamageCommand`、`ApplyStatChangeCommand`、`ChangeArmorCommand`、`ApplyEffectHealCommand`。
 
 ### 事件
 
 | 方向 | 事件 |
 |------|------|
-| 发送 | `ArmorChangedEvent`、`StatsDirtyEvent` |
-| 监听 | 无 |
+| 发送 | `ArmorChangedEvent`、`StatsDirtyEvent`（经 Command 间接发送） |
+| 监听 | `CardPlacedEvent`、`CardMovedEvent`、`MonsterKilledEvent`、`CombatAfterResolvedEvent` |
 
-**状态**：完整实现
+**依赖**：`ICollectionModel`、`IConfigModel`、`IBoardModel`、`IPlayerModel`  
+**状态**：完整实现（Stage1 怪物技能已接线；等级4+ 移动触发技能仍待后续阶段）
 
 ---
 

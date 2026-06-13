@@ -28,6 +28,7 @@ public static partial class DefaultGameConfigFactory
     public const string SkillArmorBreakerId = "skill_armor_breaker";
     public const string SkillLovingBodyId = "skill_loving_body";
     public const string SkillSharpShieldId = "skill_sharp_shield";
+    public const string SkillAmbushId = "skill_ambush";
     public const string SkillCallFriendsId = "skill_call_friends";
     public const string SkillRevengeId = "skill_revenge";
     public const string SkillMedicId = "skill_medic";
@@ -125,22 +126,108 @@ public static partial class DefaultGameConfigFactory
 
     private static void AddPlaytestSkills(GameConfigSet config)
     {
-        config.Skills.Add(new SkillDefinition { SkillId = SkillArmorBreakerId, DisplayName = "破防专家" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillLovingBodyId, DisplayName = "爱之躯" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillSharpShieldId, DisplayName = "尖盾" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillCallFriendsId, DisplayName = "叫人！" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillRevengeId, DisplayName = "复仇" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillMedicId, DisplayName = "医疗兵" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillProtectionAuraId, DisplayName = "防护光环" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillRelentlessPursuitId, DisplayName = "不休追击" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillSideStrikeId, DisplayName = "侧方打击" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillHeartMotherId, DisplayName = "红桃之母" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillUnbreakableId, DisplayName = "牢不可破" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillVerticalLeverId, DisplayName = "竖向拉杆" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillDuelId, DisplayName = "决斗" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillWarDanceId, DisplayName = "战舞" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillViolenceId, DisplayName = "暴力" });
-        config.Skills.Add(new SkillDefinition { SkillId = SkillSpadeRoyaltyId, DisplayName = "黑桃皇室" });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillArmorBreakerId,
+            DisplayName = "破防专家",
+            Description = "移动到格1、格2、格3时，减少玩家护甲2点。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillLovingBodyId,
+            DisplayName = "爱之躯",
+            Description = "处于格7、格8、格9时，每次与玩家战斗恢复1点血量。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillSharpShieldId,
+            DisplayName = "尖盾",
+            Description = "处于格1、格4、格7时，每次与玩家战斗对玩家造成等同于本卡损失护甲值的伤害。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillAmbushId,
+            DisplayName = "预先伏击",
+            Description = "被打出到格2、格4、格6、格8时，对玩家造成3点伤害。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillCallFriendsId,
+            DisplayName = "叫人！",
+            Description = "每移动3次，将一张等级2的怪物卡加入战斗牌组。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillRevengeId,
+            DisplayName = "复仇",
+            Description = "在九宫格战场上时，每有一张怪物卡被移除，本牌攻击力+2。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillMedicId,
+            DisplayName = "医疗兵",
+            Description = "移动到格7、格8、格9时，恢复全体怪物卡4点血量。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillProtectionAuraId,
+            DisplayName = "防护光环",
+            Description = "处于格1、格4、格7时，其他怪物卡获得2点护甲。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillRelentlessPursuitId,
+            DisplayName = "不休追击",
+            Description = "每次移动到玩家正交相邻格时，与玩家卡战斗一次。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillSideStrikeId,
+            DisplayName = "侧方打击",
+            Description = "移动到格1、格3、格7、格9时，对玩家造成3点伤害。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillHeartMotherId,
+            DisplayName = "红桃之母",
+            Description = "每累计损失满10点血量触发一次，将一张随机红桃怪物卡洗入战斗卡组。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillUnbreakableId,
+            DisplayName = "牢不可破",
+            Description = "移动到格1、格3、格7、格9时，场上随机一张怪物卡获得技能庇佑。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillVerticalLeverId,
+            DisplayName = "竖向拉杆",
+            Description = "移动到格7时格1/4/7轮换；移动到格3时格3/6/9轮换。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillDuelId,
+            DisplayName = "决斗",
+            Description = "当与玩家战斗后，直到本牌移除，所有卡牌不再移动。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillWarDanceId,
+            DisplayName = "战舞",
+            Description = "每移动1次，本牌攻击+1。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillViolenceId,
+            DisplayName = "暴力",
+            Description = "每移动4次，若处于格2、格4、格6、格8时，则与玩家卡战斗一次。"
+        });
+        config.Skills.Add(new SkillDefinition
+        {
+            SkillId = SkillSpadeRoyaltyId,
+            DisplayName = "黑桃皇室",
+            Description = "每移动4次，九宫格战场上所有黑桃卡攻击+1。"
+        });
     }
 
     private static void AddPlaytestHelpCards(GameConfigSet config)
@@ -433,7 +520,7 @@ public static partial class DefaultGameConfigFactory
         AssignSkills(config, MonsterSpade3Id, SkillArmorBreakerId);
         AssignSkills(config, MonsterHeart3Id, SkillLovingBodyId);
         AssignSkills(config, MonsterDiamond3Id, SkillSharpShieldId);
-        AssignSkills(config, MonsterClub3Id, SkillCallFriendsId);
+        AssignSkills(config, MonsterClub3Id, SkillAmbushId);
         AssignSkills(config, MonsterSpade4Id, SkillRevengeId);
         AssignSkills(config, MonsterHeart4Id, SkillMedicId);
         AssignSkills(config, MonsterDiamond4Id, SkillProtectionAuraId);

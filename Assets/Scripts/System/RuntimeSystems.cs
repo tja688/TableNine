@@ -488,8 +488,16 @@ public interface IStatSystem : ISystem
 
 public sealed class StatSystem : AbstractSystem, IStatSystem
 {
+    private static readonly int[] AmbushSlots = { 2, 4, 6, 8 };
+    private static readonly int[] LeftColumnSlots = { 1, 4, 7 };
+    private static readonly int[] TopRowSlots = { 1, 2, 3 };
+
     protected override void OnInit()
     {
+        this.RegisterEvent<CardMovedEvent>(OnMonsterSkillCardMoved);
+        this.RegisterEvent<CardPlacedEvent>(OnMonsterSkillCardPlaced);
+        this.RegisterEvent<MonsterKilledEvent>(OnMonsterSkillMonsterKilled);
+        this.RegisterEvent<CombatAfterResolvedEvent>(OnMonsterSkillCombatAfterResolved);
     }
 
     public EffectiveStats GetEffectivePlayerStats()
@@ -553,25 +561,21 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         if (monsterRuntime.BoardSlot.HasValue)
         {
             var slot = monsterRuntime.BoardSlot.Value;
-            if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillClubCubId) && slot.Value == 6)
+            if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillSpadeCubId) && slot.Value == 6)
             {
                 attack += 2;
             }
 
-            if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillDiamondCubId) && slot.Value == 4)
+            if (!monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillClubCubId) &&
+                HasClubCubAuraActive(boardModel, collectionModel))
+            {
+                attack += 2;
+            }
+
+            if (!monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillProtectionAuraId) &&
+                HasProtectionAuraActive(boardModel, collectionModel))
             {
                 defense += 2;
-            }
-
-            if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillHeartCubId) && BoardSlotUtility.IsBottomRow(slot))
-            {
-                currentHp += 2;
-                maxHp += 2;
-            }
-
-            if (!monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillSpadeCubId) && HasSpadeCubAuraActive(boardModel, collectionModel))
-            {
-                attack += 2;
             }
         }
 
@@ -589,7 +593,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             Attack = attack,
             Defense = defense,
             DamageReduction = damageReduction,
-            HasFirstStrike = HasFirstStrike(monsterRuntime, configModel)
+            HasFirstStrike = HasFirstStrike(monsterRuntime, configModel, monsterRuntime.BoardSlot)
         };
     }
 
@@ -623,7 +627,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         return hasShield && hasSword && hasArmor;
     }
 
-    private static bool HasFirstStrike(CardRuntime runtime, IConfigModel configModel)
+    private static bool HasFirstStrike(CardRuntime runtime, IConfigModel configModel, BoardSlotNo? boardSlot = null)
     {
         for (var i = 0; i < runtime.SkillIds.Count; i++)
         {
@@ -633,14 +637,21 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             }
         }
 
+        if (boardSlot.HasValue &&
+            boardSlot.Value.Value == 6 &&
+            runtime.HasSkill(DefaultGameConfigFactory.SkillSpadeCubId))
+        {
+            return true;
+        }
+
         return false;
     }
 
-    private static bool HasSpadeCubAuraActive(IBoardModel boardModel, ICollectionModel collectionModel)
+    private static bool HasClubCubAuraActive(IBoardModel boardModel, ICollectionModel collectionModel)
     {
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < TopRowSlots.Length; i++)
         {
-            var slot = BoardSlotUtility.ClockwiseRing[i];
+            var slot = new BoardSlotNo(TopRowSlots[i]);
             var uid = boardModel.GetCardAt(slot);
             if (!uid.HasValue)
             {
@@ -649,13 +660,257 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
 
             if (collectionModel.TryGetCard(uid.Value, out var runtime) &&
                 runtime.CardType == CardType.Monster &&
-                runtime.HasSkill(DefaultGameConfigFactory.SkillSpadeCubId))
+                runtime.HasSkill(DefaultGameConfigFactory.SkillClubCubId))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool HasProtectionAuraActive(IBoardModel boardModel, ICollectionModel collectionModel)
+    {
+        for (var i = 0; i < LeftColumnSlots.Length; i++)
+        {
+            var slot = new BoardSlotNo(LeftColumnSlots[i]);
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue)
+            {
+                continue;
+            }
+
+            if (collectionModel.TryGetCard(uid.Value, out var runtime) &&
+                runtime.CardType == CardType.Monster &&
+                runtime.HasSkill(DefaultGameConfigFactory.SkillProtectionAuraId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void OnMonsterSkillCardPlaced(CardPlacedEvent placed)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(placed.Uid, out var runtime) || runtime.CardType != CardType.Monster)
+        {
+            return;
+        }
+
+        if (!runtime.HasSkill(DefaultGameConfigFactory.SkillAmbushId) || !IsAmbushSlot(placed.Slot))
+        {
+            return;
+        }
+
+        var playerModel = this.GetModel<IPlayerModel>();
+        SendArchitectureCommand(new ApplyDamageCommand(
+            playerModel.PlayerCardUid,
+            3));
+    }
+
+    private void OnMonsterSkillCardMoved(CardMovedEvent moved)
+    {
+        if (!moved.IsBoardMovement)
+        {
+            return;
+        }
+
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(moved.Uid, out var runtime) || runtime.CardType != CardType.Monster)
+        {
+            return;
+        }
+
+        if (moved.PreviousSlot.HasValue && moved.PreviousSlot.Value.Value == moved.NewSlot.Value)
+        {
+            return;
+        }
+
+        var newSlot = moved.NewSlot;
+        if (runtime.HasSkill(DefaultGameConfigFactory.SkillHeartCubId) && newSlot.Value == 8)
+        {
+            SendArchitectureCommand(new ApplyStatChangeCommand(
+                moved.Uid,
+                StatType.MaxHp,
+                2,
+                "skill_heart_cub"));
+        }
+
+        if (runtime.HasSkill(DefaultGameConfigFactory.SkillDiamondCubId) && newSlot.Value == 4)
+        {
+            SendArchitectureCommand(new ApplyStatChangeCommand(
+                moved.Uid,
+                StatType.Defense,
+                2,
+                "skill_diamond_cub"));
+        }
+
+        if (runtime.HasSkill(DefaultGameConfigFactory.SkillArmorBreakerId) && IsTopRowSlot(newSlot))
+        {
+            var playerModel = this.GetModel<IPlayerModel>();
+            SendArchitectureCommand(new ChangeArmorCommand(
+                playerModel.PlayerCardUid,
+                -2,
+                "skill_armor_breaker"));
+        }
+
+        if (runtime.HasSkill(DefaultGameConfigFactory.SkillMedicId) && BoardSlotUtility.IsBottomRow(newSlot))
+        {
+            HealAllBoardMonsters(4, "skill_medic");
+        }
+    }
+
+    private void OnMonsterSkillMonsterKilled(MonsterKilledEvent killed)
+    {
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+
+        for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
+        {
+            var slot = BoardSlotUtility.ClockwiseRing[i];
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue || uid.Value.Equals(killed.MonsterUid))
+            {
+                continue;
+            }
+
+            if (!collectionModel.TryGetCard(uid.Value, out var runtime) ||
+                runtime.CardType != CardType.Monster ||
+                !runtime.HasSkill(DefaultGameConfigFactory.SkillRevengeId))
+            {
+                continue;
+            }
+
+            SendArchitectureCommand(new ApplyStatChangeCommand(
+                uid.Value,
+                StatType.Attack,
+                2,
+                "skill_revenge"));
+        }
+    }
+
+    private void OnMonsterSkillCombatAfterResolved(CombatAfterResolvedEvent resolved)
+    {
+        var collectionModel = this.GetModel<ICollectionModel>();
+        if (!collectionModel.TryGetCard(resolved.Context.MonsterUid, out var monsterRuntime) ||
+            monsterRuntime.CardType != CardType.Monster ||
+            !monsterRuntime.BoardSlot.HasValue)
+        {
+            return;
+        }
+
+        var slot = monsterRuntime.BoardSlot.Value;
+        if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillSharpShieldId) && IsLeftColumnSlot(slot))
+        {
+            var armorLost = SumArmorAbsorbed(resolved.Context, resolved.Context.MonsterUid);
+            if (armorLost > 0)
+            {
+                SendArchitectureCommand(new ApplyDamageCommand(
+                    resolved.Context.PlayerUid,
+                    armorLost));
+            }
+        }
+
+        if (monsterRuntime.HasSkill(DefaultGameConfigFactory.SkillLovingBodyId) &&
+            BoardSlotUtility.IsBottomRow(slot) &&
+            monsterRuntime.CurrentHp > 0)
+        {
+            SendArchitectureCommand(new ApplyEffectHealCommand(
+                resolved.Context.MonsterUid,
+                1,
+                false));
+        }
+    }
+
+    private void HealAllBoardMonsters(int amount, string causeId)
+    {
+        var boardModel = this.GetModel<IBoardModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+
+        for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
+        {
+            var slot = BoardSlotUtility.ClockwiseRing[i];
+            var uid = boardModel.GetCardAt(slot);
+            if (!uid.HasValue)
+            {
+                continue;
+            }
+
+            if (!collectionModel.TryGetCard(uid.Value, out var runtime) || runtime.CardType != CardType.Monster)
+            {
+                continue;
+            }
+
+            SendArchitectureCommand(new ApplyEffectHealCommand(uid.Value, amount, false));
+        }
+    }
+
+    private static int SumArmorAbsorbed(CombatContext context, CardUid monsterUid)
+    {
+        var total = 0;
+        total += SumArmorAbsorbed(context.FirstHitGroup, monsterUid);
+        total += SumArmorAbsorbed(context.CounterHitGroup, monsterUid);
+        return total;
+    }
+
+    private static int SumArmorAbsorbed(IReadOnlyList<DamageContext> group, CardUid monsterUid)
+    {
+        var total = 0;
+        for (var i = 0; i < group.Count; i++)
+        {
+            if (group[i].Target.Equals(monsterUid))
+            {
+                total += group[i].ArmorAbsorbed;
+            }
+        }
+
+        return total;
+    }
+
+    private static bool IsAmbushSlot(BoardSlotNo slot)
+    {
+        for (var i = 0; i < AmbushSlots.Length; i++)
+        {
+            if (AmbushSlots[i] == slot.Value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsLeftColumnSlot(BoardSlotNo slot)
+    {
+        for (var i = 0; i < LeftColumnSlots.Length; i++)
+        {
+            if (LeftColumnSlots[i] == slot.Value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsTopRowSlot(BoardSlotNo slot)
+    {
+        for (var i = 0; i < TopRowSlots.Length; i++)
+        {
+            if (TopRowSlots[i] == slot.Value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void SendArchitectureCommand(ICommand command)
+    {
+        ((IBelongToArchitecture)this).GetArchitecture().SendCommand(command);
     }
 
     public void FillArmorFromDefenseAtNodeStart()
