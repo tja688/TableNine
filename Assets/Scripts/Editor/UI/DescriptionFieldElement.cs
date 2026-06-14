@@ -46,7 +46,7 @@ public sealed class DescriptionFieldElement : VisualElement
         }
 
         _property.stringValue = sanitized;
-        _serializedObject.ApplyModifiedProperties();
+        TableNineConfigEditorAutoSave.PersistIfEnabled(_serializedObject, _serializedObject.targetObject);
         UpdateCounter(sanitized);
     }
 

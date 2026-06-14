@@ -77,9 +77,12 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         root.Add(_skin.BuildHeader("游戏配置总控", "Master 统一入口：路由子库编辑器，支持引用回退与全局刷新。"));
         root.Add(_skin.BuildToolbar(
             ("刷新", RefreshAllEditors, "重新加载 Master 资产并刷新所有已打开的子库配置窗口"),
-            ("保存", SaveMaster, "保存 Master 与子库引用变更"),
+            ("保存", SaveMaster, "保存 Master 与子库引用变更（自动保存关闭时必用）"),
             ("校验", TableNineGameConfigSync.ValidateMenu, "运行全局配置校验"),
             ("同步默认", SyncFromDefaults, "从代码默认同步全部子库并写回 Master 引用")));
+
+        var toolbar = root[root.childCount - 1] as Toolbar;
+        toolbar?.Insert(0, TableNineConfigEditorAutoSave.CreateToolbarToggle(_ => UpdateFooter()));
 
         var split = new TwoPaneSplitView(0, 250, TwoPaneSplitViewOrientation.Horizontal);
         split.style.flexGrow = 1;
@@ -191,6 +194,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         if (_selectedKey == "overview")
         {
             BuildOverviewPage(_contentRoot);
+            TableNineConfigEditorAutoSave.BindContentRoot(_contentRoot, _masterSo, _master);
             return;
         }
 
@@ -202,6 +206,23 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         }
 
         BuildSubConfigPage(_contentRoot, route);
+        TableNineConfigEditorAutoSave.BindContentRoot(_contentRoot, _masterSo, _master);
+    }
+
+    private void OnDisable()
+    {
+        FlushAutoSaveBeforeContextChange();
+    }
+
+    private void FlushAutoSaveBeforeContextChange()
+    {
+        if (_masterSo == null || _master == null)
+        {
+            return;
+        }
+
+        TableNineConfigEditorAutoSave.PersistIfEnabled(_masterSo, _master, immediateDisk: true);
+        TableNineConfigEditorAutoSave.FlushPending();
     }
 
     private void BuildOverviewPage(VisualElement root)
@@ -327,6 +348,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
 
     private void SelectNav(string key)
     {
+        FlushAutoSaveBeforeContextChange();
         _selectedKey = key;
         EditorPrefs.SetString(PrefsSelectionKey, _selectedKey);
         _skin.UpdateNavigationStyles(_navEntries, _selectedKey);
@@ -354,18 +376,13 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         var path = _master != null
             ? AssetDatabase.GetAssetPath(_master)
             : TableNineGameConfigSync.MasterAssetPath;
-        _sidebarFooterLabel.text = $"{CountLinkedSubConfigs()}/5 已链接 · {path}";
+        _sidebarFooterLabel.text =
+            $"{CountLinkedSubConfigs()}/5 已链接 · {TableNineConfigEditorAutoSave.GetFooterStatusLabel()} · {path}";
     }
 
     private void RefreshAllEditors()
     {
-        _masterSo?.ApplyModifiedProperties();
-        if (_master != null)
-        {
-            EditorUtility.SetDirty(_master);
-        }
-
-        AssetDatabase.SaveAssets();
+        TableNineConfigEditorAutoSave.Persist(_masterSo, _master);
         ReloadMaster(TableNineConfigEditorRefresh.RefreshAllOpenEditors());
         ShowNotification(new GUIContent("已刷新 Master 与所有已打开的子库窗口"));
     }
@@ -377,9 +394,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
             return;
         }
 
-        _masterSo.ApplyModifiedProperties();
-        EditorUtility.SetDirty(_master);
-        AssetDatabase.SaveAssets();
+        TableNineConfigEditorAutoSave.Persist(_masterSo, _master);
         RefreshAll();
     }
 
@@ -422,9 +437,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         }
 
         prop.objectReferenceValue = asset;
-        _masterSo.ApplyModifiedProperties();
-        EditorUtility.SetDirty(_master);
-        AssetDatabase.SaveAssets();
+        TableNineConfigEditorAutoSave.PersistIfEnabled(_masterSo, _master, immediateDisk: true);
         RefreshAll();
     }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -23,6 +24,7 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
     protected string SearchFilter = string.Empty;
 
     private TwoPaneSplitView _splitView;
+    private ToolbarToggle _autoSaveToggle;
 
     protected abstract WarmConsoleThemePalette ThemePalette { get; }
     protected abstract string WindowTitle { get; }
@@ -41,6 +43,8 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
 
     public void SetTarget(ScriptableObject asset)
     {
+        FlushAutoSaveBeforeContextChange();
+
         if (asset == null)
         {
             return;
@@ -71,10 +75,17 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
         });
 
         root.Add(Skin.BuildActionBar(SearchField,
-            ("保存", SaveAssets, "保存当前配置资产"),
+            ("保存", SaveAssets, "保存当前配置资产（自动保存关闭时必用）"),
             ("校验", ValidateConfig, "运行全局配置校验"),
             ("新增", AddItem, "新增当前分组条目"),
             ("删除", DeleteItem, "删除当前选中条目")));
+
+        var actionBar = root[root.childCount - 1] as Toolbar;
+        if (actionBar != null)
+        {
+            _autoSaveToggle = TableNineConfigEditorAutoSave.CreateToolbarToggle(_ => UpdateFooter());
+            actionBar.Insert(0, _autoSaveToggle);
+        }
 
         _splitView = new TwoPaneSplitView(0, 250, TwoPaneSplitViewOrientation.Horizontal);
         _splitView.style.flexGrow = 1;
@@ -167,10 +178,12 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
         }
 
         BuildDetail(ContentRoot);
+        TableNineConfigEditorAutoSave.BindContentRoot(ContentRoot, TargetSo, TargetAsset);
     }
 
     protected void SelectNav(string key)
     {
+        FlushAutoSaveBeforeContextChange();
         SelectedKey = key;
         EditorPrefs.SetString(GetSelectionPrefsKey(), SelectedKey);
         Skin.UpdateNavigationStyles(NavEntries, SelectedKey);
@@ -254,9 +267,7 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
             return;
         }
 
-        TargetSo.ApplyModifiedProperties();
-        EditorUtility.SetDirty(TargetAsset);
-        AssetDatabase.SaveAssets();
+        TableNineConfigEditorAutoSave.Persist(TargetSo, TargetAsset);
     }
 
     protected void ValidateConfig()
@@ -272,8 +283,7 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
         }
 
         OnAddItem();
-        TargetSo?.ApplyModifiedProperties();
-        EditorUtility.SetDirty(TargetAsset);
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
         RebuildNavigation();
         RefreshDetail();
     }
@@ -293,10 +303,25 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
         OnDeleteItem();
         SelectedKey = string.Empty;
         EditorPrefs.SetString(GetSelectionPrefsKey(), SelectedKey);
-        TargetSo?.ApplyModifiedProperties();
-        EditorUtility.SetDirty(TargetAsset);
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
         RebuildNavigation();
         RefreshDetail();
+    }
+
+    private void OnDisable()
+    {
+        FlushAutoSaveBeforeContextChange();
+    }
+
+    private void FlushAutoSaveBeforeContextChange()
+    {
+        if (TargetSo == null || TargetAsset == null)
+        {
+            return;
+        }
+
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
+        TableNineConfigEditorAutoSave.FlushPending();
     }
 
     private void EnsureValidSelection()
@@ -323,7 +348,8 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
     {
         if (SidebarFooterLabel != null)
         {
-            SidebarFooterLabel.text = $"{GetTotalItemCount()} 条目 · {NavEntries.Count} 可见";
+            SidebarFooterLabel.text =
+                $"{GetTotalItemCount()} 条目 · {NavEntries.Count} 可见 · {TableNineConfigEditorAutoSave.GetFooterStatusLabel()}";
         }
     }
 

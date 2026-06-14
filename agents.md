@@ -48,7 +48,34 @@ flowchart LR
 - 修改或新增功能时，优先复用项目内已有的框架、模块和资源组织方式。但是如果用户的诉求明确有破坏性、侵入性，则以在基础框架编程规范下实现用户需求为第一要务。
 - 如果执行过程中发现领域层代码缺少必要事件、ActionKit 动作、状态变更或队列触发点，AI 应回到既有架构内补齐，不得绕过架构直接在表现层硬写逻辑。
 - **游戏配置（SO）**：静态数据与效果定义已 ScriptableObject 化，由 Master 汇总 5 个子库，运行时经 `GameplayBootstrap` → `TableNine.ConfigureGameConfig()` 注入 `ConfigModel`；`EffectSystem` / `SkillSystem` / `SkillBehaviorExecutor` 均读 SO，不再依赖运行时 Factory。
+- **ScriptableObject 资产目录**：`Assets/ScriptableObjects/`（Master 在根目录；五个子库在 `GameConfig/`）
 - 测试注入：`TableNineTestConfig.EnsureProductionConfigLoaded()`（EditMode 自动 resolver）
+
+### 游戏配置编辑器
+
+| 层级 | 资产 / 入口 | 说明 |
+|------|-------------|------|
+| Master | `Assets/ScriptableObjects/TableNineGameConfig.asset` | 汇总 5 个子库 Object 引用；运行时 bundle 的唯一组装入口 |
+| 总控窗口 | 菜单 `TableNine/Game Config/Edit Master Config` | `TableNineGameConfigEditorWindow`：统一入口、侧栏路由、引用回退 |
+| 子库 | `GameConfig/TableNine{Character,Card,Skill,Relic,Effect}Config.asset` | 各 `TableNine*ConfigEditorWindow` 专项编辑列表数据 |
+| 同步 / 校验 | 菜单 `Sync From Code Defaults` / `Validate` | 实现于 `TableNineGameConfigSync` |
+
+**路由关系：**
+
+```mermaid
+flowchart LR
+    M["TableNineGameConfig\n(Master)"] --> H["TableNineGameConfigEditorWindow\n总控"]
+    H --> C["Character Config Editor"]
+    H --> D["Card Config Editor"]
+    H --> S["Skill Config Editor"]
+    H --> R["Relic Config Editor"]
+    H --> E["Effect Config Editor"]
+    M --> C
+    M --> D
+    M --> S
+    M --> R
+    M --> E
+```
 
 ## 已知坑点
 

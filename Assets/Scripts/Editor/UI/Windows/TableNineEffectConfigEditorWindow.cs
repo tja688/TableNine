@@ -180,7 +180,7 @@ public sealed class TableNineEffectConfigEditorWindow : WarmConsoleConfigEditorW
                 atoms.arraySize++;
                 var newAtom = atoms.GetArrayElementAtIndex(atoms.arraySize - 1);
                 newAtom.FindPropertyRelative("AtomType").stringValue = EffectAtomTypes.Damage;
-                TargetSo.ApplyModifiedProperties();
+                TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
                 RefreshDetail();
             }) { text = "添加效果步骤" };
             section.Add(Skin.CreateButtonRow(addAtomBtn));
