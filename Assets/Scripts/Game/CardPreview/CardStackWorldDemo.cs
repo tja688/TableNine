@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using QFramework;
+using TMPro;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -32,19 +33,36 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
     [Header("Placement")]
     [SerializeField] private Vector3 mStackLocalOffset = new Vector3(6.5f, 0.5f, 0f);
     [SerializeField] private float mDragElastic = 0.6f;
+    [SerializeField] private Transform mLinkedSlot;
+    [SerializeField] private int mLinkedBoardSlotNo = 3;
+    [SerializeField] private float mLinkedSlotSnapDistance = 1.2f;
+    [SerializeField] private bool mAutoStartRunForDebug = true;
+    [SerializeField] private bool mTriggerBoardSlotCommandOnPlace = true;
+    [SerializeField] private float mReturnToStackDuration = 0.22f;
+
+    [Header("Description")]
+    [SerializeField] private TMP_Text mDescriptionText;
+    [SerializeField] private string mDefaultHint = "拖拽顶卡到关联槽位放置；离槽拖动带倾斜效果";
 
     private readonly List<CardStackWorldCard> mStack = new List<CardStackWorldCard>();
+    private readonly List<CardStackWorldCard> mPlacedCards = new List<CardStackWorldCard>();
     private BakedCardFaceComposer mComposer;
     private Transform mStackRoot;
+    private Transform mPlacedCardsRoot;
     private Camera mCamera;
     private CardStackWorldCard mDraggingCard;
     private Vector3 mDragPointerOffset;
+    private bool mPointerOverLinkedSlot;
+    private string mDefaultDescription;
 
     public float SpringStiffness => mSpringStiffness;
     public float SpringDamping => mSpringDamping;
     public float DragElastic => mDragElastic;
     public float DragSensitivity => mSensitivity;
     public bool SendToBackOnClick => mSendToBackOnClick;
+    public float ReturnToStackDuration => mReturnToStackDuration;
+    public Transform StackRoot => mStackRoot;
+    public Transform PlacedCardsRoot => mPlacedCardsRoot;
 
     public IArchitecture GetArchitecture()
     {
@@ -71,6 +89,21 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
         mStackRoot = new GameObject("CardStackRoot").transform;
         mStackRoot.SetParent(transform, false);
         mStackRoot.localPosition = mStackLocalOffset;
+
+        mPlacedCardsRoot = new GameObject("PlacedCardsRoot").transform;
+        mPlacedCardsRoot.SetParent(transform, false);
+
+        if (mDescriptionText == null)
+        {
+            mDescriptionText = FindDescriptionText();
+        }
+
+        if (mDescriptionText != null)
+        {
+            mDescriptionText.enableWordWrapping = true;
+            mDescriptionText.overflowMode = TextOverflowModes.Overflow;
+            mDefaultDescription = mDescriptionText.text;
+        }
     }
 
     private void Start()
@@ -86,6 +119,7 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
         }
 
         mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+        ResolveLinkedSlot();
         BuildStack();
     }
 
@@ -100,7 +134,7 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
 
     private void Update()
     {
-        if (mStack.Count == 0 || mCamera == null)
+        if (mCamera == null || (mStack.Count == 0 && mPlacedCards.Count == 0))
         {
             return;
         }
@@ -124,9 +158,17 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
     private void LateUpdate()
     {
         var deltaTime = Time.deltaTime;
-        for (var i = 0; i < mStack.Count; i++)
+        TickCards(mStack, deltaTime);
+        TickCards(mPlacedCards, deltaTime);
+
+        UpdateDescriptionPanel();
+    }
+
+    private static void TickCards(List<CardStackWorldCard> cards, float deltaTime)
+    {
+        for (var i = 0; i < cards.Count; i++)
         {
-            mStack[i].Tick(deltaTime);
+            cards[i].Tick(deltaTime);
         }
     }
 
@@ -193,7 +235,7 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
             cardView.ShowBaked(sprites);
 
             var stackCard = wrapper.AddComponent<CardStackWorldCard>();
-            stackCard.Initialize(this, cardView, mRandomRotation ? Random.Range(-5f, 5f) : 0f, mBaseSortingOrder);
+            stackCard.Initialize(this, definition, cardView, mRandomRotation ? Random.Range(-5f, 5f) : 0f, mBaseSortingOrder);
             mStack.Add(stackCard);
         }
 
@@ -247,25 +289,15 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
 
     private CardStackWorldCard GetTopCard()
     {
-        return mStack.Count > 0 ? mStack[mStack.Count - 1] : null;
-    }
-
-    private void TryBeginDrag()
-    {
-        var topCard = GetTopCard();
-        if (topCard == null || !topCard.TryGetDragPlanePoint(mCamera, out var pointerWorld))
+        for (var i = mStack.Count - 1; i >= 0; i--)
         {
-            return;
+            if (!mStack[i].IsPlaced)
+            {
+                return mStack[i];
+            }
         }
 
-        if (!topCard.ContainsWorldPoint(pointerWorld))
-        {
-            return;
-        }
-
-        mDraggingCard = topCard;
-        mDragPointerOffset = topCard.DragLayer.position - pointerWorld;
-        topCard.BeginDrag();
+        return null;
     }
 
     private void UpdateDrag()
@@ -275,7 +307,8 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        mDraggingCard.SetDragTarget(pointerWorld + mDragPointerOffset);
+        mPointerOverLinkedSlot = IsOverLinkedSlot(pointerWorld);
+        mDraggingCard.SetDragTarget(pointerWorld + mDragPointerOffset, mPointerOverLinkedSlot);
     }
 
     private void EndDrag()
@@ -285,12 +318,244 @@ public sealed class CardStackWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        if (mDraggingCard.ShouldSendToBack() || mSendToBackOnClick)
+        if (mDraggingCard.TryGetDragPlanePoint(mCamera, out var pointerWorld))
+        {
+            mPointerOverLinkedSlot = IsOverLinkedSlot(pointerWorld);
+        }
+
+        if (mPointerOverLinkedSlot && mLinkedSlot != null)
+        {
+            PlaceCardOnSlot(mDraggingCard);
+        }
+        else if (mDraggingCard.IsPlaced)
+        {
+            ReturnToStackTop(mDraggingCard);
+        }
+        else if (mDraggingCard.ShouldSendToBack() || mSendToBackOnClick)
         {
             SendToBack(mDraggingCard);
         }
 
         mDraggingCard.EndDrag();
         mDraggingCard = null;
+        mPointerOverLinkedSlot = false;
+    }
+
+    private void PlaceCardOnSlot(CardStackWorldCard card)
+    {
+        if (card == null || mLinkedSlot == null)
+        {
+            return;
+        }
+
+        var wasInStack = mStack.Remove(card);
+        if (wasInStack)
+        {
+            RefreshStackLayout();
+        }
+
+        if (!mPlacedCards.Contains(card))
+        {
+            mPlacedCards.Add(card);
+        }
+
+        card.PlaceOnSlot(mLinkedSlot, mPlacedCardsRoot);
+        TriggerDebugPlacement(mLinkedBoardSlotNo, card.Definition);
+    }
+
+    private void ReturnToStackTop(CardStackWorldCard card)
+    {
+        if (card == null)
+        {
+            return;
+        }
+
+        mPlacedCards.Remove(card);
+        mStack.Add(card);
+        card.BeginReturnToStack(mStackRoot, mReturnToStackDuration);
+        RefreshStackLayout();
+    }
+
+    private void TriggerDebugPlacement(int slotNo, CardDefinition definition)
+    {
+        if (definition == null)
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"[CardStackWorldDemo] Placed '{definition.DisplayName}' ({definition.CardId}) on Main CardSlot {slotNo}.");
+
+        if (!TableNine.IsInitialized)
+        {
+            return;
+        }
+
+        if (mAutoStartRunForDebug && !this.GetModel<IRunModel>().IsRunActive.Value)
+        {
+            this.SendCommand(new StartNewRunCommand());
+        }
+
+        if (!this.GetModel<IRunModel>().IsRunActive.Value)
+        {
+            return;
+        }
+
+        var boardSlot = new BoardSlotNo(slotNo);
+        var boardModel = this.GetModel<IBoardModel>();
+        if (!boardModel.GetCardAt(boardSlot).HasValue)
+        {
+            var runtime = this.GetModel<ICollectionModel>().CreateCard(definition);
+            this.GetSystem<IBoardSystem>().PlaceCard(runtime.Uid, boardSlot, CardPlacementSource.Refill);
+        }
+
+        if (mTriggerBoardSlotCommandOnPlace)
+        {
+            this.SendCommand(new ClickBoardSlotCommand(boardSlot));
+        }
+    }
+
+    private void ResolveLinkedSlot()
+    {
+        if (mLinkedSlot != null)
+        {
+            return;
+        }
+
+        mLinkedSlot = GameObject.Find("NineGrid Main CardSlots/CardSlot3")?.transform;
+        if (mLinkedSlot == null)
+        {
+            Debug.LogWarning("[CardStackWorldDemo] Linked Slot is not assigned.");
+        }
+    }
+
+    private bool IsOverLinkedSlot(Vector3 worldPoint)
+    {
+        if (mLinkedSlot == null)
+        {
+            return false;
+        }
+
+        var renderer = mLinkedSlot.GetComponent<SpriteRenderer>();
+        if (renderer != null && renderer.bounds.Contains(worldPoint))
+        {
+            return true;
+        }
+
+        return Vector2.Distance(mLinkedSlot.position, worldPoint) <= mLinkedSlotSnapDistance;
+    }
+
+    private CardStackWorldCard GetDescriptionCard()
+    {
+        if (mDraggingCard != null)
+        {
+            return mDraggingCard;
+        }
+
+        if (mCamera == null || !TryGetPointerWorld(out var pointerWorld))
+        {
+            return null;
+        }
+
+        for (var i = mPlacedCards.Count - 1; i >= 0; i--)
+        {
+            if (mPlacedCards[i].ContainsWorldPoint(pointerWorld))
+            {
+                return mPlacedCards[i];
+            }
+        }
+
+        var topCard = GetTopCard();
+        return topCard != null && topCard.ContainsWorldPoint(pointerWorld) ? topCard : null;
+    }
+
+    private void UpdateDescriptionPanel()
+    {
+        if (mDescriptionText == null || UIGameplayPanel.IsSidePanelHovered)
+        {
+            return;
+        }
+
+        var card = GetDescriptionCard();
+        if (card != null && card.Definition != null)
+        {
+            mDescriptionText.text = CardPreviewDescriptionComposer.Compose(this.GetModel<IConfigModel>(), card.Definition);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(mDefaultHint))
+        {
+            mDescriptionText.text = DescriptionPanelTextRules.Clamp(mDefaultHint);
+        }
+        else
+        {
+            mDescriptionText.text = mDefaultDescription;
+        }
+    }
+
+    private static TMP_Text FindDescriptionText()
+    {
+        var texts = Object.FindObjectsOfType<TMP_Text>(true);
+        for (var i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null && texts[i].name == "DescriptionText")
+            {
+                return texts[i];
+            }
+        }
+
+        return null;
+    }
+
+    private void TryBeginDrag()
+    {
+        if (!TryGetPointerWorld(out var pointerWorld))
+        {
+            return;
+        }
+
+        var card = FindCardUnderPointer(pointerWorld);
+        if (card == null)
+        {
+            return;
+        }
+
+        mDraggingCard = card;
+        mDragPointerOffset = card.DragLayer.position - pointerWorld;
+        card.BeginDrag();
+    }
+
+    private CardStackWorldCard FindCardUnderPointer(Vector3 pointerWorld)
+    {
+        for (var i = mPlacedCards.Count - 1; i >= 0; i--)
+        {
+            if (mPlacedCards[i].ContainsWorldPoint(pointerWorld))
+            {
+                return mPlacedCards[i];
+            }
+        }
+
+        var topCard = GetTopCard();
+        if (topCard != null && topCard.ContainsWorldPoint(pointerWorld))
+        {
+            return topCard;
+        }
+
+        return null;
+    }
+
+    private bool TryGetPointerWorld(out Vector3 pointerWorld)
+    {
+        pointerWorld = Vector3.zero;
+        if (mCamera == null)
+        {
+            return false;
+        }
+
+        var screenPoint = Input.mousePosition;
+        screenPoint.z = Mathf.Abs(mCamera.transform.position.z);
+        pointerWorld = mCamera.ScreenToWorldPoint(screenPoint);
+        pointerWorld.z = 0f;
+        return true;
     }
 }

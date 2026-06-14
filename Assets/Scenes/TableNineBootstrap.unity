@@ -3081,7 +3081,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2027708409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3107,6 +3107,14 @@ MonoBehaviour:
   mBaseSortingOrder: 400
   mStackLocalOffset: {x: 6.5, y: 0.5, z: 0}
   mDragElastic: 0.6
+  mLinkedSlot: {fileID: 0}
+  mLinkedBoardSlotNo: 3
+  mLinkedSlotSnapDistance: 1.2
+  mAutoStartRunForDebug: 1
+  mTriggerBoardSlotCommandOnPlace: 1
+  mReturnToStackDuration: 0.22
+  mDescriptionText: {fileID: 0}
+  mDefaultHint: "\u62D6\u62FD\u9876\u5361\u5230\u5173\u8054\u69FD\u4F4D\u653E\u7F6E\uFF1B\u79BB\u69FD\u62D6\u52A8\u5E26\u503E\u659C\u6548\u679C"
 --- !u!4 &2027708410
 Transform:
   m_ObjectHideFlags: 0
@@ -3114,6 +3122,86 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2027708408}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2088808408
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2088808410}
+  - component: {fileID: 2088808409}
+  m_Layer: 0
+  m_Name: BounceCardsWorldDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2088808409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088808408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3c8a2e1b9d4f6a8c0e2d4b6a8f1c3e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mContainerLocalOffset: {x: 6.5, y: 0.5, z: 0}
+  mCardCount: 5
+  mWorldCardHeight: 3.6370294
+  mBaseSortingOrder: 420
+  mBaseRotations:
+  - 10
+  - 5
+  - -3
+  - -10
+  - 2
+  mBaseOffsetsX:
+  - -2.2
+  - -1.1
+  - 0
+  - 1.1
+  - 2.2
+  mHoverPushOffset: 1.6
+  mHoverLiftY: 0.28
+  mHoverDuration: 0.4
+  mHoverSiblingDelayStep: 0.03
+  mHoverOvershoot: 1.4
+  mEntryDelay: 0.42
+  mEntryStagger: 0.08
+  mEntryDuration: 0.7
+  mTargetSlot: {fileID: 1931230193}
+  mFallDuration: 0.55
+  mFallExtraY: 8
+  mMoveToSlotDuration: 0.5
+  mMoveToSlotDelay: 0.12
+  mCardPrefab: {fileID: 0}
+  mCardFaceTemplate: {fileID: 0}
+  mPlayerCardTemplate: {fileID: 0}
+  mDescriptionText: {fileID: 0}
+  mCamera: {fileID: 0}
+  mDefaultHint: "\u60AC\u505C\u5361\u724C\u67E5\u770B\u63CF\u8FF0\uFF1B\u70B9\u51FB\u9009\u62E9\u540E\u5176\u4F59\u5361\u724C\u6389\u843D\uFF0C\u9009\u4E2D\u5361\u79FB\u81F3
+    CardSlot1"
+--- !u!4 &2088808410
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088808408}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -3258,3 +3346,4 @@ SceneRoots:
   - {fileID: 1041881334}
   - {fileID: 874526316}
   - {fileID: 2027708410}
+  - {fileID: 2088808410}

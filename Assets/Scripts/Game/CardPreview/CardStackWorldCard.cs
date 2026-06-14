@@ -3,6 +3,7 @@ using UnityEngine;
 public sealed class CardStackWorldCard : MonoBehaviour
 {
     private CardStackWorldDemo mOwner;
+    private CardDefinition mDefinition;
     private CardView mCardView;
     private Collider2D mCollider;
     private Transform mDragLayer;
@@ -20,6 +21,8 @@ public sealed class CardStackWorldCard : MonoBehaviour
     private Vector3 mDragOffset;
     private Vector3 mDragOffsetVelocity;
     private bool mDragging;
+    private bool mReturning;
+    private float mReturnDuration;
 
     private float mStackRotZ;
     private float mStackRotVelocity;
@@ -33,17 +36,24 @@ public sealed class CardStackWorldCard : MonoBehaviour
     private float mTiltXVelocity;
     private float mTiltY;
     private float mTiltYVelocity;
+    private bool mPlaced;
 
     public Transform DragLayer => mDragLayer;
     public Vector3 DragOffset => mDragOffset;
+    public CardDefinition Definition => mDefinition;
+    public bool IsPlaced => mPlaced;
+
+    private bool UseStackMotion => !mPlaced && !mReturning;
 
     public void Initialize(
         CardStackWorldDemo owner,
+        CardDefinition definition,
         CardView cardView,
         float randomRotation,
         int baseSortingOrder)
     {
         mOwner = owner;
+        mDefinition = definition;
         mCardView = cardView;
         mRandomRotation = randomRotation;
         mBaseSortingOrder = baseSortingOrder;
@@ -67,37 +77,83 @@ public sealed class CardStackWorldCard : MonoBehaviour
     public void BeginDrag()
     {
         mDragging = true;
+        mReturning = false;
     }
 
-    public void SetDragTarget(Vector3 worldTarget)
+    public void SetDragTarget(Vector3 worldTarget, bool isOverLinkedSlot)
     {
         if (!mDragging)
         {
             return;
         }
 
-        var desiredOffset = worldTarget - transform.position;
-        var maxOffset = mDragThreshold * 0.35f;
-        if (desiredOffset.magnitude > maxOffset && maxOffset > 0f)
+        mDragOffset = worldTarget - transform.position;
+        UpdateDragTilt(isOverLinkedSlot, Time.deltaTime);
+    }
+
+    private void UpdateDragTilt(bool isOverLinkedSlot, float deltaTime)
+    {
+        if (isOverLinkedSlot)
         {
-            desiredOffset = desiredOffset.normalized * (maxOffset + (desiredOffset.magnitude - maxOffset) * mOwner.DragElastic);
+            mTiltX = SpringMath.Step(ref mTiltX, ref mTiltXVelocity, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+            mTiltY = SpringMath.Step(ref mTiltY, ref mTiltYVelocity, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+            return;
         }
 
-        mDragOffset = desiredOffset;
-        var normalizedX = Mathf.Clamp(desiredOffset.x / Mathf.Max(0.01f, mDragThreshold), -1f, 1f);
-        var normalizedY = Mathf.Clamp(desiredOffset.y / Mathf.Max(0.01f, mDragThreshold), -1f, 1f);
-        mTiltX = SpringMath.Step(ref mTiltX, ref mTiltXVelocity, -normalizedY * 60f, mOwner.SpringStiffness, mOwner.SpringDamping, Time.deltaTime);
-        mTiltY = SpringMath.Step(ref mTiltY, ref mTiltYVelocity, normalizedX * 60f, mOwner.SpringStiffness, mOwner.SpringDamping, Time.deltaTime);
+        var normalizedX = Mathf.Clamp(mDragOffset.x / Mathf.Max(0.01f, mDragThreshold), -1f, 1f);
+        var normalizedY = Mathf.Clamp(mDragOffset.y / Mathf.Max(0.01f, mDragThreshold), -1f, 1f);
+        mTiltX = SpringMath.Step(ref mTiltX, ref mTiltXVelocity, -normalizedY * 60f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+        mTiltY = SpringMath.Step(ref mTiltY, ref mTiltYVelocity, normalizedX * 60f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+    }
+
+    public void PlaceOnSlot(Transform slotTransform, Transform placedRoot)
+    {
+        mPlaced = true;
+        mDragging = false;
+        mReturning = false;
+        ResetMotionState();
+        ResetStackVisualImmediate();
+
+        transform.SetParent(placedRoot, true);
+        transform.position = slotTransform.position;
+        transform.localRotation = Quaternion.identity;
+        transform.localScale = Vector3.one;
+        mDragLayer.localPosition = Vector3.zero;
+        mDragLayer.localRotation = Quaternion.identity;
+        ApplyFlatVisualTransform();
+        ApplyPlacedSortingOrder();
+    }
+
+    public void BeginReturnToStack(Transform stackRoot, float duration)
+    {
+        mPlaced = false;
+        mDragging = false;
+        mReturning = true;
+        mReturnDuration = Mathf.Max(0.05f, duration);
+        ResetMotionState();
+        ResetStackVisualImmediate();
+
+        transform.SetParent(stackRoot, true);
+        mDragLayer.localPosition = Vector3.zero;
+        mDragLayer.localRotation = Quaternion.identity;
+        ApplyFlatVisualTransform();
     }
 
     public void EndDrag()
     {
         mDragging = false;
+        if (!UseStackMotion)
+        {
+            mDragOffset = Vector3.zero;
+            mDragOffsetVelocity = Vector3.zero;
+            mDragLayer.localPosition = Vector3.zero;
+            mDragLayer.localRotation = Quaternion.identity;
+        }
     }
 
     public bool ShouldSendToBack()
     {
-        return mDragOffset.magnitude >= mDragThreshold;
+        return UseStackMotion && mDragOffset.magnitude >= mDragThreshold;
     }
 
     public bool ContainsWorldPoint(Vector3 worldPoint)
@@ -122,11 +178,34 @@ public sealed class CardStackWorldCard : MonoBehaviour
 
     public void Tick(float deltaTime)
     {
+        if (mReturning)
+        {
+            TickReturnToStack(deltaTime);
+            return;
+        }
+
+        if (mPlaced && !mDragging)
+        {
+            return;
+        }
+
         if (mDragging)
         {
             mDragLayer.position = transform.position + mDragOffset;
+            if (UseStackMotion)
+            {
+                ApplyVisualTransform();
+            }
+            else
+            {
+                ApplyFlatVisualTransform();
+                ApplyDragTilt();
+            }
+
+            return;
         }
-        else
+
+        if (UseStackMotion)
         {
             mDragOffset.x = SpringMath.Step(ref mDragOffset.x, ref mDragOffsetVelocity.x, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
             mDragOffset.y = SpringMath.Step(ref mDragOffset.y, ref mDragOffsetVelocity.y, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
@@ -134,11 +213,65 @@ public sealed class CardStackWorldCard : MonoBehaviour
             mDragLayer.position = transform.position + mDragOffset;
             mTiltX = SpringMath.Step(ref mTiltX, ref mTiltXVelocity, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
             mTiltY = SpringMath.Step(ref mTiltY, ref mTiltYVelocity, 0f, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+            mStackRotZ = SpringMath.Step(ref mStackRotZ, ref mStackRotVelocity, mTargetStackRotZ, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+            mStackScale = SpringMath.Step(ref mStackScale, ref mStackScaleVelocity, mTargetStackScale, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
+            ApplyVisualTransform();
+        }
+    }
+
+    private void TickReturnToStack(float deltaTime)
+    {
+        var ease = 1f - Mathf.Exp(-(8f / mReturnDuration) * deltaTime);
+        transform.localPosition = Vector3.Lerp(transform.localPosition, Vector3.zero, ease);
+        mStackRotZ = Mathf.LerpAngle(mStackRotZ, mTargetStackRotZ, ease);
+        mStackScale = Mathf.Lerp(mStackScale, mTargetStackScale, ease);
+        ApplyVisualTransform();
+
+        if (transform.localPosition.sqrMagnitude <= 0.0004f)
+        {
+            transform.localPosition = Vector3.zero;
+            mReturning = false;
+            mStackRotZ = mTargetStackRotZ;
+            mStackScale = mTargetStackScale;
+            ApplyVisualTransform();
+        }
+    }
+
+    private void ResetMotionState()
+    {
+        mDragOffset = Vector3.zero;
+        mDragOffsetVelocity = Vector3.zero;
+        mTiltX = 0f;
+        mTiltXVelocity = 0f;
+        mTiltY = 0f;
+        mTiltYVelocity = 0f;
+        mStackRotVelocity = 0f;
+        mStackScaleVelocity = 0f;
+    }
+
+    private void ResetStackVisualImmediate()
+    {
+        mTargetStackRotZ = 0f;
+        mTargetStackScale = 1f;
+        mStackRotZ = 0f;
+        mStackScale = 1f;
+    }
+
+    private void ApplyFlatVisualTransform()
+    {
+        if (mVisualPivot == null)
+        {
+            return;
         }
 
-        mStackRotZ = SpringMath.Step(ref mStackRotZ, ref mStackRotVelocity, mTargetStackRotZ, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
-        mStackScale = SpringMath.Step(ref mStackScale, ref mStackScaleVelocity, mTargetStackScale, mOwner.SpringStiffness, mOwner.SpringDamping, deltaTime);
-        ApplyVisualTransform();
+        mVisualPivot.localRotation = Quaternion.identity;
+        mVisualPivot.localScale = Vector3.one;
+        mVisualPivot.localPosition = Vector3.zero;
+    }
+
+    private void ApplyDragTilt()
+    {
+        mDragLayer.localRotation = Quaternion.Euler(mTiltX, mTiltY, 0f);
     }
 
     private void ApplyVisualTransform()
@@ -155,6 +288,20 @@ public sealed class CardStackWorldCard : MonoBehaviour
         mVisualPivot.localRotation = rotation;
         mVisualPivot.localScale = Vector3.one * mStackScale;
         mVisualPivot.localPosition = scaledPivot + rotation * -scaledPivot;
+    }
+
+    private void ApplyPlacedSortingOrder()
+    {
+        var order = mBaseSortingOrder + 100;
+        if (mFaceRenderer != null)
+        {
+            mFaceRenderer.sortingOrder = order;
+        }
+
+        if (mBackRenderer != null)
+        {
+            mBackRenderer.sortingOrder = order;
+        }
     }
 
     private void ApplySortingOrder()
