@@ -34,7 +34,7 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_throwing_knife
     DisplayName: "\u98DE\u5200"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 275331fcac07e714c92bee76b519d3c2, type: 3}
     Description: "\u5BF9\u602A\u7269\u9020\u62106\u70B9\u4F24\u5BB3"
     CardType: 2
     Quality: 1
@@ -53,7 +53,7 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_common_chest
     DisplayName: "\u666E\u901A\u5B9D\u7BB1\u5361"
-    Image: {fileID: 0}
+    Image: {fileID: 6826577525287482745, guid: e5716ae7961997a468ada29a548030dc, type: 3}
     Description: "\u5F00\u542F\u666E\u901A\u5B9D\u7BB1\u5956\u52B1"
     CardType: 2
     Quality: 2
