@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TableNine.Runtime::TableNineEffectConfig
   EffectGraphs:
   - EffectGraphId: eg_help_potion
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -24,6 +25,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_throwing_knife
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -36,6 +38,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_fireball
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -48,6 +51,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_attribute_up
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenChoiceOverlayAtom
       Parameters:
@@ -56,6 +60,7 @@ MonoBehaviour:
       - Key: chestTier
         Value: Normal
   - EffectGraphId: eg_help_common_chest
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenChoiceOverlayAtom
       Parameters:
@@ -66,6 +71,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_chest_card
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenChoiceOverlayAtom
       Parameters:
@@ -76,6 +82,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_blue_chest
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenChoiceOverlayAtom
       Parameters:
@@ -86,6 +93,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_gold_chest
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenChoiceOverlayAtom
       Parameters:
@@ -96,6 +104,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_gold_card
+    Image: {fileID: 0}
     Atoms:
     - AtomType: AddGoldAtom
       Parameters:
@@ -104,6 +113,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_blessing
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ApplyStatusAtom
       Parameters:
@@ -112,6 +122,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_bandage
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -122,6 +133,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_food
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -134,10 +146,12 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_healing_spring
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_bomb
+    Image: {fileID: 0}
     Atoms:
     - AtomType: DamageAtom
       Parameters:
@@ -150,6 +164,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_spin_wheel
+    Image: {fileID: 0}
     Atoms:
     - AtomType: MoveBoardAtom
       Parameters:
@@ -158,6 +173,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_crash_tutorial
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -170,10 +186,12 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_boulder
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_smasher
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -186,6 +204,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_durable_shield
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ModifyStatAtom
       Parameters:
@@ -198,6 +217,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_shield_strike_tutorial
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -210,6 +230,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_teleport
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -222,6 +243,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_kidnap
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -234,6 +256,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_violence
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ApplyStatusAtom
       Parameters:
@@ -242,6 +265,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_swap
+    Image: {fileID: 0}
     Atoms:
     - AtomType: OpenTargetingAtom
       Parameters:
@@ -254,6 +278,7 @@ MonoBehaviour:
       - Key: messageKey
         Value: msg.throwing_knife_select
   - EffectGraphId: eg_help_watchtower
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ApplyStatusAtom
       Parameters:
@@ -262,6 +287,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_multiplier_tower
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ApplyStatusAtom
       Parameters:
@@ -270,10 +296,12 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_bear_trap
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_help_blood_convert
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ModifyStatAtom
       Parameters:
@@ -288,6 +316,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_relic_thorn_armor
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ReflectParallelDamageAtom
       Parameters:
@@ -300,6 +329,7 @@ MonoBehaviour:
       - Key: damageType
         Value: Relic
   - EffectGraphId: eg_skill_thorn_skin_reflect
+    Image: {fileID: 0}
     Atoms:
     - AtomType: ReflectParallelDamageAtom
       Parameters:
@@ -310,6 +340,7 @@ MonoBehaviour:
       - Key: damageType
         Value: Skill
   - EffectGraphId: eg_passive_healing_spring_adjacent
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -318,6 +349,7 @@ MonoBehaviour:
       - Key: target
         Value: player
   - EffectGraphId: eg_passive_healing_spring_combat
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -326,6 +358,7 @@ MonoBehaviour:
       - Key: target
         Value: player
   - EffectGraphId: eg_relic_living_flesh_heal
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
@@ -334,6 +367,7 @@ MonoBehaviour:
       - Key: target
         Value: player
   - EffectGraphId: eg_passive_boulder_kill
+    Image: {fileID: 0}
     Atoms:
     - AtomType: RemoveCardAtom
       Parameters:
@@ -344,6 +378,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_passive_bear_trap_refill
+    Image: {fileID: 0}
     Atoms:
     - AtomType: DamageAtom
       Parameters:
@@ -356,6 +391,7 @@ MonoBehaviour:
     - AtomType: ConsumeHelpCardAtom
       Parameters: []
   - EffectGraphId: eg_skill_hard_skin_node_clear_heal
+    Image: {fileID: 0}
     Atoms:
     - AtomType: HealAtom
       Parameters:
