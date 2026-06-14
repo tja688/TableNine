@@ -40,8 +40,14 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
 
     [Header("Selection")]
     [SerializeField] private Transform mTargetSlot;
-    [SerializeField] private float mFallDuration = 0.75f;
-    [SerializeField] private float mFallBelowScreenPadding = 1.2f;
+    [SerializeField] private float mFallLaunchUpward = 3.4f;
+    [SerializeField] private float mFallGravity = 24f;
+    [SerializeField] private float mFallHorizontalReach = 4.2f;
+    [SerializeField] private float mFallHorizontalReachStep = 0.9f;
+    [SerializeField] private float mFallSpinMin = 55f;
+    [SerializeField] private float mFallSpinMax = 145f;
+    [SerializeField] private float mFallStaggerStep = 0.035f;
+    [SerializeField] private float mFallBelowScreenPadding = 1.6f;
     [SerializeField] private float mMoveToSlotDuration = 0.5f;
     [SerializeField] private float mMoveToSlotDelay = 0.12f;
 
@@ -390,7 +396,7 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
             }
 
             fallCount++;
-            AnimateFallOff(i, () =>
+            AnimateFallOff(i, selectedIndex, () =>
             {
                 fallCount--;
             });
@@ -425,7 +431,7 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
             });
     }
 
-    private void AnimateFallOff(int index, System.Action onComplete)
+    private void AnimateFallOff(int index, int selectedIndex, System.Action onComplete)
     {
         var entry = mCards[index];
         if (entry.Wrapper == null)
@@ -434,19 +440,48 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        var start = entry.Wrapper.position;
-        var target = GetFallOffScreenTarget(start);
-        var fallDistance = Mathf.Max(0.1f, start.y - target.y);
-        var duration = Mathf.Max(mFallDuration, fallDistance * 0.12f);
+        var wrapper = entry.Wrapper;
+        var start = wrapper.position;
+        var awayDirection = index < selectedIndex ? -1f : 1f;
+        var distanceFromSelected = Mathf.Abs(index - selectedIndex);
+        var horizontalReach = awayDirection
+            * (mFallHorizontalReach + distanceFromSelected * mFallHorizontalReachStep);
+        var end = GetFallOffScreenTarget(start);
+        end.x = start.x + horizontalReach;
 
-        entry.Wrapper
-            .DOMove(target, duration)
-            .SetEase(Ease.InQuad)
+        var drop = Mathf.Max(0.1f, start.y - end.y);
+        var gravity = Mathf.Max(0.1f, mFallGravity);
+        var launchUp = mFallLaunchUpward;
+        var duration = (launchUp + Mathf.Sqrt(launchUp * launchUp + 2f * gravity * drop)) / gravity;
+        var velocityX = horizontalReach / duration;
+        var startRotZ = wrapper.localEulerAngles.z;
+        var spinZ = entry.BaseLocalRotationZ + awayDirection * Random.Range(mFallSpinMin, mFallSpinMax);
+        var stagger = Mathf.Max(0f, mFallStaggerStep) * distanceFromSelected;
+
+        DOTween.To(() => 0f, progress =>
+            {
+                if (wrapper == null)
+                {
+                    return;
+                }
+
+                var elapsed = progress * duration;
+                wrapper.position = new Vector3(
+                    start.x + velocityX * elapsed,
+                    start.y + launchUp * elapsed - 0.5f * gravity * elapsed * elapsed,
+                    start.z);
+                wrapper.localRotation = Quaternion.Euler(
+                    0f,
+                    0f,
+                    Mathf.LerpAngle(startRotZ, spinZ, progress));
+            }, 1f, duration)
+            .SetDelay(stagger)
+            .SetEase(Ease.Linear)
             .OnComplete(() =>
             {
-                if (entry.Wrapper != null)
+                if (wrapper != null)
                 {
-                    entry.Wrapper.gameObject.SetActive(false);
+                    wrapper.gameObject.SetActive(false);
                 }
 
                 onComplete?.Invoke();
