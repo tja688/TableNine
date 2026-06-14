@@ -209,7 +209,7 @@ MonoBehaviour:
     - AtomType: ModifyStatAtom
       Parameters:
       - Key: stat
-        Value: Armor
+        Value: CurrentArmor
       - Key: delta
         Value: 5
       - Key: target

@@ -15,10 +15,13 @@ MonoBehaviour:
   Characters:
   - CharacterId: character_imp
     DisplayName: "\u5C0F\u9B3C"
+    Image: {fileID: 0}
     Description: "\u5173\u5361\u7ED3\u675F\u767D\u5E2E\u52A9\u5361\u4E09\u9009\u4E00"
     BaseHp: 10
     BaseAttack: 3
     BaseArmor: 1
+    CommonDeckId: deck_common
+    ClassDeckId: deck_clown
     InitialSkillIds:
     - skill_light_footed
     InitialHelpCardIds:
