@@ -15,7 +15,8 @@ MonoBehaviour:
   Skills:
   - SkillId: skill_light_footed
     DisplayName: "\u8F7B\u8F66\u719F\u8DEF"
-    Description: "\u5173\u5361\u7ED3\u675F\u767D\u5E2E\u52A9\u5361\u4E09\u9009\u4E00"
+    Image: {fileID: 0}
+    Description: "\u5173\u5361\u7ED3\u675F\u65F6\uFF0C\u8FDB\u884C\u4E00\u6B21\u767D\u8272\u54C1\u8D28\u5E2E\u52A9\u5361\u4E09\u9009\u4E00"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
     Trigger: 0
@@ -24,6 +25,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_first_strike
     DisplayName: "\u5148\u653B"
+    Image: {fileID: 0}
     Description: "\u6218\u6597\u65F6\u4F18\u5148\u51FA\u624B"
     GrantsFirstStrike: 1
     HasRuntimeBinding: 0
@@ -33,6 +35,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_spade_cub
     DisplayName: "\u9ED1\u6843\u5E7C\u5D3D"
+    Image: {fileID: 0}
     Description: "\u683C6\u65F6\u653B\u51FB+2\u5E76\u83B7\u5F97\u5148\u653B"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -42,6 +45,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_heart_cub
     DisplayName: "\u7EA2\u6843\u5E7C\u5D3D"
+    Image: {fileID: 0}
     Description: "\u5230\u683C8\u6C38\u4E45+2\u751F\u547D\u4E0A\u9650"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -51,6 +55,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_diamond_cub
     DisplayName: "\u65B9\u5757\u5E7C\u5D3D"
+    Image: {fileID: 0}
     Description: "\u5230\u683C4\u6C38\u4E45+2\u62A4\u7532"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -60,6 +65,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_club_cub
     DisplayName: "\u6885\u82B1\u5E7C\u5D3D"
+    Image: {fileID: 0}
     Description: "\u683C1-3\u65F6\u5176\u4ED6\u602A\u653B\u51FB+2"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -69,6 +75,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_thorn_skin
     DisplayName: "\u523A\u76AE"
+    Image: {fileID: 0}
     Description: "\u88AB\u653B\u51FB\u65F6\u53CD\u5F39\u653B\u51FB\u8005\u653B\u51FB\u529B"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 1
@@ -78,6 +85,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_hard_skin
     DisplayName: "\u786C\u76AE"
+    Image: {fileID: 0}
     Description: "+10\u751F\u547D\u4E0A\u9650\uFF0C\u6E05\u7A7A\u5173\u5361\u56DE\u8840"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 1
@@ -87,6 +95,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 10
   - SkillId: skill_battle_hardened
     DisplayName: "\u5386\u6218"
+    Image: {fileID: 0}
     Description: "\u4E0E\u654C\u6218\u6597\u653B\u51FB+1\uFF0C\u6362\u654C\u590D\u539F"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -96,6 +105,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_armory
     DisplayName: "\u519B\u68B0\u5E93"
+    Image: {fileID: 0}
     Description: "\u5173\u5361\u7ED3\u675F\u9009\u98DE\u5200\u7206\u5F39\u7834\u51FB\u9524"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -105,6 +115,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_even_hate
     DisplayName: "\u5076\u6570\u4EC7\u6068"
+    Image: {fileID: 0}
     Description: "\u5BF9\u6218\u5076\u6570\u602A\u9020\u6210\u53CC\u500D\u4F24\u5BB3"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -114,6 +125,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_tower_child
     DisplayName: "\u5854\u4E4B\u5B50"
+    Image: {fileID: 0}
     Description: "\u5173\u5361\u5F00\u59CB\u653E\u5165\u500D\u589E\u5854"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -123,6 +135,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_armor_breaker
     DisplayName: "\u7834\u9632\u4E13\u5BB6"
+    Image: {fileID: 0}
     Description: "\u5230\u4E0A\u6392\u65F6\u51CF\u73A9\u5BB62\u62A4\u7532"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -132,6 +145,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_loving_body
     DisplayName: "\u7231\u4E4B\u8EAF"
+    Image: {fileID: 0}
     Description: "\u4E0B\u6392\u6218\u6597\u65F6\u6062\u590D1\u751F\u547D"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -141,6 +155,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_sharp_shield
     DisplayName: "\u5C16\u76FE"
+    Image: {fileID: 0}
     Description: "\u5DE6\u5217\u6218\u6597\u6309\u635F\u7532\u4F24\u4EBA"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -150,6 +165,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_ambush
     DisplayName: "\u9884\u5148\u4F0F\u51FB"
+    Image: {fileID: 0}
     Description: "\u5230\u5341\u5B57\u683C\u65F6\u5BF9\u73A9\u5BB63\u4F24"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -159,6 +175,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_call_friends
     DisplayName: "\u53EB\u4EBA\uFF01"
+    Image: {fileID: 0}
     Description: "\u6BCF\u79FB\u52A83\u6B21\u52A0\u51652\u7EA7\u602A"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -168,6 +185,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_revenge
     DisplayName: "\u590D\u4EC7"
+    Image: {fileID: 0}
     Description: "\u602A\u88AB\u79FB\u9664\u65F6\u653B\u51FB+2"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -177,6 +195,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_medic
     DisplayName: "\u533B\u7597\u5175"
+    Image: {fileID: 0}
     Description: "\u5230\u4E0B\u6392\u65F6\u5168\u4F53\u602A\u56DE4\u8840"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -186,6 +205,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_protection_aura
     DisplayName: "\u9632\u62A4\u5149\u73AF"
+    Image: {fileID: 0}
     Description: "\u5DE6\u5217\u65F6\u5176\u4ED6\u602A+2\u62A4\u7532"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -195,6 +215,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_relentless_pursuit
     DisplayName: "\u4E0D\u4F11\u8FFD\u51FB"
+    Image: {fileID: 0}
     Description: "\u90BB\u63A5\u73A9\u5BB6\u65F6\u89E6\u53D1\u6218\u6597"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -204,6 +225,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_side_strike
     DisplayName: "\u4FA7\u65B9\u6253\u51FB"
+    Image: {fileID: 0}
     Description: "\u5230\u89D2\u683C\u65F6\u5BF9\u73A9\u5BB63\u4F24"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -213,6 +235,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_heart_mother
     DisplayName: "\u7EA2\u6843\u4E4B\u6BCD"
+    Image: {fileID: 0}
     Description: "\u635F\u6EE110\u8840\u6D17\u5165\u7EA2\u6843\u602A"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -222,6 +245,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_unbreakable
     DisplayName: "\u7262\u4E0D\u53EF\u7834"
+    Image: {fileID: 0}
     Description: "\u5230\u89D2\u683C\u65F6\u968F\u673A\u602A\u83B7\u5E87\u4F51"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -231,6 +255,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_vertical_lever
     DisplayName: "\u7AD6\u5411\u62C9\u6746"
+    Image: {fileID: 0}
     Description: "\u5230\u683C7\u62163\u65F6\u5217\u8F6E\u6362"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -240,6 +265,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_duel
     DisplayName: "\u51B3\u6597"
+    Image: {fileID: 0}
     Description: "\u6218\u6597\u540E\u5168\u573A\u505C\u6B62\u79FB\u52A8"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -249,6 +275,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_war_dance
     DisplayName: "\u6218\u821E"
+    Image: {fileID: 0}
     Description: "\u6BCF\u79FB\u52A81\u6B21\u653B\u51FB+1"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -258,6 +285,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_violence
     DisplayName: "\u66B4\u529B"
+    Image: {fileID: 0}
     Description: "\u6BCF4\u79FB\u5728\u5341\u5B57\u683C\u89E6\u53D1\u6218\u6597"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
@@ -267,6 +295,7 @@ MonoBehaviour:
     MaxHpOnAcquire: 0
   - SkillId: skill_spade_royalty
     DisplayName: "\u9ED1\u6843\u7687\u5BA4"
+    Image: {fileID: 0}
     Description: "\u6BCF4\u79FB\u5168\u4F53\u9ED1\u6843\u653B\u51FB+1"
     GrantsFirstStrike: 0
     HasRuntimeBinding: 0
