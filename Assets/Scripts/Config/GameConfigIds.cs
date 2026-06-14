@@ -2,6 +2,12 @@ public static class GameConfigIds
 {
     public const string CharacterImpId = "character_imp";
 
+    public const string DeckCommonId = "deck_common";
+    public const string DeckClownId = "deck_clown";
+    public const string DeckWeakEliteId = "deck_weak_elite";
+    public const string DeckStrongEliteId = "deck_strong_elite";
+    public const string DeckBossId = "deck_boss";
+
     public const string SkillLightFootedId = "skill_light_footed";
     public const string SkillFirstStrikeId = "skill_first_strike";
     public const string SkillSpadeCubId = "skill_spade_cub";

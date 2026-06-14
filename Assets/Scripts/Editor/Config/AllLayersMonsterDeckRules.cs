@@ -100,6 +100,7 @@ public static class AllLayersMonsterDeckRules
         {
             Layer = layer,
             NodeInLayer = nodeInLayer,
+            SourceDeckId = ResolveSourceDeckId(nodeInLayer),
             TotalCardCount = 9 + nodeInLayer
         };
 
@@ -115,6 +116,21 @@ public static class AllLayersMonsterDeckRules
 
         BuildAllowedMonsterPool(rule);
         config.MonsterDeckRules.Add(rule);
+    }
+
+    private static string ResolveSourceDeckId(int nodeInLayer)
+    {
+        if (nodeInLayer <= 3)
+        {
+            return GameConfigIds.DeckWeakEliteId;
+        }
+
+        if (nodeInLayer <= 6)
+        {
+            return GameConfigIds.DeckStrongEliteId;
+        }
+
+        return GameConfigIds.DeckBossId;
     }
 
     private static void AppendQuota(MonsterDeckRuleDefinition rule, MonsterLevelQuotaDefinition quota)

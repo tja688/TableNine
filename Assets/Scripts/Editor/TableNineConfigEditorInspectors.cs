@@ -23,7 +23,7 @@ public sealed class TableNineCardConfigInspector : TableNineConfigEditorInspecto
     protected override int GetItemCount(ScriptableObject target)
     {
         var config = (TableNineCardConfig)target;
-        return (config.Cards?.Count ?? 0) + (config.MonsterDeckRules?.Count ?? 0);
+        return (config.CardDecks?.Count ?? 0) + (config.Cards?.Count ?? 0) + (config.MonsterDeckRules?.Count ?? 0);
     }
 }
 

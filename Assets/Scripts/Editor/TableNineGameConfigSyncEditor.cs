@@ -46,6 +46,7 @@ public static class TableNineGameConfigSync
         var master = LoadOrCreateMaster();
 
         characterConfig.Characters = CloneList(config.Characters);
+        cardConfig.CardDecks = CloneList(config.CardDecks);
         cardConfig.Cards = CloneList(config.Cards);
         cardConfig.MonsterDeckRules = CloneList(config.MonsterDeckRules);
         skillConfig.Skills = CloneList(config.Skills);

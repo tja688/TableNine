@@ -444,17 +444,24 @@ public interface IConfigModel : IModel
     bool IsLoaded { get; }
     IReadOnlyList<string> ValidationErrors { get; }
     CardDefinition GetCardDefinition(string cardId);
+    CardDeckDefinition GetCardDeckDefinition(string deckId);
     CharacterDefinition GetCharacterDefinition(string characterId);
     SkillDefinition GetSkillDefinition(string skillId);
     IReadOnlyList<SkillDefinition> GetAllSkillDefinitions();
     MonsterDeckRuleDefinition GetMonsterDeckRule(int layer, int nodeInLayer);
     IReadOnlyList<CardDefinition> GetAllHelpCardDefinitions();
+    IReadOnlyList<CardDefinition> GetPlayableHelpCardDefinitions(string characterId);
     IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality);
     bool TryGetCardDefinition(string cardId, out CardDefinition definition);
+    bool TryGetCardDeckDefinition(string deckId, out CardDeckDefinition definition);
     RelicDefinition GetRelicDefinition(string relicId);
     IReadOnlyList<RelicDefinition> GetAllRelicDefinitions();
     RoomDefinition GetRoomDefinition(string roomId);
     IReadOnlyList<CardDefinition> GetCardsByType(CardType cardType);
+    IReadOnlyList<CardDefinition> GetCardsByDeck(string deckId);
+    Sprite GetCardMainImage(string cardId);
+    Sprite GetEffectiveCardFaceImage(string cardId);
+    Sprite GetEffectiveCardBackImage(string cardId);
     bool TryGetEffectGraph(string effectGraphId, out EffectGraphDefinition graph);
     IReadOnlyList<SkillEffectBinding> GetSkillBindings(SkillTrigger trigger);
     IReadOnlyList<SkillBehaviorRule> GetSkillBehaviorRules(SkillTrigger trigger);
@@ -464,6 +471,7 @@ public interface IConfigModel : IModel
 public sealed class ConfigModel : AbstractModel, IConfigModel
 {
     private readonly Dictionary<string, CardDefinition> mCardsById = new Dictionary<string, CardDefinition>();
+    private readonly Dictionary<string, CardDeckDefinition> mCardDecksById = new Dictionary<string, CardDeckDefinition>();
     private readonly Dictionary<string, CharacterDefinition> mCharactersById = new Dictionary<string, CharacterDefinition>();
     private readonly Dictionary<string, SkillDefinition> mSkillsById = new Dictionary<string, SkillDefinition>();
     private readonly Dictionary<string, MonsterDeckRuleDefinition> mMonsterRulesByKey = new Dictionary<string, MonsterDeckRuleDefinition>();
@@ -505,6 +513,7 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         }
 
         mCardsById.Clear();
+        mCardDecksById.Clear();
         mCharactersById.Clear();
         mSkillsById.Clear();
         mMonsterRulesByKey.Clear();
@@ -515,6 +524,15 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         mSkillBehaviorRules.Clear();
 
         var config = bundle.Core;
+        for (var i = 0; i < config.CardDecks.Count; i++)
+        {
+            var deck = config.CardDecks[i];
+            if (deck != null && !string.IsNullOrEmpty(deck.DeckId))
+            {
+                mCardDecksById[deck.DeckId] = deck;
+            }
+        }
+
         for (var i = 0; i < config.Cards.Count; i++)
         {
             mCardsById[config.Cards[i].CardId] = config.Cards[i];
@@ -575,6 +593,11 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         return mCardsById[cardId];
     }
 
+    public CardDeckDefinition GetCardDeckDefinition(string deckId)
+    {
+        return mCardDecksById[deckId];
+    }
+
     public CharacterDefinition GetCharacterDefinition(string characterId)
     {
         return mCharactersById[characterId];
@@ -615,6 +638,30 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         return result;
     }
 
+    public IReadOnlyList<CardDefinition> GetPlayableHelpCardDefinitions(string characterId)
+    {
+        if (string.IsNullOrEmpty(characterId) || !mCharactersById.TryGetValue(characterId, out var character))
+        {
+            return GetAllHelpCardDefinitions();
+        }
+
+        var result = new List<CardDefinition>();
+        foreach (var card in mCardsById.Values)
+        {
+            if (card.CardType != CardType.Help)
+            {
+                continue;
+            }
+
+            if (card.DeckId == character.CommonDeckId || card.DeckId == character.ClassDeckId)
+            {
+                result.Add(card);
+            }
+        }
+
+        return result.Count > 0 ? result : GetAllHelpCardDefinitions();
+    }
+
     public IReadOnlyList<CardDefinition> GetHelpCardsByQuality(CardQuality quality)
     {
         var result = new List<CardDefinition>();
@@ -632,6 +679,11 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
     public bool TryGetCardDefinition(string cardId, out CardDefinition definition)
     {
         return mCardsById.TryGetValue(cardId, out definition);
+    }
+
+    public bool TryGetCardDeckDefinition(string deckId, out CardDeckDefinition definition)
+    {
+        return mCardDecksById.TryGetValue(deckId, out definition);
     }
 
     public RelicDefinition GetRelicDefinition(string relicId)
@@ -667,6 +719,60 @@ public sealed class ConfigModel : AbstractModel, IConfigModel
         }
 
         return result;
+    }
+
+    public IReadOnlyList<CardDefinition> GetCardsByDeck(string deckId)
+    {
+        var result = new List<CardDefinition>();
+        if (string.IsNullOrEmpty(deckId))
+        {
+            return result;
+        }
+
+        foreach (var card in mCardsById.Values)
+        {
+            if (card.DeckId == deckId)
+            {
+                result.Add(card);
+            }
+        }
+
+        return result;
+    }
+
+    public Sprite GetCardMainImage(string cardId)
+    {
+        return TryGetCardDefinition(cardId, out var card) ? card.Image : null;
+    }
+
+    public Sprite GetEffectiveCardFaceImage(string cardId)
+    {
+        if (!TryGetCardDefinition(cardId, out var card))
+        {
+            return null;
+        }
+
+        if (card.FaceImageOverride != null)
+        {
+            return card.FaceImageOverride;
+        }
+
+        return TryGetCardDeckDefinition(card.DeckId, out var deck) ? deck.DefaultFaceImage : null;
+    }
+
+    public Sprite GetEffectiveCardBackImage(string cardId)
+    {
+        if (!TryGetCardDefinition(cardId, out var card))
+        {
+            return null;
+        }
+
+        if (card.BackImageOverride != null)
+        {
+            return card.BackImageOverride;
+        }
+
+        return TryGetCardDeckDefinition(card.DeckId, out var deck) ? deck.DefaultBackImage : null;
     }
 
     public bool TryGetEffectGraph(string effectGraphId, out EffectGraphDefinition graph)

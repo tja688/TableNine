@@ -37,10 +37,11 @@ description: 按用户指定的任务规格文档推进 TableNine 开发落地�
 |------|------|--------|
 | 1 | [AGENTS.md](../../../AGENTS.md) | 项目背景、QFramework 入口、协作约定 |
 | 2 | [rules.md](../../../rules.md) | 架构四层规范、文件保护规则 |
-| 3 | [Assets/Notes/QframeworkNotes/architecture.md](../../../Assets/Notes/QframeworkNotes/architecture.md) | 注册表、分层、核心流程导航 |
-| 4 | `spec_doc` | `spec_scope` 范围内的目标、任务、产出、验收 |
-| 5 | 规格引用的文档 | 如 [ArchitectureDesign.md](../../../Assets/Notes/ArchitectureDesign.md)、`Assets/Docs/` 中被引用的章节 |
-| 6 | 同 slug 或前序汇报（若存在） | `Assets/Notes/{report_slug}落地汇报.md` 或归档目录中的同名文件 |
+| 3 | `Assets/Scripts/TableNine.cs` + codegraph | 注册表、分层入口、核心流程导航 |
+| 4 | [QFramework_Docs_用户手册.md](../../../Assets/Notes/QframeworkNotes/QFramework_Docs_用户手册.md) | QFramework 分层与用法（按目录查找） |
+| 5 | `spec_doc` | `spec_scope` 范围内的目标、任务、产出、验收 |
+| 6 | 规格引用的文档 | 如 [ArchitectureDesign.md](../../../Assets/Notes/过程性汇报文档归档/ArchitectureDesign.md)、`Assets/Docs/` 中被引用的章节 |
+| 7 | 同 slug 或前序汇报（若存在） | `Assets/Notes/{report_slug}落地汇报.md` 或归档目录中的同名文件 |
 
 **Plan.md 快捷对照**（仅当 `spec_doc` 为 Plan 且范围为 R{N} 时）：
 
@@ -78,7 +79,7 @@ description: 按用户指定的任务规格文档推进 TableNine 开发落地�
 1. **最小正确 diff**：只改本任务范围；复用现有 Model/Command/System 组织。
 2. **QFramework 约束**：`AbstractCommand` / `AbstractSystem` / `IController` 内访问架构能力必须用 `this.` 扩展方法（见 AGENTS.md）。
 3. **测试同步**：按规格要求新增或更新 EditMode 测试；旧语义测试改期望或标 `LegacyRuleTests`，勿新增依赖旧语义的测试。
-4. **分层文档**：改动 Command/System/Model/Event/Controller 后同步维护 `Assets/Notes/QframeworkNotes/` 对应分层文档。
+4. **架构影响**：改动 Command/System/Model/Event/Controller 后，用 codegraph 确认注册表与调用链影响。
 5. **规格文档**：本技能默认不改 `spec_doc`；实现假设写入汇报「待确认项」。
 
 ## 阶段 3：验证（Unity MCP + 测试）

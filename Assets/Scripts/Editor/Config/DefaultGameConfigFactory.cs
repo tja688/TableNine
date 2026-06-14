@@ -45,6 +45,8 @@ public static partial class DefaultGameConfigFactory
     {
         var config = new GameConfigSet();
 
+        AddDefaultCardDecks(config);
+
         config.Characters.Add(new CharacterDefinition
         {
             CharacterId = CharacterImpId,
@@ -53,6 +55,8 @@ public static partial class DefaultGameConfigFactory
             BaseHp = 10,
             BaseAttack = 3,
             BaseArmor = 1,
+            CommonDeckId = GameConfigIds.DeckCommonId,
+            ClassDeckId = GameConfigIds.DeckClownId,
             InitialSkillIds = new List<string> { SkillLightFootedId },
             InitialHelpCardIds = new List<string>
             {
@@ -344,9 +348,97 @@ public static partial class DefaultGameConfigFactory
             RoomType = RoomType.Shop
         });
 
+        AssignDefaultCardDecks(config);
         CardDefinitionMigration.MarkAuthoritativeRestoreAfterNode(config.Cards);
         HelpCardSystemTagConfig.Apply(config);
         EffectGraphRegistry.AssignToConfig(config);
         return config;
+    }
+
+    private static void AddDefaultCardDecks(GameConfigSet config)
+    {
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckCommonId,
+            DisplayName = "通用牌组",
+            Description = "所有职业共享的帮助卡与导师卡",
+            Faction = CardDeckFaction.Player,
+            DeckKind = CardDeckKind.Common
+        });
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckClownId,
+            DisplayName = "小丑牌组",
+            Description = "小丑职业专属帮助卡",
+            Faction = CardDeckFaction.Player,
+            DeckKind = CardDeckKind.Class
+        });
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckWeakEliteId,
+            DisplayName = "弱精英牌组",
+            Description = "每层一至三节点使用的怪物牌组",
+            Faction = CardDeckFaction.Monster,
+            DeckKind = CardDeckKind.WeakElite
+        });
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckStrongEliteId,
+            DisplayName = "强精英牌组",
+            Description = "每层四至六节点使用的怪物牌组",
+            Faction = CardDeckFaction.Monster,
+            DeckKind = CardDeckKind.StrongElite
+        });
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckBossId,
+            DisplayName = "层主牌组",
+            Description = "每层七至九节点使用的怪物牌组",
+            Faction = CardDeckFaction.Monster,
+            DeckKind = CardDeckKind.Boss
+        });
+    }
+
+    private static void AssignDefaultCardDecks(GameConfigSet config)
+    {
+        for (var i = 0; i < config.Cards.Count; i++)
+        {
+            var card = config.Cards[i];
+            if (card == null || !string.IsNullOrWhiteSpace(card.DeckId))
+            {
+                continue;
+            }
+
+            if (card.CardId == HelpThrowingKnifeId)
+            {
+                card.DeckId = GameConfigIds.DeckClownId;
+            }
+            else if (card.CardType == CardType.Help || card.CardType == CardType.Tutor)
+            {
+                card.DeckId = GameConfigIds.DeckCommonId;
+            }
+            else if (card.CardType == CardType.Monster)
+            {
+                card.DeckId = GetDefaultMonsterDeckId(card.MonsterLevel);
+            }
+        }
+    }
+
+    private static string GetDefaultMonsterDeckId(MonsterLevel level)
+    {
+        switch (level)
+        {
+            case MonsterLevel.Level1:
+            case MonsterLevel.Level2:
+            case MonsterLevel.Level3:
+                return GameConfigIds.DeckWeakEliteId;
+            case MonsterLevel.Level4:
+            case MonsterLevel.Elite:
+                return GameConfigIds.DeckStrongEliteId;
+            case MonsterLevel.Boss:
+                return GameConfigIds.DeckBossId;
+            default:
+                return GameConfigIds.DeckCommonId;
+        }
     }
 }

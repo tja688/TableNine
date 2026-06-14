@@ -233,7 +233,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
         root.Add(_skin.CreateStatsGrid(
             ("已链接子库", $"{linkedCount}/5", "Master 上已赋值的子库引用"),
             ("角色条目", CountCharacters().ToString(), "Characters 列表"),
-            ("卡牌条目", CountCards().ToString(), "Cards + MonsterDeckRules"),
+            ("卡牌条目", CountCards().ToString(), "CardDecks + Cards + MonsterDeckRules"),
             ("技能条目", CountSkills().ToString(), "Skills + Bindings + BehaviorRules"),
             ("遗物条目", CountRelics().ToString(), "Relics + Rooms"),
             ("效果条目", CountEffects().ToString(), "EffectGraphs + HelpCard Mappings")));
@@ -526,7 +526,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
     private int CountCards()
     {
         var config = _master?.CardConfig;
-        return (config?.Cards?.Count ?? 0) + (config?.MonsterDeckRules?.Count ?? 0);
+        return (config?.CardDecks?.Count ?? 0) + (config?.Cards?.Count ?? 0) + (config?.MonsterDeckRules?.Count ?? 0);
     }
 
     private int CountSkills()
@@ -556,7 +556,7 @@ public sealed class TableNineGameConfigEditorWindow : EditorWindow
             case TableNineCharacterConfig character:
                 return character.Characters?.Count ?? 0;
             case TableNineCardConfig card:
-                return (card.Cards?.Count ?? 0) + (card.MonsterDeckRules?.Count ?? 0);
+                return (card.CardDecks?.Count ?? 0) + (card.Cards?.Count ?? 0) + (card.MonsterDeckRules?.Count ?? 0);
             case TableNineSkillConfig skill:
                 return (skill.Skills?.Count ?? 0)
                        + (skill.SkillBindings?.Count ?? 0)

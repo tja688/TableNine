@@ -31,10 +31,11 @@ description: 质检 TableNine 文档任务落地成果：读落地汇报与任�
 |------|------|------|
 | 1 | [AGENTS.md](../../../AGENTS.md) | 项目约束、QFramework 入口 |
 | 2 | [rules.md](../../../rules.md) | 四层架构、Command 边界、文件保护 |
-| 3 | [Assets/Notes/QframeworkNotes/architecture.md](../../../Assets/Notes/QframeworkNotes/architecture.md) | 注册表、分层、核心流程 |
-| 4 | `report_path` | **被检对象**：变更清单、测试证据、质检路线图、任务来源 |
-| 5 | `spec_doc` | `spec_scope` 范围内的目标、任务、验收 |
-| 6 | 规格引用的文档 | 汇报或规格引用的 ArchitectureDesign、`Assets/Docs/` 等 |
+| 3 | `Assets/Scripts/TableNine.cs` + codegraph | 注册表、分层、核心流程 |
+| 4 | [QFramework_Docs_用户手册.md](../../../Assets/Notes/QframeworkNotes/QFramework_Docs_用户手册.md) | QFramework 分层与用法（按目录查找） |
+| 5 | `report_path` | **被检对象**：变更清单、测试证据、质检路线图、任务来源 |
+| 6 | `spec_doc` | `spec_scope` 范围内的目标、任务、验收 |
+| 7 | 规格引用的文档 | 汇报或规格引用的 [ArchitectureDesign.md](../../../Assets/Notes/过程性汇报文档归档/ArchitectureDesign.md)、`Assets/Docs/` 等 |
 
 ## 阶段 1：核查变更（按汇报路线图）
 
@@ -56,11 +57,10 @@ description: 质检 TableNine 文档任务落地成果：读落地汇报与任�
 | QFramework 分层 | IController 改状态是否只走 Command；System/Model 是否裸调 | 裸 `GetModel`/`GetSystem`（须 `this.`）；UI 直写 Model |
 | 项目红线 | Plan §0 或 ArchitectureDesign 不变量 | `Attack - Defense` 战斗减伤；默认临时移除；大段新 switch |
 | 规格符合度 | `spec_doc` 任务与验收项 | 未覆盖验收项；擅自扩大范围 |
-| 架构不变量 | ArchitectureDesign / architecture.md 相关章节 | 防御参与扣伤、状态绕过 Command |
+| 架构不变量 | ArchitectureDesign 相关章节 | 防御参与扣伤、状态绕过 Command |
 | 测试 | 汇报声称的 EditMode 是否真实覆盖规则 | 只测工程不测规则；旧语义测试未更新 |
 | 隐性雷 | 硬编码、占位未标注、抢做无关任务 | magic number 业务规则；表现层侵入规则层；静默吞异常 |
 | 文件保护 | rules.md | 手改 `.unity` |
-| 分层文档 | QframeworkNotes | 改了注册表但未同步 commands/systems/models 等 |
 
 ### 1.3 运行验证
 
@@ -117,7 +117,7 @@ description: 质检 TableNine 文档任务落地成果：读落地汇报与任�
 ## 阶段 3：评价维度（写入附录或回复）
 
 1. **规格符合度**：任务项与验收项逐条 ✅/⚠️/❌
-2. **架构符合度**：ArchitectureDesign / architecture.md 不变量
+2. **架构符合度**：ArchitectureDesign 不变量
 3. **规范符合度**：rules.md + AGENTS.md 约束
 4. **可维护性**：命名、分层、测试可续接性
 5. **风险**：硬编码、占位、跨任务耦合、未文档化假设

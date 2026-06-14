@@ -20,6 +20,11 @@ public static class DescriptionPanelConfigValidation
             CollectEntryErrors("Card", config.Cards[i].CardId, config.Cards[i].Description, errors);
         }
 
+        for (var i = 0; i < config.CardDecks.Count; i++)
+        {
+            CollectEntryErrors("CardDeck", config.CardDecks[i].DeckId, config.CardDecks[i].Description, errors);
+        }
+
         for (var i = 0; i < config.Skills.Count; i++)
         {
             CollectEntryErrors("Skill", config.Skills[i].SkillId, config.Skills[i].Description, errors);
@@ -71,6 +76,17 @@ public static class DescriptionPanelConfigValidation
             }
 
             SanitizeAndLog("Card", entry.CardId, ref entry.Description);
+        }
+
+        for (var i = 0; i < config.CardDecks.Count; i++)
+        {
+            var entry = config.CardDecks[i];
+            if (entry == null)
+            {
+                continue;
+            }
+
+            SanitizeAndLog("CardDeck", entry.DeckId, ref entry.Description);
         }
     }
 

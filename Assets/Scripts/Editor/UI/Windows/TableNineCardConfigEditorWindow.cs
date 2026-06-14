@@ -1,19 +1,21 @@
 #if UNITY_EDITOR
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWindowBase
 {
-    private const string GroupCards = "card";
+    private const string GroupDecks = "deck";
     private const string GroupRules = "rule";
+    private const string DecksList = "CardDecks";
     private const string CardsList = "Cards";
     private const string RulesList = "MonsterDeckRules";
 
     protected override WarmConsoleThemePalette ThemePalette => WarmConsoleThemePalette.Card;
     protected override string WindowTitle => "卡牌配置";
-    protected override string WindowSubtitle => "编辑卡牌定义与怪物牌组生成规则。";
+    protected override string WindowSubtitle => "以牌组为中心管理卡牌定义、卡面卡背与怪物生成规则。";
     protected override string EditorPrefsKey => "Card";
     protected override string DefaultAssetPath => $"{TableNineGameConfigSync.ConfigFolderPath}/TableNineCardConfig.asset";
 
@@ -39,31 +41,34 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
 
     protected override int GetTotalItemCount()
     {
+        var decks = GetListProperty(DecksList);
         var cards = GetListProperty(CardsList);
         var rules = GetListProperty(RulesList);
-        return (cards?.arraySize ?? 0) + (rules?.arraySize ?? 0);
+        return (decks?.arraySize ?? 0) + (cards?.arraySize ?? 0) + (rules?.arraySize ?? 0);
     }
 
     protected override void BuildNavigation(VisualElement navList)
     {
-        var cards = GetListProperty(CardsList);
-        if (cards != null && cards.arraySize > 0)
+        var decks = GetListProperty(DecksList);
+        if (decks != null && decks.arraySize > 0)
         {
-            AddNavSection("卡牌");
-            for (var i = 0; i < cards.arraySize; i++)
+            AddNavSection("牌组");
+            for (var i = 0; i < decks.arraySize; i++)
             {
-                var element = cards.GetArrayElementAtIndex(i);
+                var element = decks.GetArrayElementAtIndex(i);
+                var deckId = GetStringProp(element, "DeckId", $"deck_{i}");
+                var count = CountCardsInDeck(deckId);
                 AddNavButton(
-                    GetStringProp(element, "DisplayName", "未命名卡牌"),
-                    GetStringProp(element, "CardId", $"card_{i}"),
-                    MakeKey(GroupCards, i));
+                    GetStringProp(element, "DisplayName", "未命名牌组"),
+                    $"{deckId} · {count} 张卡",
+                    MakeKey(GroupDecks, i));
             }
         }
 
         var rules = GetListProperty(RulesList);
         if (rules != null && rules.arraySize > 0)
         {
-            AddNavSection("怪物牌组规则");
+            AddNavSection("怪物生成规则");
             for (var i = 0; i < rules.arraySize; i++)
             {
                 var element = rules.GetArrayElementAtIndex(i);
@@ -71,7 +76,7 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
                 var node = element.FindPropertyRelative("NodeInLayer").intValue;
                 AddNavButton(
                     $"层 {layer} · 节点 {node}",
-                    $"共 {element.FindPropertyRelative("TotalCardCount").intValue} 张",
+                    $"{GetStringProp(element, "SourceDeckId", "未指定牌组")} · {element.FindPropertyRelative("TotalCardCount").intValue} 张",
                     MakeKey(GroupRules, i));
             }
         }
@@ -85,9 +90,9 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
             return;
         }
 
-        if (group == GroupCards)
+        if (group == GroupDecks)
         {
-            BuildCardDetail(contentRoot, index);
+            BuildDeckDetail(contentRoot, index);
             return;
         }
 
@@ -100,58 +105,90 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
         contentRoot.Add(Skin.CreateStatusHelpBox("未知条目类型。", HelpBoxMessageType.Warning));
     }
 
-    private void BuildCardDetail(VisualElement contentRoot, int index)
+    private void BuildDeckDetail(VisualElement contentRoot, int index)
     {
-        var element = GetListElement(CardsList, index);
-        if (element == null) return;
+        var deck = GetListElement(DecksList, index);
+        if (deck == null) return;
 
-        var displayName = GetStringProp(element, "DisplayName", "未命名卡牌");
-        var id = GetStringProp(element, "CardId", string.Empty);
-        var cardType = (CardType)element.FindPropertyRelative("CardType").enumValueIndex;
+        var displayName = GetStringProp(deck, "DisplayName", "未命名牌组");
+        var deckId = GetStringProp(deck, "DeckId", string.Empty);
+        var cardCount = CountCardsInDeck(deckId);
 
-        contentRoot.Add(Skin.CreatePageHeader(displayName, $"{id} · {cardType}"));
+        contentRoot.Add(Skin.CreatePageHeader(displayName, $"{deckId} · {ReadEnum(deck, "Faction")} · {ReadEnum(deck, "DeckKind")}"));
         contentRoot.Add(Skin.CreateStatsGrid(
-            ("生命", element.FindPropertyRelative("BaseHp").intValue.ToString(), "怪物基础生命"),
-            ("攻击", element.FindPropertyRelative("BaseAttack").intValue.ToString(), "怪物基础攻击"),
-            ("护甲", element.FindPropertyRelative("BaseArmor").intValue.ToString(), "怪物基础护甲"),
-            ("价格", element.FindPropertyRelative("Price").intValue.ToString(), "商店/奖励价格")));
+            ("卡牌数", cardCount.ToString(), "归属本牌组的卡牌"),
+            ("阵营", ReadEnum(deck, "Faction"), "玩家或怪物"),
+            ("类型", ReadEnum(deck, "DeckKind"), "牌组机制分类")));
 
         var form = new VisualElement();
         var spritePanel = new SpritePreviewPanel(Skin);
-        spritePanel.Bind(TargetSo, element.FindPropertyRelative("Image"));
+        spritePanel.Bind(TargetSo, deck.FindPropertyRelative("DefaultFaceImage"));
 
-        form.Add(Skin.CreateSectionCard("基础信息", "卡牌标识、类型与描述。", section =>
+        form.Add(Skin.CreateSectionCard("牌组基础", "牌组作为卡牌组织与默认图像的顶层入口。", section =>
         {
-            ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                "CardId", "DisplayName", "Description", "CardType", "Quality", "Price");
+            ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, deck,
+                "DeckId", "DisplayName", "Description", "Faction", "DeckKind", "DefaultFaceImage", "DefaultBackImage");
         }));
 
-        if (cardType == CardType.Monster)
+        contentRoot.Add(Skin.CreateFormWithSpritePreview(form, spritePanel));
+        contentRoot.Add(Skin.CreateButtonRow(
+            new Button(() => AddCardToDeck(deckId)) { text = "新增卡牌到本牌组" },
+            new Button(AddDeckAndRefresh) { text = "新增牌组" }));
+
+        var cards = GetListProperty(CardsList);
+        if (cards == null || cardCount == 0)
         {
-            form.Add(Skin.CreateSectionCard("怪物属性", "花色、点数与战斗数值。", section =>
-            {
-                ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                    "MonsterLevel", "Suit", "Rank", "BaseHp", "BaseAttack", "BaseArmor", "SkillIds");
-            }));
-        }
-        else if (cardType == CardType.Help)
-        {
-            form.Add(Skin.CreateSectionCard("援助卡逻辑", "效果绑定与恢复规则。", section =>
-            {
-                ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                    "EffectGraphId", "SystemTag", "RestoreAfterNode", "RestoreAfterNodeAuthoritative", "SkillIds");
-            }));
-        }
-        else
-        {
-            form.Add(Skin.CreateSectionCard("扩展属性", "其他卡牌字段。", section =>
-            {
-                ConfigEditorPropertyBuilder.AddAllChildrenExcept(section, Skin, TargetSo, element,
-                    "CardId", "DisplayName", "Description", "Image", "CardType", "Quality", "Price");
-            }));
+            contentRoot.Add(Skin.CreateStatusHelpBox("当前牌组还没有卡牌。", HelpBoxMessageType.Info));
+            return;
         }
 
-        contentRoot.Add(Skin.CreateFormWithSpritePreview(form, spritePanel));
+        contentRoot.Add(Skin.CreateSectionCard("牌组内卡牌", "每张卡保留自身主图标，并可按需覆盖牌组默认卡面与卡背。", section =>
+        {
+            for (var i = 0; i < cards.arraySize; i++)
+            {
+                var card = cards.GetArrayElementAtIndex(i);
+                if (GetStringProp(card, "DeckId", string.Empty) != deckId)
+                {
+                    continue;
+                }
+
+                section.Add(CreateCardEditorBlock(card, i));
+            }
+        }));
+    }
+
+    private VisualElement CreateCardEditorBlock(SerializedProperty card, int index)
+    {
+        var cardType = (CardType)card.FindPropertyRelative("CardType").enumValueIndex;
+        var title = $"{GetStringProp(card, "DisplayName", "未命名卡牌")} · {GetStringProp(card, "CardId", $"card_{index}")}";
+
+        return Skin.CreateSectionCard(title, cardType.ToString(), section =>
+        {
+            section.Add(Skin.CreateButtonRow(new Button(() => DeleteCardAt(index)) { text = "删除这张卡" }));
+
+            ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, card,
+                "CardId", "DisplayName", "DeckId", "Description", "CardType", "Quality", "Price");
+            AddSpriteProperty(section, card.FindPropertyRelative("Image"), "主图标", "卡牌中心核心显示图标。");
+            ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, card,
+                "FaceImageOverride", "BackImageOverride");
+
+            if (cardType == CardType.Monster)
+            {
+                ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, card,
+                    "MonsterLevel", "Suit", "Rank", "BaseHp", "BaseAttack", "BaseArmor", "SkillIds");
+            }
+            else if (cardType == CardType.Help)
+            {
+                ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, card,
+                    "EffectGraphId", "SystemTag", "RestoreAfterNode", "RestoreAfterNodeAuthoritative", "SkillIds");
+            }
+            else
+            {
+                ConfigEditorPropertyBuilder.AddAllChildrenExcept(section, Skin, TargetSo, card,
+                    "CardId", "DisplayName", "DeckId", "Description", "Image", "FaceImageOverride",
+                    "BackImageOverride", "CardType", "Quality", "Price");
+            }
+        });
     }
 
     private void BuildRuleDetail(VisualElement contentRoot, int index)
@@ -163,14 +200,15 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
         var node = element.FindPropertyRelative("NodeInLayer").intValue;
         contentRoot.Add(Skin.CreatePageHeader($"层 {layer} · 节点 {node}", "怪物牌组生成规则"));
         contentRoot.Add(Skin.CreateStatsGrid(
+            ("来源牌组", GetStringProp(element, "SourceDeckId", "未指定"), "节点所属怪物牌组"),
             ("层", layer.ToString(), "地图层编号"),
             ("节点", node.ToString(), "层内节点序号"),
             ("总卡数", element.FindPropertyRelative("TotalCardCount").intValue.ToString(), "本节点牌组总数")));
 
-        contentRoot.Add(Skin.CreateSectionCard("节点参数", "层级与数量约束。", section =>
+        contentRoot.Add(Skin.CreateSectionCard("节点参数", "层级、来源牌组与数量约束。", section =>
         {
             ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                "Layer", "NodeInLayer", "TotalCardCount");
+                "Layer", "NodeInLayer", "SourceDeckId", "TotalCardCount");
         }));
 
         contentRoot.Add(Skin.CreateSectionCard("卡池与配额", "允许卡、强制卡与等级配额。", section =>
@@ -184,7 +222,7 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
     {
         if (!TryParseKey(SelectedKey, out var group, out _) || string.IsNullOrEmpty(group))
         {
-            group = GroupCards;
+            group = GroupDecks;
         }
 
         if (group == GroupRules)
@@ -193,17 +231,61 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
             {
                 element.FindPropertyRelative("Layer").intValue = 1;
                 element.FindPropertyRelative("NodeInLayer").intValue = 1;
+                element.FindPropertyRelative("SourceDeckId").stringValue = GameConfigIds.DeckWeakEliteId;
                 element.FindPropertyRelative("TotalCardCount").intValue = 3;
             });
             return;
         }
 
-        AddToList(CardsList, GroupCards, element =>
+        AddDeck(refresh: false);
+    }
+
+    private void AddDeckAndRefresh()
+    {
+        AddDeck(refresh: true);
+    }
+
+    private void AddDeck(bool refresh)
+    {
+        AddToList(DecksList, GroupDecks, element =>
         {
-            element.FindPropertyRelative("CardId").stringValue = $"card_new_{DateTime.Now.Ticks % 10000}";
-            element.FindPropertyRelative("DisplayName").stringValue = "新卡牌";
-            element.FindPropertyRelative("CardType").enumValueIndex = (int)CardType.Help;
+            element.FindPropertyRelative("DeckId").stringValue = $"deck_new_{DateTime.Now.Ticks % 10000}";
+            element.FindPropertyRelative("DisplayName").stringValue = "新牌组";
+            element.FindPropertyRelative("Faction").enumValueIndex = (int)CardDeckFaction.Player;
+            element.FindPropertyRelative("DeckKind").enumValueIndex = (int)CardDeckKind.Custom;
         });
+
+        if (!refresh)
+        {
+            return;
+        }
+
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
+        RebuildNavigation();
+        RefreshDetail();
+    }
+
+    private void AddCardToDeck(string deckId, bool refresh = true)
+    {
+        var list = GetListProperty(CardsList);
+        if (list == null) return;
+
+        list.arraySize++;
+        var element = list.GetArrayElementAtIndex(list.arraySize - 1);
+        element.FindPropertyRelative("CardId").stringValue = $"card_new_{DateTime.Now.Ticks % 10000}";
+        element.FindPropertyRelative("DisplayName").stringValue = "新卡牌";
+        element.FindPropertyRelative("DeckId").stringValue = string.IsNullOrEmpty(deckId) ? GameConfigIds.DeckCommonId : deckId;
+        element.FindPropertyRelative("CardType").enumValueIndex = (int)CardType.Help;
+        element.FindPropertyRelative("Quality").enumValueIndex = (int)CardQuality.White;
+
+        if (!refresh)
+        {
+            return;
+        }
+
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
+        RebuildNavigation();
+        RefreshDetail();
     }
 
     private void AddToList(string listName, string group, Action<SerializedProperty> init)
@@ -221,10 +303,73 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
     {
         if (!TryParseKey(SelectedKey, out var group, out var index)) return;
 
-        var listName = group == GroupRules ? RulesList : CardsList;
+        var listName = group == GroupRules ? RulesList : DecksList;
         var list = GetListProperty(listName);
         if (list == null || index < 0 || index >= list.arraySize) return;
         list.DeleteArrayElementAtIndex(index);
+    }
+
+    private void DeleteCardAt(int index)
+    {
+        if (!EditorUtility.DisplayDialog("卡牌配置", "确定删除这张卡？", "删除", "取消"))
+        {
+            return;
+        }
+
+        var list = GetListProperty(CardsList);
+        if (list == null || index < 0 || index >= list.arraySize) return;
+        list.DeleteArrayElementAtIndex(index);
+        TableNineConfigEditorAutoSave.PersistIfEnabled(TargetSo, TargetAsset, immediateDisk: true);
+        RebuildNavigation();
+        RefreshDetail();
+    }
+
+    private int CountCardsInDeck(string deckId)
+    {
+        var cards = GetListProperty(CardsList);
+        if (cards == null || string.IsNullOrEmpty(deckId))
+        {
+            return 0;
+        }
+
+        var count = 0;
+        for (var i = 0; i < cards.arraySize; i++)
+        {
+            if (GetStringProp(cards.GetArrayElementAtIndex(i), "DeckId", string.Empty) == deckId)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private string ReadEnum(SerializedProperty parent, string propertyName)
+    {
+        var prop = parent.FindPropertyRelative(propertyName);
+        if (prop == null || prop.propertyType != SerializedPropertyType.Enum)
+        {
+            return string.Empty;
+        }
+
+        return prop.enumDisplayNames[prop.enumValueIndex];
+    }
+
+    private void AddSpriteProperty(VisualElement parent, SerializedProperty property, string label, string description)
+    {
+        if (property == null)
+        {
+            return;
+        }
+
+        var field = new ObjectField("")
+        {
+            objectType = typeof(Sprite),
+            allowSceneObjects = false
+        };
+        field.BindProperty(property);
+        field.Bind(TargetSo);
+        parent.Add(Skin.WrapControl(label, description, field));
     }
 }
 #endif

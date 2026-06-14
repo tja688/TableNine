@@ -23,10 +23,20 @@ public static class ConfigValidator
     {
         var errors = new List<string>();
         var cardIds = new HashSet<string>();
+        var deckIds = new HashSet<string>();
         var skillIds = new HashSet<string>();
         var characterIds = new HashSet<string>();
         var relicIds = new HashSet<string>();
         var roomIds = new HashSet<string>();
+
+        for (var i = 0; i < config.CardDecks.Count; i++)
+        {
+            var deck = config.CardDecks[i];
+            if (string.IsNullOrWhiteSpace(deck.DeckId) || !deckIds.Add(deck.DeckId))
+            {
+                errors.Add($"Duplicate or empty deckId: {deck.DeckId}");
+            }
+        }
 
         for (var i = 0; i < config.Cards.Count; i++)
         {
@@ -34,6 +44,11 @@ public static class ConfigValidator
             if (string.IsNullOrWhiteSpace(card.CardId) || !cardIds.Add(card.CardId))
             {
                 errors.Add($"Duplicate or empty cardId: {card.CardId}");
+            }
+
+            if (string.IsNullOrWhiteSpace(card.DeckId) || !deckIds.Contains(card.DeckId))
+            {
+                errors.Add($"Card {card.CardId} references missing deckId: {card.DeckId}");
             }
         }
 
@@ -69,6 +84,16 @@ public static class ConfigValidator
             if (string.IsNullOrWhiteSpace(character.CharacterId) || !characterIds.Add(character.CharacterId))
             {
                 errors.Add($"Duplicate or empty characterId: {character.CharacterId}");
+            }
+
+            if (!string.IsNullOrEmpty(character.CommonDeckId) && !deckIds.Contains(character.CommonDeckId))
+            {
+                errors.Add($"Character {character.CharacterId} references missing common deckId: {character.CommonDeckId}");
+            }
+
+            if (!string.IsNullOrEmpty(character.ClassDeckId) && !deckIds.Contains(character.ClassDeckId))
+            {
+                errors.Add($"Character {character.CharacterId} references missing class deckId: {character.ClassDeckId}");
             }
 
             for (var j = 0; j < character.InitialSkillIds.Count; j++)
@@ -120,6 +145,11 @@ public static class ConfigValidator
             if (rule.AllowedMonsterCardIds.Count == 0)
             {
                 errors.Add($"Monster deck rule {rule.Layer}-{rule.NodeInLayer} has no allowed monster cards.");
+            }
+
+            if (!string.IsNullOrEmpty(rule.SourceDeckId) && !deckIds.Contains(rule.SourceDeckId))
+            {
+                errors.Add($"Monster deck rule {rule.Layer}-{rule.NodeInLayer} references missing source deckId: {rule.SourceDeckId}");
             }
 
             for (var j = 0; j < rule.AllowedMonsterCardIds.Count; j++)

@@ -12,10 +12,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36685afba35c93c4f8318028f964c10d, type: 3}
   m_Name: TableNineCardConfig
   m_EditorClassIdentifier: TableNine.Runtime::TableNineCardConfig
+  CardDecks:
+  - DeckId: deck_common
+    DisplayName: "\u901A\u7528\u724C\u7EC4"
+    Description: "\u6240\u6709\u804C\u4E1A\u5171\u4EAB\u7684\u5E2E\u52A9\u5361\u4E0E\u5BFC\u5E08\u5361"
+    Faction: 0
+    DeckKind: 0
+    DefaultFaceImage: {fileID: 0}
+    DefaultBackImage: {fileID: 0}
+  - DeckId: deck_clown
+    DisplayName: "\u5C0F\u4E11\u724C\u7EC4"
+    Description: "\u5C0F\u4E11\u804C\u4E1A\u4E13\u5C5E\u5E2E\u52A9\u5361"
+    Faction: 0
+    DeckKind: 1
+    DefaultFaceImage: {fileID: 0}
+    DefaultBackImage: {fileID: 0}
+  - DeckId: deck_weak_elite
+    DisplayName: "\u5F31\u7CBE\u82F1\u724C\u7EC4"
+    Description: "\u6BCF\u5C42\u4E00\u81F3\u4E09\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
+    Faction: 1
+    DeckKind: 2
+    DefaultFaceImage: {fileID: 0}
+    DefaultBackImage: {fileID: 0}
+  - DeckId: deck_strong_elite
+    DisplayName: "\u5F3A\u7CBE\u82F1\u724C\u7EC4"
+    Description: "\u6BCF\u5C42\u56DB\u81F3\u516D\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
+    Faction: 1
+    DeckKind: 3
+    DefaultFaceImage: {fileID: 0}
+    DefaultBackImage: {fileID: 0}
+  - DeckId: deck_boss
+    DisplayName: "\u5C42\u4E3B\u724C\u7EC4"
+    Description: "\u6BCF\u5C42\u4E03\u81F3\u4E5D\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
+    Faction: 1
+    DeckKind: 4
+    DefaultFaceImage: {fileID: 0}
+    DefaultBackImage: {fileID: 0}
   Cards:
   - CardId: help_potion
     DisplayName: "\u6062\u590D\u836F\u6C34"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6062\u590D10\u70B9\u751F\u547D"
     CardType: 2
     Quality: 1
@@ -27,14 +66,17 @@ MonoBehaviour:
     BaseAttack: 0
     BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
-    RestoreAfterNode: 1
+    RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
     EffectGraphId: eg_help_potion
     SystemTag: 3
     SkillIds: []
   - CardId: help_throwing_knife
     DisplayName: "\u98DE\u5200"
+    DeckId: deck_clown
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u5BF9\u602A\u7269\u9020\u62106\u70B9\u4F24\u5BB3"
     CardType: 2
     Quality: 1
@@ -53,7 +95,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_common_chest
     DisplayName: "\u666E\u901A\u5B9D\u7BB1\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u5F00\u542F\u666E\u901A\u5B9D\u7BB1\u5956\u52B1"
     CardType: 2
     Quality: 2
@@ -72,7 +117,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_attribute_up
     DisplayName: "\u5C5E\u6027\u63D0\u5347\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9009\u62E9\u4E00\u9879\u5C5E\u6027\u63D0\u5347"
     CardType: 2
     Quality: 3
@@ -91,7 +139,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_gold_card
     DisplayName: "\u91D1\u5E01\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u83B7\u5F97\u91D1\u5E01\u5956\u52B1"
     CardType: 2
     Quality: 2
@@ -110,7 +161,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_chest_card
     DisplayName: "\u5B9D\u7BB1\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u5F00\u542F\u5B9D\u7BB1\u5956\u52B1"
     CardType: 2
     Quality: 2
@@ -129,7 +183,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_blessing
     DisplayName: "\u5E87\u4F51\u9B54\u6CD5\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u83B7\u5F97\u968F\u673A\u6B63\u9762\u589E\u76CA"
     CardType: 2
     Quality: 1
@@ -148,7 +205,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_bandage
     DisplayName: "\u7EF7\u5E26"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6062\u590D\u5C11\u91CF\u751F\u547D"
     CardType: 2
     Quality: 1
@@ -167,7 +227,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_colorless
     DisplayName: "\u65E0\u8272\u5361"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65E0\u82B1\u8272\u666E\u901A\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -186,7 +249,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_spade_2
     DisplayName: "\u9ED1\u68432"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u6843\u5E7C\u5D3D\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -206,7 +272,10 @@ MonoBehaviour:
     - skill_spade_cub
   - CardId: monster_heart_2
     DisplayName: "\u7EA2\u68432"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u6843\u5E7C\u5D3D\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -226,7 +295,10 @@ MonoBehaviour:
     - skill_heart_cub
   - CardId: monster_diamond_2
     DisplayName: "\u65B9\u57572"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u5757\u5E7C\u5D3D\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -246,7 +318,10 @@ MonoBehaviour:
     - skill_diamond_cub
   - CardId: monster_club_2
     DisplayName: "\u6885\u82B12"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B1\u5E7C\u5D3D\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -266,7 +341,10 @@ MonoBehaviour:
     - skill_club_cub
   - CardId: help_blue_chest
     DisplayName: "\u84DD\u8272\u5B9D\u7BB1\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u5F00\u542F\u84DD\u8272\u5B9D\u7BB1\u5956\u52B1"
     CardType: 2
     Quality: 3
@@ -285,7 +363,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_gold_chest
     DisplayName: "\u91D1\u8272\u5B9D\u7BB1\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u5F00\u542F\u91D1\u8272\u5B9D\u7BB1\u5956\u52B1"
     CardType: 2
     Quality: 4
@@ -304,7 +385,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_spade_3
     DisplayName: "\u9ED1\u68433"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68433\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -324,7 +408,10 @@ MonoBehaviour:
     - skill_armor_breaker
   - CardId: monster_heart_3
     DisplayName: "\u7EA2\u68433"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68433\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -344,7 +431,10 @@ MonoBehaviour:
     - skill_loving_body
   - CardId: monster_diamond_3
     DisplayName: "\u65B9\u57573"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57573\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -364,7 +454,10 @@ MonoBehaviour:
     - skill_sharp_shield
   - CardId: monster_club_3
     DisplayName: "\u6885\u82B13"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B13\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -384,7 +477,10 @@ MonoBehaviour:
     - skill_ambush
   - CardId: monster_spade_4
     DisplayName: "\u9ED1\u68434"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68434\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -404,7 +500,10 @@ MonoBehaviour:
     - skill_revenge
   - CardId: monster_heart_4
     DisplayName: "\u7EA2\u68434"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68434\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -424,7 +523,10 @@ MonoBehaviour:
     - skill_medic
   - CardId: monster_diamond_4
     DisplayName: "\u65B9\u57574"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57574\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -444,7 +546,10 @@ MonoBehaviour:
     - skill_protection_aura
   - CardId: monster_club_4
     DisplayName: "\u6885\u82B14"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B14\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -464,7 +569,10 @@ MonoBehaviour:
     - skill_relentless_pursuit
   - CardId: monster_spade_5
     DisplayName: "\u9ED1\u68435"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68435\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -484,7 +592,10 @@ MonoBehaviour:
     - skill_side_strike
   - CardId: monster_heart_5
     DisplayName: "\u7EA2\u68435"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68435\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -504,7 +615,10 @@ MonoBehaviour:
     - skill_heart_mother
   - CardId: monster_diamond_5
     DisplayName: "\u65B9\u57575"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57575\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -524,7 +638,10 @@ MonoBehaviour:
     - skill_unbreakable
   - CardId: monster_club_5
     DisplayName: "\u6885\u82B15"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B15\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -544,7 +661,10 @@ MonoBehaviour:
     - skill_vertical_lever
   - CardId: monster_spade_a
     DisplayName: "\u9ED1\u6843A"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u6843\u7CBE\u82F1\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -565,7 +685,10 @@ MonoBehaviour:
     - skill_war_dance
   - CardId: monster_spade_j
     DisplayName: "\u9ED1\u6843J"
+    DeckId: deck_boss
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u6843\u5C42\u4E3B\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -586,7 +709,10 @@ MonoBehaviour:
     - skill_spade_royalty
   - CardId: help_fireball
     DisplayName: "\u706B\u7403\u672F"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u706B\u7403\u672F"
     CardType: 2
     Quality: 1
@@ -605,7 +731,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_spin_wheel
     DisplayName: "\u65CB\u8F6C\u8F6E"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65CB\u8F6C\u8F6E"
     CardType: 2
     Quality: 1
@@ -624,7 +753,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_violence
     DisplayName: "\u66B4\u529B\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u66B4\u529B\u5361"
     CardType: 2
     Quality: 1
@@ -643,7 +775,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_boulder
     DisplayName: "\u6EDA\u77F3"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6EDA\u77F3"
     CardType: 2
     Quality: 1
@@ -662,7 +797,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_bomb
     DisplayName: "\u7206\u5F39"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7206\u5F39"
     CardType: 2
     Quality: 1
@@ -681,7 +819,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_swap
     DisplayName: "\u4EA4\u6362\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u4EA4\u6362\u5361"
     CardType: 2
     Quality: 1
@@ -700,7 +841,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_smasher
     DisplayName: "\u7834\u51FB\u9524"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7834\u51FB\u9524"
     CardType: 2
     Quality: 1
@@ -719,7 +863,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_food
     DisplayName: "\u98DF\u54C1\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u98DF\u54C1\u5361"
     CardType: 2
     Quality: 2
@@ -738,7 +885,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_healing_spring
     DisplayName: "\u6CBB\u7597\u6CC9"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6CBB\u7597\u6CC9"
     CardType: 2
     Quality: 2
@@ -757,7 +907,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_crash_tutorial
     DisplayName: "\u649E\u51FB\u6559\u7A0B"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u649E\u51FB\u6559\u7A0B"
     CardType: 2
     Quality: 2
@@ -776,7 +929,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_watchtower
     DisplayName: "\u77AD\u671B\u5854"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u77AD\u671B\u5854"
     CardType: 2
     Quality: 3
@@ -795,7 +951,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_multiplier_tower
     DisplayName: "\u500D\u589E\u5854"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u500D\u589E\u5854"
     CardType: 2
     Quality: 3
@@ -814,7 +973,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_durable_shield
     DisplayName: "\u8010\u7528\u76FE\u724C"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u8010\u7528\u76FE\u724C"
     CardType: 2
     Quality: 1
@@ -833,7 +995,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_bear_trap
     DisplayName: "\u6355\u718A\u9677\u9631"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6355\u718A\u9677\u9631"
     CardType: 2
     Quality: 1
@@ -852,7 +1017,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_teleport
     DisplayName: "\u4F20\u9001\u5361"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u4F20\u9001\u5361"
     CardType: 2
     Quality: 1
@@ -871,7 +1039,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_blood_convert
     DisplayName: "\u8840\u6DB2\u8F6C\u6362"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u8840\u6DB2\u8F6C\u6362"
     CardType: 2
     Quality: 1
@@ -890,7 +1061,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_shield_strike_tutorial
     DisplayName: "\u76FE\u51FB\u6559\u7A0B"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u76FE\u51FB\u6559\u7A0B"
     CardType: 2
     Quality: 2
@@ -909,7 +1083,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: help_kidnap
     DisplayName: "\u7ED1\u7968"
+    DeckId: deck_common
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7ED1\u7968"
     CardType: 2
     Quality: 2
@@ -928,7 +1105,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_colorless_l2
     DisplayName: "\u65E0\u8272\u5361\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65E0\u82B1\u8272\u666E\u901A\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -947,7 +1127,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_spade_2_l2
     DisplayName: "\u9ED1\u68432\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u6843\u5E7C\u5D3D\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -967,7 +1150,10 @@ MonoBehaviour:
     - skill_spade_cub
   - CardId: monster_heart_2_l2
     DisplayName: "\u7EA2\u68432\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u6843\u5E7C\u5D3D\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -987,7 +1173,10 @@ MonoBehaviour:
     - skill_heart_cub
   - CardId: monster_diamond_2_l2
     DisplayName: "\u65B9\u57572\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u5757\u5E7C\u5D3D\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1007,7 +1196,10 @@ MonoBehaviour:
     - skill_diamond_cub
   - CardId: monster_club_2_l2
     DisplayName: "\u6885\u82B12\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B1\u5E7C\u5D3D\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1027,7 +1219,10 @@ MonoBehaviour:
     - skill_club_cub
   - CardId: monster_spade_3_l2
     DisplayName: "\u9ED1\u68433\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68433\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1047,7 +1242,10 @@ MonoBehaviour:
     - skill_armor_breaker
   - CardId: monster_heart_3_l2
     DisplayName: "\u7EA2\u68433\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68433\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1067,7 +1265,10 @@ MonoBehaviour:
     - skill_loving_body
   - CardId: monster_diamond_3_l2
     DisplayName: "\u65B9\u57573\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57573\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1087,7 +1288,10 @@ MonoBehaviour:
     - skill_sharp_shield
   - CardId: monster_club_3_l2
     DisplayName: "\u6885\u82B13\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B13\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1107,7 +1311,10 @@ MonoBehaviour:
     - skill_ambush
   - CardId: monster_spade_4_l2
     DisplayName: "\u9ED1\u68434\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68434\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1127,7 +1334,10 @@ MonoBehaviour:
     - skill_revenge
   - CardId: monster_heart_4_l2
     DisplayName: "\u7EA2\u68434\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68434\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1147,7 +1357,10 @@ MonoBehaviour:
     - skill_medic
   - CardId: monster_diamond_4_l2
     DisplayName: "\u65B9\u57574\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57574\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1167,7 +1380,10 @@ MonoBehaviour:
     - skill_protection_aura
   - CardId: monster_club_4_l2
     DisplayName: "\u6885\u82B14\xB7\u4E8C\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B14\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1187,7 +1403,10 @@ MonoBehaviour:
     - skill_relentless_pursuit
   - CardId: monster_spade_5_l2
     DisplayName: "\u9ED1\u68435\xB7\u4E8C\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68435\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1207,7 +1426,10 @@ MonoBehaviour:
     - skill_side_strike
   - CardId: monster_heart_5_l2
     DisplayName: "\u7EA2\u68435\xB7\u4E8C\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68435\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1227,7 +1449,10 @@ MonoBehaviour:
     - skill_heart_mother
   - CardId: monster_diamond_5_l2
     DisplayName: "\u65B9\u57575\xB7\u4E8C\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57575\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1247,7 +1472,10 @@ MonoBehaviour:
     - skill_unbreakable
   - CardId: monster_club_5_l2
     DisplayName: "\u6885\u82B15\xB7\u4E8C\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B15\u602A\u7269\xB7\u4E8C\u5C42"
     CardType: 1
     Quality: 0
@@ -1267,7 +1495,10 @@ MonoBehaviour:
     - skill_vertical_lever
   - CardId: monster_colorless_l3
     DisplayName: "\u65E0\u8272\u5361\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65E0\u82B1\u8272\u666E\u901A\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1286,7 +1517,10 @@ MonoBehaviour:
     SkillIds: []
   - CardId: monster_spade_2_l3
     DisplayName: "\u9ED1\u68432\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u6843\u5E7C\u5D3D\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1306,7 +1540,10 @@ MonoBehaviour:
     - skill_spade_cub
   - CardId: monster_heart_2_l3
     DisplayName: "\u7EA2\u68432\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u6843\u5E7C\u5D3D\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1326,7 +1563,10 @@ MonoBehaviour:
     - skill_heart_cub
   - CardId: monster_diamond_2_l3
     DisplayName: "\u65B9\u57572\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u5757\u5E7C\u5D3D\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1346,7 +1586,10 @@ MonoBehaviour:
     - skill_diamond_cub
   - CardId: monster_club_2_l3
     DisplayName: "\u6885\u82B12\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B1\u5E7C\u5D3D\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1366,7 +1609,10 @@ MonoBehaviour:
     - skill_club_cub
   - CardId: monster_spade_3_l3
     DisplayName: "\u9ED1\u68433\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68433\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1386,7 +1632,10 @@ MonoBehaviour:
     - skill_armor_breaker
   - CardId: monster_heart_3_l3
     DisplayName: "\u7EA2\u68433\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68433\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1406,7 +1655,10 @@ MonoBehaviour:
     - skill_loving_body
   - CardId: monster_diamond_3_l3
     DisplayName: "\u65B9\u57573\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57573\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1426,7 +1678,10 @@ MonoBehaviour:
     - skill_sharp_shield
   - CardId: monster_club_3_l3
     DisplayName: "\u6885\u82B13\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B13\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1446,7 +1701,10 @@ MonoBehaviour:
     - skill_ambush
   - CardId: monster_spade_4_l3
     DisplayName: "\u9ED1\u68434\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68434\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1466,7 +1724,10 @@ MonoBehaviour:
     - skill_revenge
   - CardId: monster_heart_4_l3
     DisplayName: "\u7EA2\u68434\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68434\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1486,7 +1747,10 @@ MonoBehaviour:
     - skill_medic
   - CardId: monster_diamond_4_l3
     DisplayName: "\u65B9\u57574\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57574\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1506,7 +1770,10 @@ MonoBehaviour:
     - skill_protection_aura
   - CardId: monster_club_4_l3
     DisplayName: "\u6885\u82B14\xB7\u4E09\u5C42"
+    DeckId: deck_weak_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B14\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1526,7 +1793,10 @@ MonoBehaviour:
     - skill_relentless_pursuit
   - CardId: monster_spade_5_l3
     DisplayName: "\u9ED1\u68435\xB7\u4E09\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u9ED1\u68435\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1546,7 +1816,10 @@ MonoBehaviour:
     - skill_side_strike
   - CardId: monster_heart_5_l3
     DisplayName: "\u7EA2\u68435\xB7\u4E09\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u68435\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1566,7 +1839,10 @@ MonoBehaviour:
     - skill_heart_mother
   - CardId: monster_diamond_5_l3
     DisplayName: "\u65B9\u57575\xB7\u4E09\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u57575\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1586,7 +1862,10 @@ MonoBehaviour:
     - skill_unbreakable
   - CardId: monster_club_5_l3
     DisplayName: "\u6885\u82B15\xB7\u4E09\u5C42"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u6885\u82B15\u602A\u7269\xB7\u4E09\u5C42"
     CardType: 1
     Quality: 0
@@ -1606,7 +1885,10 @@ MonoBehaviour:
     - skill_vertical_lever
   - CardId: monster_heart_a
     DisplayName: "\u7EA2\u6843A"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u6843\u7CBE\u82F1\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -1627,7 +1909,10 @@ MonoBehaviour:
     - skill_war_dance
   - CardId: monster_heart_j
     DisplayName: "\u7EA2\u6843J"
+    DeckId: deck_boss
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u7EA2\u6843\u5C42\u4E3B\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -1648,7 +1933,10 @@ MonoBehaviour:
     - skill_spade_royalty
   - CardId: monster_diamond_a
     DisplayName: "\u65B9\u5757A"
+    DeckId: deck_strong_elite
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u5757\u7CBE\u82F1\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -1669,7 +1957,10 @@ MonoBehaviour:
     - skill_war_dance
   - CardId: monster_diamond_j
     DisplayName: "\u65B9\u5757J"
+    DeckId: deck_boss
     Image: {fileID: 0}
+    FaceImageOverride: {fileID: 0}
+    BackImageOverride: {fileID: 0}
     Description: "\u65B9\u5757\u5C42\u4E3B\u602A\u7269"
     CardType: 1
     Quality: 0
@@ -1691,6 +1982,7 @@ MonoBehaviour:
   MonsterDeckRules:
   - Layer: 1
     NodeInLayer: 1
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 10
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1723,6 +2015,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 2
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 11
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1755,6 +2048,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 3
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 12
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1799,6 +2093,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 4
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 13
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1843,6 +2138,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 5
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 14
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1901,6 +2197,7 @@ MonoBehaviour:
     - monster_spade_a
   - Layer: 1
     NodeInLayer: 6
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 15
     AllowedMonsterCardIds:
     - monster_colorless
@@ -1957,6 +2254,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 7
+    SourceDeckId: deck_boss
     TotalCardCount: 16
     AllowedMonsterCardIds:
     - monster_spade_3
@@ -1999,6 +2297,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 8
+    SourceDeckId: deck_boss
     TotalCardCount: 17
     AllowedMonsterCardIds:
     - monster_spade_3
@@ -2041,6 +2340,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 1
     NodeInLayer: 9
+    SourceDeckId: deck_boss
     TotalCardCount: 18
     AllowedMonsterCardIds:
     - monster_spade_3
@@ -2085,6 +2385,7 @@ MonoBehaviour:
     - monster_spade_j
   - Layer: 2
     NodeInLayer: 1
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 10
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2117,6 +2418,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 2
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 11
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2149,6 +2451,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 3
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 12
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2193,6 +2496,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 4
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 13
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2237,6 +2541,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 5
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 14
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2295,6 +2600,7 @@ MonoBehaviour:
     - monster_heart_a
   - Layer: 2
     NodeInLayer: 6
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 15
     AllowedMonsterCardIds:
     - monster_colorless_l2
@@ -2351,6 +2657,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 7
+    SourceDeckId: deck_boss
     TotalCardCount: 16
     AllowedMonsterCardIds:
     - monster_spade_3_l2
@@ -2393,6 +2700,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 8
+    SourceDeckId: deck_boss
     TotalCardCount: 17
     AllowedMonsterCardIds:
     - monster_spade_3_l2
@@ -2435,6 +2743,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 2
     NodeInLayer: 9
+    SourceDeckId: deck_boss
     TotalCardCount: 18
     AllowedMonsterCardIds:
     - monster_spade_3_l2
@@ -2479,6 +2788,7 @@ MonoBehaviour:
     - monster_heart_j
   - Layer: 3
     NodeInLayer: 1
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 10
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2511,6 +2821,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 2
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 11
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2543,6 +2854,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 3
+    SourceDeckId: deck_weak_elite
     TotalCardCount: 12
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2587,6 +2899,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 4
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 13
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2631,6 +2944,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 5
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 14
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2689,6 +3003,7 @@ MonoBehaviour:
     - monster_diamond_a
   - Layer: 3
     NodeInLayer: 6
+    SourceDeckId: deck_strong_elite
     TotalCardCount: 15
     AllowedMonsterCardIds:
     - monster_colorless_l3
@@ -2745,6 +3060,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 7
+    SourceDeckId: deck_boss
     TotalCardCount: 16
     AllowedMonsterCardIds:
     - monster_spade_3_l3
@@ -2787,6 +3103,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 8
+    SourceDeckId: deck_boss
     TotalCardCount: 17
     AllowedMonsterCardIds:
     - monster_spade_3_l3
@@ -2829,6 +3146,7 @@ MonoBehaviour:
     MandatoryMonsterCardIds: []
   - Layer: 3
     NodeInLayer: 9
+    SourceDeckId: deck_boss
     TotalCardCount: 18
     AllowedMonsterCardIds:
     - monster_spade_3_l3

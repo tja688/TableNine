@@ -876,8 +876,8 @@ public sealed class RewardSystem : AbstractSystem, IRewardSystem
 
         rewardModel.ClearHelpRewardCardIds();
 
-        // [S1 FIX] Use IConfigModel to dynamically query all help cards
-        var allHelpCards = configModel.GetAllHelpCardDefinitions();
+        // Player rewards are sourced from the shared deck plus the current class deck.
+        var allHelpCards = configModel.GetPlayableHelpCardDefinitions(runModel.CharacterId);
         var capacity = deckModel.GetHelpDeckCapacity(runModel.Layer.Value);
         var currentCount = CountActiveHelpCards(deckModel);
 
@@ -1486,7 +1486,8 @@ public sealed class ShopSystem : AbstractSystem, IShopSystem
         rewardModel.ClearShopCardIds();
 
         // [S2 FIX] Use IConfigModel to dynamically query all help cards
-        var allHelpCards = configModel.GetAllHelpCardDefinitions();
+        var runModel = this.GetModel<IRunModel>();
+        var allHelpCards = configModel.GetPlayableHelpCardDefinitions(runModel.CharacterId);
         var pool = new List<string>();
         for (var i = 0; i < allHelpCards.Count; i++)
         {

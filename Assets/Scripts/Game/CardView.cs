@@ -147,9 +147,17 @@ public sealed class CardViewPresenter : IController
     public void Refresh(CardView view, CardUid uid, bool itemSlot, bool pending)
     {
         var data = Create(uid);
-        var sprite = data != null
-            ? this.GetUtility<IResourceUtility>().LoadCardSprite(data.SpriteId)
-            : null;
+        var sprite = data != null ? ResolveSprite(data) : null;
         view.Bind(data, itemSlot, pending, sprite);
+    }
+
+    private Sprite ResolveSprite(CardViewData data)
+    {
+        var configModel = this.GetModel<IConfigModel>();
+        var sprite = configModel.GetCardMainImage(data.DefinitionId)
+                     ?? configModel.GetEffectiveCardFaceImage(data.DefinitionId);
+        return sprite != null
+            ? sprite
+            : this.GetUtility<IResourceUtility>().LoadCardSprite(data.SpriteId);
     }
 }

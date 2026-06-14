@@ -19,6 +19,7 @@ public sealed class TableNineGameConfig : ScriptableObject
 
         if (CardConfig != null)
         {
+            bundle.Core.CardDecks.AddRange(CardConfig.CardDecks);
             bundle.Core.Cards.AddRange(CardConfig.Cards);
             bundle.Core.MonsterDeckRules.AddRange(CardConfig.MonsterDeckRules);
         }
@@ -42,6 +43,7 @@ public sealed class TableNineGameConfig : ScriptableObject
             ApplyHelpCardEffectMappings(bundle);
         }
 
+        CardDeckDefinitionMigration.EnsureDecksAndAssignments(bundle.Core);
         CardDefinitionMigration.MigrateHelpCardSemantics(bundle.Core.Cards);
         return bundle;
     }

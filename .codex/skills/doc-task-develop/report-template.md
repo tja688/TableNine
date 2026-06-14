@@ -57,7 +57,7 @@
 
 ## 4. 架构符合性
 
-对照 [ArchitectureDesign.md](ArchitectureDesign.md) / [architecture.md](QframeworkNotes/architecture.md) 相关章节：
+对照 [ArchitectureDesign.md](../../Assets/Notes/过程性汇报文档归档/ArchitectureDesign.md) 相关章节：
 
 - {不变量 1}：{满足方式}
 - {不变量 2}：{满足方式}

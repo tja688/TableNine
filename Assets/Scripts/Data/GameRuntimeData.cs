@@ -21,6 +21,22 @@ public enum CardQuality
     Red
 }
 
+public enum CardDeckFaction
+{
+    Player,
+    Monster
+}
+
+public enum CardDeckKind
+{
+    Common,
+    Class,
+    WeakElite,
+    StrongElite,
+    Boss,
+    Custom
+}
+
 public enum MonsterLevel
 {
     None,
@@ -346,8 +362,23 @@ public sealed class CharacterDefinition
     public int BaseAttack;
     [FormerlySerializedAs("BaseArmor")]
     public int BaseArmor;
+    public string CommonDeckId;
+    public string ClassDeckId;
     public List<string> InitialSkillIds = new List<string>();
     public List<string> InitialHelpCardIds = new List<string>();
+}
+
+[Serializable]
+public sealed class CardDeckDefinition
+{
+    public string DeckId;
+    public string DisplayName;
+    [DescriptionField]
+    public string Description;
+    public CardDeckFaction Faction;
+    public CardDeckKind DeckKind;
+    public Sprite DefaultFaceImage;
+    public Sprite DefaultBackImage;
 }
 
 [Serializable]
@@ -355,7 +386,10 @@ public sealed class CardDefinition
 {
     public string CardId;
     public string DisplayName;
+    public string DeckId;
     public Sprite Image;
+    public Sprite FaceImageOverride;
+    public Sprite BackImageOverride;
     [DescriptionField]
     public string Description;
     public CardType CardType;
@@ -408,6 +442,7 @@ public sealed class MonsterDeckRuleDefinition
 {
     public int Layer;
     public int NodeInLayer;
+    public string SourceDeckId;
     public int TotalCardCount;
     public List<string> AllowedMonsterCardIds = new List<string>();
     public List<MonsterLevelQuotaDefinition> LevelQuotas = new List<MonsterLevelQuotaDefinition>();
@@ -418,6 +453,7 @@ public sealed class MonsterDeckRuleDefinition
 public sealed class GameConfigDatabase : ScriptableObject
 {
     public List<CharacterDefinition> Characters = new List<CharacterDefinition>();
+    public List<CardDeckDefinition> CardDecks = new List<CardDeckDefinition>();
     public List<CardDefinition> Cards = new List<CardDefinition>();
     public List<SkillDefinition> Skills = new List<SkillDefinition>();
     public List<MonsterDeckRuleDefinition> MonsterDeckRules = new List<MonsterDeckRuleDefinition>();
@@ -428,11 +464,13 @@ public sealed class GameConfigDatabase : ScriptableObject
     {
         var config = new GameConfigSet();
         config.Characters.AddRange(Characters);
+        config.CardDecks.AddRange(CardDecks);
         config.Cards.AddRange(Cards);
         config.Skills.AddRange(Skills);
         config.MonsterDeckRules.AddRange(MonsterDeckRules);
         config.Relics.AddRange(Relics);
         config.Rooms.AddRange(Rooms);
+        CardDeckDefinitionMigration.EnsureDecksAndAssignments(config);
         CardDefinitionMigration.MigrateHelpCardSemantics(config.Cards);
         return config;
     }
@@ -441,6 +479,7 @@ public sealed class GameConfigDatabase : ScriptableObject
 public sealed class GameConfigSet
 {
     public List<CharacterDefinition> Characters { get; } = new List<CharacterDefinition>();
+    public List<CardDeckDefinition> CardDecks { get; } = new List<CardDeckDefinition>();
     public List<CardDefinition> Cards { get; } = new List<CardDefinition>();
     public List<SkillDefinition> Skills { get; } = new List<SkillDefinition>();
     public List<MonsterDeckRuleDefinition> MonsterDeckRules { get; } = new List<MonsterDeckRuleDefinition>();
