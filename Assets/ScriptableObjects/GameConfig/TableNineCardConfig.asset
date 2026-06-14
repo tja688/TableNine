@@ -73,7 +73,7 @@ MonoBehaviour:
     BaseAttack: 0
     BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
-    RestoreAfterNode: 0
+    RestoreAfterNode: 1
     RestoreAfterNodeAuthoritative: 1
     EffectGraphId: eg_help_potion
     SystemTag: 3

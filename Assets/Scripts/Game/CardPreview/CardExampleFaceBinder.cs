@@ -11,127 +11,31 @@ public static class CardExampleFaceBinder
             return;
         }
 
-        var showStats = card.CardType == CardType.Monster;
-        SetText(root, "CardName", card.DisplayName ?? string.Empty);
-        SetStatText(root, "CardLife", showStats, card.BaseHp.ToString());
-        SetStatText(root, "CardAttack", showStats, card.BaseAttack.ToString());
-        SetStatText(root, "CardDefense", showStats, card.BaseArmor.ToString());
+        Apply(root, BakedCardRenderDataFactory.CreateFromCardDefinition(config, card));
+    }
+
+    public static void Apply(Transform root, BakedCardFaceRenderData data)
+    {
+        if (root == null || data == null)
+        {
+            return;
+        }
+
+        var showStats = data.StatMode == BakedCardFaceStatMode.FullStats;
+        SetText(root, "CardName", data.DisplayName ?? string.Empty);
+        SetStatText(root, "CardLife", showStats, data.Life.ToString());
+        SetStatText(root, "CardAttack", showStats, data.Attack.ToString());
+        SetStatText(root, "CardDefense", showStats, data.Defense.ToString());
 
         SetActive(root, "CardLifeIcon", showStats);
         SetActive(root, "CardAttackIcon", showStats);
         SetActive(root, "CardDefenseIcon", showStats);
 
-        ApplyDeckSprites(root, card, config);
-        ApplyMainIcon(root, card, config);
-        ApplyEntryIcons(root, card, config, showStats && card.CardType != CardType.Tutor);
-    }
-
-    private static void ApplyDeckSprites(Transform root, CardDefinition card, IConfigModel config)
-    {
-        ApplySprite(root, "CardFront", config.GetEffectiveCardFaceImage(card.CardId));
-        ApplySprite(root, "CardBack", config.GetEffectiveCardBackImage(card.CardId));
-    }
-
-    private static void ApplySprite(Transform root, string childName, Sprite sprite)
-    {
-        var child = FindChild(root, childName);
-        if (child == null)
-        {
-            return;
-        }
-
-        var renderer = child.GetComponent<SpriteRenderer>();
-        if (renderer == null)
-        {
-            return;
-        }
-
-        if (sprite != null)
-        {
-            renderer.sprite = sprite;
-        }
-
-        renderer.enabled = renderer.sprite != null;
-    }
-
-    private static void ApplyMainIcon(Transform root, CardDefinition card, IConfigModel config)
-    {
-        var mainIcon = FindChild(root, "CardMainIcon");
-        if (mainIcon == null)
-        {
-            return;
-        }
-
-        mainIcon.gameObject.SetActive(true);
-        var renderer = mainIcon.GetComponent<SpriteRenderer>();
-        if (renderer == null)
-        {
-            return;
-        }
-
-        var sprite = ResolveMainIconSprite(card, config);
-        renderer.sprite = sprite;
-        renderer.enabled = sprite != null;
-    }
-
-    private static Sprite ResolveMainIconSprite(CardDefinition card, IConfigModel config)
-    {
-        var sprite = config.GetCardMainImage(card.CardId);
-        if (sprite != null)
-        {
-            return sprite;
-        }
-
-        if (card.CardType != CardType.Tutor || card.SkillIds == null || card.SkillIds.Count == 0)
-        {
-            return null;
-        }
-
-        return config.GetSkillDefinition(card.SkillIds[0])?.Image;
-    }
-
-    private static void ApplyEntryIcons(Transform root, CardDefinition card, IConfigModel config, bool showStats)
-    {
-        var container = FindChild(root, "EntryIcons");
-        if (container == null)
-        {
-            return;
-        }
-
-        if (!showStats || card.SkillIds == null || card.SkillIds.Count == 0)
-        {
-            container.gameObject.SetActive(false);
-            return;
-        }
-
-        container.gameObject.SetActive(true);
-        var skillSprites = new List<Sprite>();
-        for (var i = 0; i < card.SkillIds.Count; i++)
-        {
-            var skill = config.GetSkillDefinition(card.SkillIds[i]);
-            if (skill?.Image != null)
-            {
-                skillSprites.Add(skill.Image);
-            }
-        }
-
-        for (var i = 0; i < container.childCount; i++)
-        {
-            var child = container.GetChild(i);
-            var hasSprite = i < skillSprites.Count;
-            child.gameObject.SetActive(hasSprite);
-            if (!hasSprite)
-            {
-                continue;
-            }
-
-            var renderer = child.GetComponent<SpriteRenderer>();
-            if (renderer != null)
-            {
-                renderer.sprite = skillSprites[i];
-                renderer.enabled = skillSprites[i] != null;
-            }
-        }
+        ApplySprite(root, "CardFront", data.FaceSprite);
+        ApplySprite(root, "CardBack", data.BackSprite);
+        ApplyMainIcon(root, data.MainIconSprite);
+        ApplyIconContainer(root, "EntryIcons", data);
+        ApplyIconContainer(root, "SkillIcons", data);
     }
 
     private static void SetStatText(Transform root, string childName, bool visible, string value)
@@ -201,5 +105,94 @@ public static class CardExampleFaceBinder
         }
 
         return null;
+    }
+
+    private static void ApplySprite(Transform root, string childName, Sprite sprite)
+    {
+        var child = FindChild(root, childName);
+        if (child == null)
+        {
+            return;
+        }
+
+        var renderer = child.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        if (sprite != null)
+        {
+            renderer.sprite = sprite;
+        }
+
+        renderer.enabled = renderer.sprite != null;
+    }
+
+    private static void ApplyMainIcon(Transform root, Sprite sprite)
+    {
+        var mainIcon = FindChild(root, "CardMainIcon");
+        if (mainIcon == null)
+        {
+            return;
+        }
+
+        var renderer = mainIcon.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        renderer.sprite = sprite;
+        renderer.enabled = sprite != null;
+        mainIcon.gameObject.SetActive(sprite != null);
+    }
+
+    private static void ApplyIconContainer(Transform root, string containerName, BakedCardFaceRenderData data)
+    {
+        var container = FindChild(root, containerName);
+        if (container == null)
+        {
+            return;
+        }
+
+        var sprites = data.EntryIconSprites;
+        var showIcons = data.StatMode == BakedCardFaceStatMode.FullStats
+                        && ((sprites != null && sprites.Count > 0) || data.StampedIconCount > 0);
+        container.gameObject.SetActive(showIcons);
+        if (!showIcons)
+        {
+            return;
+        }
+
+        for (var i = 0; i < container.childCount; i++)
+        {
+            var child = container.GetChild(i);
+            var shouldShow = sprites != null && i < sprites.Count;
+            if (!shouldShow && sprites != null && sprites.Count > 0)
+            {
+                child.gameObject.SetActive(false);
+                continue;
+            }
+
+            shouldShow = i < data.StampedIconCount || shouldShow;
+            child.gameObject.SetActive(shouldShow);
+            if (!shouldShow)
+            {
+                continue;
+            }
+
+            if (sprites == null || i >= sprites.Count)
+            {
+                continue;
+            }
+
+            var renderer = child.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.sprite = sprites[i];
+                renderer.enabled = sprites[i] != null;
+            }
+        }
     }
 }

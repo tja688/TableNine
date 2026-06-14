@@ -18,6 +18,9 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
     [SerializeField] private Button[] mChoiceButtons;
+    [SerializeField] private Image[] mChoiceItemImages;
+    [SerializeField] private TMP_Text[] mChoiceNameTexts;
+    [SerializeField] private Graphic[] mChoiceArrowGraphics;
     [SerializeField] private Button mPassButton;
     [SerializeField] private TMP_Text mPassText;
 
@@ -53,6 +56,9 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
         HideAllSubWindows();
         mActiveSubWindow = null;
         mChoiceButtons = null;
+        mChoiceItemImages = null;
+        mChoiceNameTexts = null;
+        mChoiceArrowGraphics = null;
         mPassButton = null;
         mPassText = null;
     }
@@ -131,16 +137,28 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
         }
 
         var buttons = new List<Button>();
+        var itemImages = new List<Image>();
+        var nameTexts = new List<TMP_Text>();
+        var arrowGraphics = new List<Graphic>();
         for (var i = 1; i <= 3; i++)
         {
-            var button = FindDeep(searchRoot, $"ChoiseButton{i}")?.GetComponent<Button>();
+            var buttonRoot = FindDeep(searchRoot, $"ChoiseButton{i}");
+            var button = buttonRoot != null ? buttonRoot.GetComponent<Button>() : null;
             if (button != null)
             {
                 buttons.Add(button);
+                itemImages.Add(
+                    FindDeep(buttonRoot, "ChoiseItemImage1")?.GetComponent<Image>()
+                    ?? buttonRoot.GetComponent<Image>());
+                nameTexts.Add(FindDeep(buttonRoot, "Name")?.GetComponent<TMP_Text>());
+                arrowGraphics.Add(FindDeep(buttonRoot, "ChoiseArrowImage")?.GetComponent<Graphic>());
             }
         }
 
         mChoiceButtons = buttons.ToArray();
+        mChoiceItemImages = itemImages.ToArray();
+        mChoiceNameTexts = nameTexts.ToArray();
+        mChoiceArrowGraphics = arrowGraphics.ToArray();
         mPassButton = FindDeep(searchRoot, "PassButton")?.GetComponent<Button>();
         mPassText = FindDeep(searchRoot, "PassText")?.GetComponent<TMP_Text>();
     }
@@ -185,6 +203,43 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
         if (mPassButton != null)
         {
             mPassButton.onClick.RemoveAllListeners();
+        }
+    }
+
+    public void SetChoiceCardPreview(int index, Sprite sprite, string displayName)
+    {
+        if (index < 0 || mChoiceItemImages == null || index >= mChoiceItemImages.Length)
+        {
+            return;
+        }
+
+        var image = mChoiceItemImages[index];
+        if (image == null)
+        {
+            return;
+        }
+
+        image.sprite = sprite;
+        image.type = Image.Type.Simple;
+        image.preserveAspect = true;
+        image.color = Color.white;
+        image.raycastTarget = false;
+
+        var rect = image.rectTransform;
+        rect.anchorMin = new Vector2(0.08f, 0.08f);
+        rect.anchorMax = new Vector2(0.92f, 0.92f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        if (mChoiceNameTexts != null && index < mChoiceNameTexts.Length && mChoiceNameTexts[index] != null)
+        {
+            mChoiceNameTexts[index].text = string.IsNullOrWhiteSpace(displayName) ? string.Empty : displayName;
+            mChoiceNameTexts[index].gameObject.SetActive(false);
+        }
+
+        if (mChoiceArrowGraphics != null && index < mChoiceArrowGraphics.Length && mChoiceArrowGraphics[index] != null)
+        {
+            mChoiceArrowGraphics[index].gameObject.SetActive(false);
         }
     }
 

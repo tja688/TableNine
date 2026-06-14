@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum BakedCardFaceTemplate
@@ -29,4 +30,8 @@ public sealed class BakedCardFaceRenderData
     public BakedCardFaceSize Size;
     public BakedCardFaceStatMode StatMode;
     public int StampedIconCount;
+    public Sprite FaceSprite;
+    public Sprite BackSprite;
+    public Sprite MainIconSprite;
+    public List<Sprite> EntryIconSprites = new List<Sprite>();
 }

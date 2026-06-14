@@ -1,9 +1,14 @@
 using System.Collections.Generic;
 using QFramework;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class GameplayWorldPresenter : MonoBehaviour, IController
 {
+    private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
+
     private readonly Dictionary<int, GameplayCardVisual> mBoardCardViews = new Dictionary<int, GameplayCardVisual>();
     private readonly Dictionary<int, GameplayCardVisual> mItemCardViews = new Dictionary<int, GameplayCardVisual>();
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
@@ -12,8 +17,14 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     [SerializeField] private Transform mBoardRoot;
     [SerializeField] private Transform mItemRoot;
     [SerializeField] private GameObject mCardTemplate;
+    [SerializeField] private GameObject mCardFaceTemplate;
+    [SerializeField] private GameObject mPlayerCardTemplate;
+    [SerializeField] private float mFallbackWorldCardHeight = 3.64f;
 
     private CardViewPresenter mCardViewPresenter;
+    private BakedCardFaceComposer mCardComposer;
+    private GameObject mReferenceCardTemplate;
+    private float mReferenceWorldCardHeight;
 
     public IArchitecture GetArchitecture()
     {
@@ -29,6 +40,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         mCardViewPresenter = new CardViewPresenter();
         CacheSceneReferences();
+        mCardComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
         BuildSlotInputs();
         BuildCardVisuals();
         RegisterGameplayEvents();
@@ -43,6 +55,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
 
         mEventRegisters.Clear();
+        if (mCardComposer != null)
+        {
+            mCardComposer.Dispose();
+            mCardComposer = null;
+        }
     }
 
     private void CacheSceneReferences()
@@ -57,14 +74,21 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             mItemRoot = GameObject.Find("Item CardSlots")?.transform;
         }
 
-        if (mEnableLegacyGreyboxPresentation && mCardTemplate == null)
+        if (mEnableLegacyGreyboxPresentation && mReferenceCardTemplate == null)
         {
-            mCardTemplate = GameObject.Find("NineGrid CardSlots/CardExample");
+            mReferenceCardTemplate = GameObject.Find("NineGrid Main CardSlots/CardSlot1/CardExample");
         }
 
-        if (mEnableLegacyGreyboxPresentation && mCardTemplate == null)
+        if (mEnableLegacyGreyboxPresentation && mReferenceCardTemplate == null)
         {
-            mCardTemplate = GameObject.Find("CardExample");
+            mReferenceCardTemplate = GameObject.Find("CardExample");
+        }
+
+        if (mCardTemplate == null)
+        {
+#if UNITY_EDITOR
+            mCardTemplate = AssetDatabase.LoadAssetAtPath<GameObject>(StandardCardPrefabPath);
+#endif
         }
 
         if (mBoardRoot == null || mItemRoot == null || mCardTemplate == null)
@@ -74,7 +98,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             return;
         }
 
-        mCardTemplate.SetActive(false);
+        mReferenceWorldCardHeight = MeasureReferenceWorldHeight();
+        if (IsSceneObject(mReferenceCardTemplate))
+        {
+            mReferenceCardTemplate.SetActive(false);
+        }
     }
 
     private void BuildSlotInputs()
@@ -229,7 +257,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             }
 
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-            mCardViewPresenter.Refresh(view, uid.Value, false, isPending);
+            RefreshCardView(view, uid.Value, false, isPending);
         }
     }
 
@@ -257,7 +285,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
 
         var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-        mCardViewPresenter.Refresh(view, uid.Value, false, isPending);
+        RefreshCardView(view, uid.Value, false, isPending);
     }
 
     private void RefreshItemCardViews()
@@ -286,7 +314,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             }
 
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-            mCardViewPresenter.Refresh(view, uid.Value, true, isPending);
+            RefreshCardView(view, uid.Value, true, isPending);
         }
     }
 
@@ -313,7 +341,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
 
         var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
-        mCardViewPresenter.Refresh(view, uid.Value, true, isPending);
+        RefreshCardView(view, uid.Value, true, isPending);
     }
 
     private void RefreshCardByUid(CardUid uid)
@@ -364,7 +392,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         instance.name = objectName;
         instance.SetActive(true);
         instance.transform.position = worldPosition;
-        instance.transform.localScale = mCardTemplate.transform.localScale * scaleMultiplier;
+        instance.transform.localScale = Vector3.one;
 
         var collider = instance.GetComponent<Collider2D>();
         if (collider != null)
@@ -379,8 +407,33 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
 
         view.Initialize();
+        view.SetTargetWorldHeight(mReferenceWorldCardHeight * scaleMultiplier);
         view.Hide();
         return view;
+    }
+
+    private void RefreshCardView(GameplayCardVisual view, CardUid uid, bool itemSlot, bool pending)
+    {
+        var data = mCardViewPresenter.Create(uid);
+        var sprites = ComposeCardSprites(data);
+        view.Bind(data, itemSlot, pending, sprites);
+    }
+
+    private BakedCardSpriteSet ComposeCardSprites(CardViewData data)
+    {
+        if (mCardComposer == null || data == null)
+        {
+            return default;
+        }
+
+        var renderData = BakedCardRenderDataFactory.CreateRuntime(this, data);
+        if (renderData == null)
+        {
+            return default;
+        }
+
+        var faceSprite = mCardComposer.Compose(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit, out var backSprite);
+        return new BakedCardSpriteSet(faceSprite, backSprite);
     }
 
     private void HideBoardCardViews()
@@ -418,6 +471,40 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         return null;
     }
 
+    private float MeasureReferenceWorldHeight()
+    {
+        if (mReferenceCardTemplate == null)
+        {
+            return mFallbackWorldCardHeight;
+        }
+
+        var collider = mReferenceCardTemplate.GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            var size = collider.bounds.size.y;
+            if (size > 0f)
+            {
+                return size;
+            }
+        }
+
+        var renderer = mReferenceCardTemplate.GetComponentInChildren<SpriteRenderer>(true);
+        if (renderer != null)
+        {
+            var size = renderer.bounds.size.y;
+            if (size > 0f)
+            {
+                return size;
+            }
+        }
+
+        return mFallbackWorldCardHeight;
+    }
+
+    private static bool IsSceneObject(GameObject target)
+    {
+        return target != null && target.scene.IsValid() && target.scene.isLoaded;
+    }
 }
 
 // Compatibility shim for the existing scene component. New scenes should use GameplayWorldPresenter.

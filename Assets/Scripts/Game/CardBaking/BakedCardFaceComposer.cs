@@ -11,9 +11,26 @@ public sealed class BakedCardFaceComposer
     private const string PlayerCardPath = "Assets/Prefabs/Cards/PlayerCard.prefab";
     private const float TemplateDistance = 6000f;
 
+    private readonly GameObject mCardExampleTemplate;
+    private readonly GameObject mPlayerCardTemplate;
     private Camera mCamera;
     private GameObject mCameraObject;
     private int mComposeIndex;
+
+    public BakedCardFaceComposer(GameObject cardExampleTemplate = null, GameObject playerCardTemplate = null)
+    {
+#if UNITY_EDITOR
+        mCardExampleTemplate = cardExampleTemplate != null
+            ? cardExampleTemplate
+            : AssetDatabase.LoadAssetAtPath<GameObject>(CardExamplePath);
+        mPlayerCardTemplate = playerCardTemplate != null
+            ? playerCardTemplate
+            : AssetDatabase.LoadAssetAtPath<GameObject>(PlayerCardPath);
+#else
+        mCardExampleTemplate = cardExampleTemplate;
+        mPlayerCardTemplate = playerCardTemplate;
+#endif
+    }
 
     public Sprite Compose(BakedCardFaceRenderData data, float pixelsPerUnit, out Sprite backSprite)
     {
@@ -78,14 +95,11 @@ public sealed class BakedCardFaceComposer
         mCameraObject = null;
     }
 
-    private static GameObject LoadTemplate(BakedCardFaceTemplate template)
+    private GameObject LoadTemplate(BakedCardFaceTemplate template)
     {
-#if UNITY_EDITOR
-        var path = template == BakedCardFaceTemplate.PlayerCard ? PlayerCardPath : CardExamplePath;
-        return AssetDatabase.LoadAssetAtPath<GameObject>(path);
-#else
-        return null;
-#endif
+        return template == BakedCardFaceTemplate.PlayerCard
+            ? mPlayerCardTemplate
+            : mCardExampleTemplate;
     }
 
     private void EnsureCamera()
@@ -110,23 +124,7 @@ public sealed class BakedCardFaceComposer
 
     private static void ApplyData(Transform root, BakedCardFaceRenderData data)
     {
-        SetText(root, "CardName", data.DisplayName);
-        SetText(root, "CardLife", data.StatMode == BakedCardFaceStatMode.FullStats ? data.Life.ToString() : string.Empty);
-        SetText(root, "CardAttack", data.StatMode == BakedCardFaceStatMode.FullStats ? data.Attack.ToString() : string.Empty);
-        SetText(root, "CardDefense", data.StatMode == BakedCardFaceStatMode.FullStats ? data.Defense.ToString() : string.Empty);
-
-        SetActive(root, "CardLifeIcon", data.StatMode == BakedCardFaceStatMode.FullStats);
-        SetActive(root, "CardAttackIcon", data.StatMode == BakedCardFaceStatMode.FullStats);
-        SetActive(root, "CardDefenseIcon", data.StatMode == BakedCardFaceStatMode.FullStats);
-
-        var mainIcon = FindChild(root, "CardMainIcon");
-        if (mainIcon != null)
-        {
-            mainIcon.gameObject.SetActive(true);
-        }
-
-        ApplyStampedIcons(root, "SkillIcons", data.StampedIconCount);
-        ApplyStampedIcons(root, "EntryIcons", data.StampedIconCount);
+        CardExampleFaceBinder.Apply(root, data);
     }
 
     private Sprite RenderTemplate(GameObject root, BakedCardFaceSize size, float pixelsPerUnit)
@@ -226,49 +224,6 @@ public sealed class BakedCardFaceComposer
         }
 
         return bounds;
-    }
-
-    private static void SetText(Transform root, string childName, string value)
-    {
-        var child = FindChild(root, childName);
-        if (child == null)
-        {
-            return;
-        }
-
-        var text = child.GetComponent<TMP_Text>();
-        if (text == null)
-        {
-            return;
-        }
-
-        text.text = value ?? string.Empty;
-        text.enableWordWrapping = false;
-        text.extraPadding = true;
-        text.ForceMeshUpdate(true, true);
-    }
-
-    private static void SetActive(Transform root, string childName, bool active)
-    {
-        var child = FindChild(root, childName);
-        if (child != null)
-        {
-            child.gameObject.SetActive(active);
-        }
-    }
-
-    private static void ApplyStampedIcons(Transform root, string containerName, int activeCount)
-    {
-        var container = FindChild(root, containerName);
-        if (container == null)
-        {
-            return;
-        }
-
-        for (var i = 0; i < container.childCount; i++)
-        {
-            container.GetChild(i).gameObject.SetActive(i < activeCount);
-        }
     }
 
     private static Transform FindChild(Transform root, string childName)

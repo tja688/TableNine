@@ -171,6 +171,7 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
             AddSpriteProperty(section, card.FindPropertyRelative("Image"), "主图标", "卡牌中心核心显示图标。");
             ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, card,
                 "FaceImageOverride", "BackImageOverride");
+            section.Add(new BakedCardPreviewPanel(Skin, TargetSo, () => ResolvePreviewData(index)));
 
             if (cardType == CardType.Monster)
             {
@@ -370,6 +371,17 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
         field.BindProperty(property);
         field.Bind(TargetSo);
         parent.Add(Skin.WrapControl(label, description, field));
+    }
+
+    private BakedCardFaceRenderData ResolvePreviewData(int index)
+    {
+        if (!(TargetAsset is TableNineCardConfig asset) || index < 0 || index >= asset.Cards.Count)
+        {
+            return null;
+        }
+
+        var master = AssetDatabase.LoadAssetAtPath<TableNineGameConfig>("Assets/ScriptableObjects/TableNineGameConfig.asset");
+        return BakedCardRenderDataFactory.CreateEditorPreview(master, asset.Cards[index]);
     }
 }
 #endif
