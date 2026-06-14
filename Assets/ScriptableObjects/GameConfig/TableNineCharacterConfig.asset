@@ -16,7 +16,7 @@ MonoBehaviour:
   - CharacterId: character_imp
     DisplayName: "\u5C0F\u9B3C"
     Image: {fileID: 0}
-    Description: "\u5173\u5361\u7ED3\u675F\u767D\u5E2E\u52A9\u5361\u4E09\u9009\u4E00"
+    Description: "\u6BCF\u6B21\u5173\u5361\u7ED3\u675F\uFF0C\u8FDB\u884C\u4E00\u6B21\u767D\u8272\u5E2E\u52A9\u5361\u7684\u4E09\u9009\u4E00"
     BaseHp: 10
     BaseAttack: 3
     BaseArmor: 1
