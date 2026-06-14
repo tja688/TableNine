@@ -9,8 +9,8 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 {
     private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
 
-    private readonly Dictionary<int, GameplayCardVisual> mBoardCardViews = new Dictionary<int, GameplayCardVisual>();
-    private readonly Dictionary<int, GameplayCardVisual> mItemCardViews = new Dictionary<int, GameplayCardVisual>();
+    private readonly Dictionary<int, CardView> mBoardCardViews = new Dictionary<int, CardView>();
+    private readonly Dictionary<int, CardView> mItemCardViews = new Dictionary<int, CardView>();
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
     [SerializeField] private bool mEnableLegacyGreyboxPresentation = true;
@@ -386,7 +386,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         }
     }
 
-    private GameplayCardVisual CreateCardVisual(string objectName, Vector3 worldPosition, Transform parent, float scaleMultiplier)
+    private CardView CreateCardVisual(string objectName, Vector3 worldPosition, Transform parent, float scaleMultiplier)
     {
         var instance = Instantiate(mCardTemplate, worldPosition, Quaternion.identity, parent);
         instance.name = objectName;
@@ -394,16 +394,10 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         instance.transform.position = worldPosition;
         instance.transform.localScale = Vector3.one;
 
-        var collider = instance.GetComponent<Collider2D>();
-        if (collider != null)
-        {
-            Destroy(collider);
-        }
-
-        var view = instance.GetComponent<GameplayCardVisual>();
+        var view = instance.GetComponent<CardView>();
         if (view == null)
         {
-            view = instance.AddComponent<GameplayCardVisual>();
+            view = instance.AddComponent<CardView>();
         }
 
         view.Initialize();
@@ -412,7 +406,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         return view;
     }
 
-    private void RefreshCardView(GameplayCardVisual view, CardUid uid, bool itemSlot, bool pending)
+    private void RefreshCardView(CardView view, CardUid uid, bool itemSlot, bool pending)
     {
         var data = mCardViewPresenter.Create(uid);
         var sprites = ComposeCardSprites(data);
@@ -432,8 +426,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             return default;
         }
 
-        var faceSprite = mCardComposer.Compose(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit, out var backSprite);
-        return new BakedCardSpriteSet(faceSprite, backSprite);
+        return mCardComposer.ComposeSet(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit);
     }
 
     private void HideBoardCardViews()
@@ -475,7 +468,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     {
         if (mReferenceCardTemplate == null)
         {
-            return mFallbackWorldCardHeight;
+            return BakedCardRenderDataFactory.CanonicalWorldCardHeight;
         }
 
         var collider = mReferenceCardTemplate.GetComponent<Collider2D>();
@@ -498,7 +491,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             }
         }
 
-        return mFallbackWorldCardHeight;
+        return BakedCardRenderDataFactory.CanonicalWorldCardHeight;
     }
 
     private static bool IsSceneObject(GameObject target)

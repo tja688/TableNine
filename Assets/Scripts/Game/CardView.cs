@@ -3,49 +3,34 @@ using UnityEngine;
 
 public class CardView : MonoBehaviour
 {
-    [SerializeField] private SpriteRenderer mArtworkRenderer;
-    [SerializeField] private SpriteRenderer mBackRenderer;
+    [SerializeField] private CardDisplayAdapter mDisplayAdapter;
     [SerializeField] private TextMesh mTextMesh;
-    [SerializeField] private BoxCollider2D mCollider;
-    [SerializeField] private float mTargetWorldHeight = 3.6f;
 
     public CardUid? BoundUid { get; private set; }
     public CardViewData Data { get; private set; }
-
-    private Vector3 mInitialLocalScale = Vector3.one;
-    private Sprite mRuntimeFaceSprite;
-    private Sprite mRuntimeBackSprite;
+    public CardDisplayAdapter DisplayAdapter => mDisplayAdapter;
 
     public virtual void Initialize()
     {
-        if (mArtworkRenderer == null)
+        if (mDisplayAdapter == null)
         {
-            mArtworkRenderer = GetComponent<SpriteRenderer>();
+            mDisplayAdapter = GetComponent<CardDisplayAdapter>();
         }
 
-        if (mArtworkRenderer == null)
+        if (mDisplayAdapter == null)
         {
-            mArtworkRenderer = gameObject.AddComponent<SpriteRenderer>();
+            mDisplayAdapter = gameObject.AddComponent<CardDisplayAdapter>();
         }
 
-        if (mCollider == null)
-        {
-            mCollider = GetComponent<BoxCollider2D>();
-        }
-
-        if (mCollider == null)
-        {
-            mCollider = gameObject.AddComponent<BoxCollider2D>();
-        }
-
-        mCollider.isTrigger = true;
-        mBackRenderer = EnsureBackRenderer();
-        mInitialLocalScale = transform.localScale;
+        mDisplayAdapter.Initialize();
     }
 
     public void SetTargetWorldHeight(float targetWorldHeight)
     {
-        mTargetWorldHeight = Mathf.Max(0.1f, targetWorldHeight);
+        if (mDisplayAdapter != null)
+        {
+            mDisplayAdapter.SetTargetWorldHeight(targetWorldHeight);
+        }
     }
 
     public void Bind(CardViewData data, bool itemSlot, bool pending, BakedCardSpriteSet sprites)
@@ -60,7 +45,7 @@ public class CardView : MonoBehaviour
 
         if (sprites.HasFace)
         {
-            ShowBaked(sprites.FaceSprite, sprites.BackSprite, pending);
+            ShowBaked(sprites, pending);
             return;
         }
 
@@ -75,23 +60,10 @@ public class CardView : MonoBehaviour
     public void Show(string cardText, Color cardColor, Sprite sprite)
     {
         gameObject.SetActive(true);
-        ReleaseRuntimeSprites();
-        transform.localScale = mInitialLocalScale;
-
-        if (mArtworkRenderer != null)
+        if (mDisplayAdapter != null)
         {
-            if (sprite != null)
-            {
-                mArtworkRenderer.sprite = sprite;
-            }
-
-            mArtworkRenderer.color = cardColor;
-            mArtworkRenderer.enabled = mArtworkRenderer.sprite != null;
-        }
-
-        if (mBackRenderer != null)
-        {
-            mBackRenderer.enabled = false;
+            mDisplayAdapter.Hide();
+            gameObject.SetActive(true);
         }
 
         EnsureTextMesh();
@@ -99,32 +71,15 @@ public class CardView : MonoBehaviour
         {
             mTextMesh.gameObject.SetActive(true);
             mTextMesh.text = cardText;
+            mTextMesh.color = cardColor;
         }
-
-        SyncCollider(mArtworkRenderer != null ? mArtworkRenderer.sprite : null);
     }
 
-    public void ShowBaked(Sprite faceSprite, Sprite backSprite, bool pending = false)
+    public void ShowBaked(BakedCardSpriteSet sprites, bool pending = false)
     {
-        gameObject.SetActive(true);
-        ReleaseRuntimeSprites();
-
-        mRuntimeFaceSprite = faceSprite;
-        mRuntimeBackSprite = backSprite;
-
-        if (mArtworkRenderer != null)
+        if (mDisplayAdapter == null)
         {
-            mArtworkRenderer.sprite = faceSprite;
-            mArtworkRenderer.color = pending ? new Color(1f, 0.97f, 0.88f) : Color.white;
-            mArtworkRenderer.enabled = faceSprite != null;
-        }
-
-        if (mBackRenderer != null)
-        {
-            mBackRenderer.sprite = backSprite;
-            mBackRenderer.enabled = false;
-            mBackRenderer.sortingLayerName = mArtworkRenderer != null ? mArtworkRenderer.sortingLayerName : mBackRenderer.sortingLayerName;
-            mBackRenderer.sortingOrder = mArtworkRenderer != null ? mArtworkRenderer.sortingOrder : mBackRenderer.sortingOrder;
+            return;
         }
 
         if (mTextMesh != null)
@@ -132,44 +87,26 @@ public class CardView : MonoBehaviour
             mTextMesh.gameObject.SetActive(false);
         }
 
-        FitToHeight(faceSprite);
-        SyncCollider(faceSprite);
+        mDisplayAdapter.ApplySprites(sprites, pending);
+    }
+
+    public void ShowBaked(Sprite faceSprite, Sprite backSprite, bool pending = false)
+    {
+        ShowBaked(new BakedCardSpriteSet(faceSprite, backSprite), pending);
     }
 
     public void Hide()
     {
         BoundUid = null;
         Data = null;
-        ReleaseRuntimeSprites();
-        gameObject.SetActive(false);
-    }
-
-    private void OnDestroy()
-    {
-        ReleaseRuntimeSprites();
-    }
-
-    private SpriteRenderer EnsureBackRenderer()
-    {
-        var existing = transform.Find("CardBack");
-        var backTransform = existing;
-        if (backTransform == null)
+        if (mDisplayAdapter != null)
         {
-            var backObject = new GameObject("CardBack");
-            backTransform = backObject.transform;
-            backTransform.SetParent(transform, false);
-            backTransform.localPosition = new Vector3(0f, 0f, 0.01f);
-            backTransform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            mDisplayAdapter.Hide();
         }
-
-        var renderer = backTransform.GetComponent<SpriteRenderer>();
-        if (renderer == null)
+        else
         {
-            renderer = backTransform.gameObject.AddComponent<SpriteRenderer>();
+            gameObject.SetActive(false);
         }
-
-        renderer.enabled = false;
-        return renderer;
     }
 
     private void EnsureTextMesh()
@@ -191,103 +128,10 @@ public class CardView : MonoBehaviour
         mTextMesh.alignment = TextAlignment.Center;
         mTextMesh.fontSize = 40;
         mTextMesh.characterSize = 0.08f;
-        mTextMesh.color = new Color(0.14f, 0.14f, 0.14f);
-
-        var renderer = mTextMesh.GetComponent<MeshRenderer>();
-        if (renderer != null && mArtworkRenderer != null)
+        if (mTextMesh.color.a <= 0f)
         {
-            renderer.sortingOrder = mArtworkRenderer.sortingOrder + 1;
+            mTextMesh.color = new Color(0.14f, 0.14f, 0.14f);
         }
-    }
-
-    private void FitToHeight(Sprite faceSprite)
-    {
-        if (faceSprite == null)
-        {
-            transform.localScale = mInitialLocalScale;
-            return;
-        }
-
-        var localHeight = faceSprite.bounds.size.y;
-        if (localHeight <= 0f)
-        {
-            return;
-        }
-
-        var parentScale = transform.parent != null ? transform.parent.lossyScale.y : 1f;
-        if (Mathf.Approximately(parentScale, 0f))
-        {
-            parentScale = 1f;
-        }
-
-        var scale = mTargetWorldHeight / (localHeight * parentScale);
-        transform.localScale = mInitialLocalScale * scale;
-    }
-
-    private void SyncCollider(Sprite sprite)
-    {
-        if (mCollider == null)
-        {
-            return;
-        }
-
-        if (sprite == null)
-        {
-            mCollider.size = new Vector2(1.5f, 2f);
-            mCollider.offset = Vector2.zero;
-            return;
-        }
-
-        mCollider.size = sprite.bounds.size;
-        mCollider.offset = sprite.bounds.center;
-    }
-
-    private void ReleaseRuntimeSprites()
-    {
-        ReleaseRuntimeSprite(ref mRuntimeFaceSprite);
-        ReleaseRuntimeSprite(ref mRuntimeBackSprite);
-    }
-
-    private static void ReleaseRuntimeSprite(ref Sprite sprite)
-    {
-        if (sprite == null)
-        {
-            return;
-        }
-
-        var texture = sprite.texture;
-        if (!IsRuntimeGeneratedFace(sprite, texture))
-        {
-            sprite = null;
-            return;
-        }
-
-        if (Application.isPlaying)
-        {
-            Destroy(sprite);
-            if (texture != null)
-            {
-                Destroy(texture);
-            }
-        }
-        else
-        {
-            DestroyImmediate(sprite);
-            if (texture != null)
-            {
-                DestroyImmediate(texture);
-            }
-        }
-
-        sprite = null;
-    }
-
-    private static bool IsRuntimeGeneratedFace(Sprite sprite, Texture texture)
-    {
-        return sprite != null
-               && sprite.name.StartsWith("BakedCardFace_")
-               && texture != null
-               && texture.name.StartsWith("BakedCardFace_");
     }
 }
 

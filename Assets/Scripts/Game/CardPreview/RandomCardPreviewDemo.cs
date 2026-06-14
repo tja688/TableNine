@@ -225,13 +225,12 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
             renderData.Defense = Mathf.Max(0, mCurrentCard.BaseArmor + Random.Range(0, 3));
         }
 
-        var worldFace = mComposer.Compose(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit, out var worldBack);
-        mWorldCardView.ShowBaked(worldFace, worldBack);
+        var sprites = mComposer.ComposeSet(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit);
+        mWorldCardView.ShowBaked(sprites);
 
-        if (mChoiceOverlay != null)
+        if (mChoiceOverlay != null && sprites.HasFace)
         {
-            var uiFace = mComposer.Compose(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit, out _);
-            mChoiceOverlay.SetChoiceCardPreview(mChoicePreviewIndex, uiFace, mCurrentCard.DisplayName);
+            mChoiceOverlay.SetChoiceCardPreview(mChoicePreviewIndex, sprites.FaceSprite, mCurrentCard.DisplayName);
         }
     }
 
@@ -295,7 +294,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
     {
         if (mCardRoot == null)
         {
-            return mFallbackWorldCardHeight;
+            return BakedCardRenderDataFactory.CanonicalWorldCardHeight;
         }
 
         var collider = mCardRoot.GetComponent<Collider2D>();
@@ -318,6 +317,6 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
             }
         }
 
-        return mFallbackWorldCardHeight;
+        return BakedCardRenderDataFactory.CanonicalWorldCardHeight;
     }
 }

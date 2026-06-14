@@ -113,56 +113,11 @@ public sealed class BakedCardWorldView : MonoBehaviour
 
     private void UpdateFaceSide()
     {
-        if (mVisualPivot == null || mFaceRenderer == null || mBackRenderer == null)
-        {
-            return;
-        }
-
-        var y = Mathf.Repeat(mVisualPivot.localEulerAngles.y, 360f);
-        var faceVisible = y <= 90f || y >= 270f;
-        mFaceRenderer.enabled = faceVisible;
-        mBackRenderer.enabled = !faceVisible && mBackRenderer.sprite != null;
+        BakedCardFaceVisibility.Apply(mVisualPivot, mFaceRenderer, mBackRenderer);
     }
 
     private void ReleaseRuntimeFaceSprite()
     {
-        if (mRuntimeFaceSprite == null)
-        {
-            return;
-        }
-
-        var texture = mRuntimeFaceSprite.texture;
-        if (!IsRuntimeGeneratedFace(mRuntimeFaceSprite, texture))
-        {
-            mRuntimeFaceSprite = null;
-            return;
-        }
-
-        if (Application.isPlaying)
-        {
-            Destroy(mRuntimeFaceSprite);
-            if (texture != null)
-            {
-                Destroy(texture);
-            }
-        }
-        else
-        {
-            DestroyImmediate(mRuntimeFaceSprite);
-            if (texture != null)
-            {
-                DestroyImmediate(texture);
-            }
-        }
-
-        mRuntimeFaceSprite = null;
-    }
-
-    private static bool IsRuntimeGeneratedFace(Sprite sprite, Texture texture)
-    {
-        return sprite != null
-               && sprite.name.StartsWith("BakedCardFace_")
-               && texture != null
-               && texture.name.StartsWith("BakedCardFace_");
+        BakedCardRuntimeSpriteUtility.Release(ref mRuntimeFaceSprite);
     }
 }

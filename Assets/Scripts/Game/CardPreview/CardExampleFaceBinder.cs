@@ -162,6 +162,7 @@ public static class CardExampleFaceBinder
         container.gameObject.SetActive(showIcons);
         if (!showIcons)
         {
+            HideIconChildren(container);
             return;
         }
 
@@ -193,6 +194,24 @@ public static class CardExampleFaceBinder
                 renderer.sprite = sprites[i];
                 renderer.enabled = sprites[i] != null;
             }
+        }
+    }
+
+    private static void HideIconChildren(Transform container)
+    {
+        for (var i = 0; i < container.childCount; i++)
+        {
+            var child = container.GetChild(i);
+            child.gameObject.SetActive(false);
+
+            var renderer = child.GetComponent<SpriteRenderer>();
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            renderer.sprite = null;
+            renderer.enabled = false;
         }
     }
 }

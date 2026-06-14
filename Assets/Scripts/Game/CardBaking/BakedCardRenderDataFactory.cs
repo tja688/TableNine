@@ -6,6 +6,9 @@ public static class BakedCardRenderDataFactory
 {
     public const float StandardPixelsPerUnit = 100f;
     public const BakedCardFaceSize StandardBakeSize = BakedCardFaceSize.Large;
+    public const float StandardSlotScale = 1.8185147f;
+    public const float TemplateLocalCardHeight = 2f;
+    public const float CanonicalWorldCardHeight = TemplateLocalCardHeight * StandardSlotScale;
 
     public static BakedCardFaceRenderData CreateRuntime(IController controller, CardViewData data)
     {

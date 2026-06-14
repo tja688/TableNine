@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -10,6 +9,7 @@ public sealed class BakedCardFaceComposer
     private const string CardExamplePath = "Assets/Prefabs/Cards/CardExample.prefab";
     private const string PlayerCardPath = "Assets/Prefabs/Cards/PlayerCard.prefab";
     private const float TemplateDistance = 6000f;
+    private const float TemplateLocalCardHeight = 2f;
 
     private readonly GameObject mCardExampleTemplate;
     private readonly GameObject mPlayerCardTemplate;
@@ -32,19 +32,18 @@ public sealed class BakedCardFaceComposer
 #endif
     }
 
-    public Sprite Compose(BakedCardFaceRenderData data, float pixelsPerUnit, out Sprite backSprite)
+    public BakedCardSpriteSet ComposeSet(BakedCardFaceRenderData data, float pixelsPerUnit)
     {
-        backSprite = null;
         if (data == null)
         {
-            return null;
+            return default;
         }
 
         var template = LoadTemplate(data.Template);
         if (template == null)
         {
             Debug.LogWarning($"Baked card face template is missing: {data.Template}");
-            return null;
+            return default;
         }
 
         EnsureCamera();
@@ -59,8 +58,30 @@ public sealed class BakedCardFaceComposer
         try
         {
             ApplyData(root.transform, data);
-            backSprite = FindChild(root.transform, "CardBack")?.GetComponent<SpriteRenderer>()?.sprite;
-            return RenderTemplate(root, data.Size, pixelsPerUnit);
+            var contentWorldHeight = ResolveTemplateContentWorldHeight(root);
+            var framingBounds = CalculateSpriteBounds(root);
+            if (framingBounds.size.x <= 0f || framingBounds.size.y <= 0f)
+            {
+                framingBounds = new Bounds(root.transform.position, new Vector3(1.5f, TemplateLocalCardHeight, 0.1f));
+            }
+
+            var faceSprite = RenderFramedView(
+                root,
+                data.Size,
+                pixelsPerUnit,
+                framingBounds,
+                includeFaceElements: true,
+                $"BakedCardFace_{data.Size}_{mComposeIndex}");
+
+            var backSprite = RenderFramedView(
+                root,
+                data.Size,
+                pixelsPerUnit,
+                framingBounds,
+                includeFaceElements: false,
+                $"BakedCardBack_{data.Size}_{mComposeIndex}");
+
+            return new BakedCardSpriteSet(faceSprite, backSprite, contentWorldHeight, 1f);
         }
         finally
         {
@@ -73,6 +94,13 @@ public sealed class BakedCardFaceComposer
                 Object.DestroyImmediate(root);
             }
         }
+    }
+
+    public Sprite Compose(BakedCardFaceRenderData data, float pixelsPerUnit, out Sprite backSprite)
+    {
+        var spriteSet = ComposeSet(data, pixelsPerUnit);
+        backSprite = spriteSet.BackSprite;
+        return spriteSet.FaceSprite;
     }
 
     public void Dispose()
@@ -127,20 +155,33 @@ public sealed class BakedCardFaceComposer
         CardExampleFaceBinder.Apply(root, data);
     }
 
-    private Sprite RenderTemplate(GameObject root, BakedCardFaceSize size, float pixelsPerUnit)
+    private static float ResolveTemplateContentWorldHeight(GameObject root)
     {
-        var dimensions = GetPixelDimensions(size);
-        var bounds = CalculateSpriteBounds(root);
-        if (bounds.size.x <= 0f || bounds.size.y <= 0f)
+        var collider = root.GetComponent<Collider2D>();
+        if (collider != null && collider.bounds.size.y > 0f)
         {
-            bounds = new Bounds(root.transform.position, new Vector3(2f, 3f, 0.1f));
+            return collider.bounds.size.y;
         }
 
-        var padding = Mathf.Max(bounds.size.x, bounds.size.y) * 0.05f;
+        return TemplateLocalCardHeight;
+    }
+
+    private Sprite RenderFramedView(
+        GameObject root,
+        BakedCardFaceSize size,
+        float pixelsPerUnit,
+        Bounds framingBounds,
+        bool includeFaceElements,
+        string textureName)
+    {
+        ConfigureTemplateVisibility(root.transform, includeFaceElements);
+
+        var dimensions = GetPixelDimensions(size);
+        var padding = Mathf.Max(framingBounds.size.x, framingBounds.size.y) * 0.05f;
         var aspect = (float)dimensions.x / dimensions.y;
-        var halfHeight = bounds.extents.y + padding;
+        var halfHeight = framingBounds.extents.y + padding;
         var halfWidthByHeight = halfHeight * aspect;
-        var halfWidth = bounds.extents.x + padding;
+        var halfWidth = framingBounds.extents.x + padding;
         if (halfWidthByHeight < halfWidth)
         {
             halfHeight = halfWidth / aspect;
@@ -148,7 +189,7 @@ public sealed class BakedCardFaceComposer
 
         mCamera.aspect = aspect;
         mCamera.orthographicSize = halfHeight;
-        mCamera.transform.position = new Vector3(bounds.center.x, bounds.center.y, bounds.center.z - 10f);
+        mCamera.transform.position = new Vector3(framingBounds.center.x, framingBounds.center.y, framingBounds.center.z - 10f);
         mCamera.transform.rotation = Quaternion.identity;
 
         var renderTexture = new RenderTexture(dimensions.x, dimensions.y, 24, RenderTextureFormat.ARGB32)
@@ -168,7 +209,7 @@ public sealed class BakedCardFaceComposer
         {
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp,
-            name = $"BakedCardFace_{size}_{mComposeIndex}"
+            name = textureName
         };
         texture.ReadPixels(new Rect(0, 0, dimensions.x, dimensions.y), 0, 0);
         texture.Apply(false, false);
@@ -176,15 +217,134 @@ public sealed class BakedCardFaceComposer
         mCamera.targetTexture = previousTarget;
         RenderTexture.active = previousActive;
         renderTexture.Release();
-        Object.Destroy(renderTexture);
+        if (Application.isPlaying)
+        {
+            Object.Destroy(renderTexture);
+        }
+        else
+        {
+            Object.DestroyImmediate(renderTexture);
+        }
+
+        var croppedTexture = CropToOpaqueBounds(texture, out _);
+        if (croppedTexture != texture)
+        {
+            if (Application.isPlaying)
+            {
+                Object.Destroy(texture);
+            }
+            else
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
 
         var sprite = Sprite.Create(
-            texture,
-            new Rect(0, 0, texture.width, texture.height),
+            croppedTexture,
+            new Rect(0f, 0f, croppedTexture.width, croppedTexture.height),
             new Vector2(0.5f, 0.5f),
             pixelsPerUnit);
-        sprite.name = texture.name;
+        sprite.name = croppedTexture.name;
         return sprite;
+    }
+
+    private static void ConfigureTemplateVisibility(Transform root, bool includeFaceElements)
+    {
+        SetActiveIfExists(root, "CardFront", includeFaceElements);
+        SetActiveIfExists(root, "CardTextCanvas", includeFaceElements);
+        SetActiveIfExists(root, "CardName", includeFaceElements);
+        SetActiveIfExists(root, "CardBack", !includeFaceElements);
+    }
+
+    private static void SetActiveIfExists(Transform root, string childName, bool active)
+    {
+        var child = FindChild(root, childName);
+        if (child != null)
+        {
+            child.gameObject.SetActive(active);
+        }
+    }
+
+    private static Texture2D CropToOpaqueBounds(Texture2D source, out RectInt cropRect)
+    {
+        cropRect = new RectInt(0, 0, source.width, source.height);
+        if (source == null || source.width <= 0 || source.height <= 0)
+        {
+            return source;
+        }
+
+        var pixels = source.GetPixels32();
+        var width = source.width;
+        var height = source.height;
+        var minX = width;
+        var minY = height;
+        var maxX = -1;
+        var maxY = -1;
+
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                if (pixels[y * width + x].a <= 0)
+                {
+                    continue;
+                }
+
+                if (x < minX)
+                {
+                    minX = x;
+                }
+
+                if (x > maxX)
+                {
+                    maxX = x;
+                }
+
+                if (y < minY)
+                {
+                    minY = y;
+                }
+
+                if (y > maxY)
+                {
+                    maxY = y;
+                }
+            }
+        }
+
+        if (maxX < minX || maxY < minY)
+        {
+            return source;
+        }
+
+        var cropWidth = maxX - minX + 1;
+        var cropHeight = maxY - minY + 1;
+        cropRect = new RectInt(minX, minY, cropWidth, cropHeight);
+
+        if (cropWidth == width && cropHeight == height)
+        {
+            return source;
+        }
+
+        var cropped = new Texture2D(cropWidth, cropHeight, TextureFormat.RGBA32, false)
+        {
+            filterMode = source.filterMode,
+            wrapMode = source.wrapMode,
+            name = source.name
+        };
+
+        var croppedPixels = new Color32[cropWidth * cropHeight];
+        for (var y = 0; y < cropHeight; y++)
+        {
+            for (var x = 0; x < cropWidth; x++)
+            {
+                croppedPixels[y * cropWidth + x] = pixels[(minY + y) * width + (minX + x)];
+            }
+        }
+
+        cropped.SetPixels32(croppedPixels);
+        cropped.Apply(false, false);
+        return cropped;
     }
 
     private static Vector2Int GetPixelDimensions(BakedCardFaceSize size)
