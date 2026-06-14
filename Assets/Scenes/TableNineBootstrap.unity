@@ -239,7 +239,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!212 &1243059
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -318,6 +318,14 @@ PrefabInstance:
     - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_text
       value: "\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684"
+      objectReference: {fileID: 0}
+    - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
+      propertyPath: m_fontSize
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4575963582077196793, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_Name
@@ -496,54 +504,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &160508175
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 160508177}
-  - component: {fileID: 160508176}
-  m_Layer: 0
-  m_Name: BakedCardFaceDemoRoot
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &160508176
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 160508175}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9d760d5c9a11244fba90abfa88945c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mRefreshInterval: 0.6
-  mPixelsPerUnit: 100
-  mSortingLayerName: Default
-  mSortingOrder: 250
---- !u!4 &160508177
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 160508175}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &250055751
 GameObject:
   m_ObjectHideFlags: 0
@@ -923,7 +883,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!212 &847778540
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -2388,7 +2348,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1716330729}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6a160d838ff8b4b4693ac20007e008c7, type: 3}
   m_Name: 
@@ -2456,7 +2416,7 @@ Camera:
   m_HDR: 1
   m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 1
+  m_ForceIntoRT: 0
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
@@ -2548,6 +2508,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1931230193}
   - component: {fileID: 1931230194}
+  - component: {fileID: 1931230195}
   m_Layer: 0
   m_Name: CardSlot1
   m_TagString: Untagged
@@ -2623,6 +2584,22 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &1931230195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1931230192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b298336a258a972459aa73eb4bdc28e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mCardRoot: {fileID: 0}
+  mDescriptionText: {fileID: 0}
+  mCamera: {fileID: 0}
+  mDefaultHint: "\u6309\u7A7A\u683C\u5207\u6362\u968F\u673A\u5361\u724C\uFF0C\u9F20\u6807\u6307\u5411\u5361\u724C\u67E5\u770B\u63CF\u8FF0"
 --- !u!1 &1971120003
 GameObject:
   m_ObjectHideFlags: 0
@@ -3094,4 +3071,3 @@ SceneRoots:
   - {fileID: 1573821133}
   - {fileID: 1041881334}
   - {fileID: 874526316}
-  - {fileID: 160508177}
