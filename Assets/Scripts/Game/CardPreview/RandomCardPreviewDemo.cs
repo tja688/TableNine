@@ -20,7 +20,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
     [SerializeField] private float mFallbackWorldCardHeight = 3.64f;
     [SerializeField] private TMP_Text mDescriptionText;
     [SerializeField] private Camera mCamera;
-    [SerializeField] private string mDefaultHint = "按空格切换随机卡牌，鼠标指向卡牌查看描述";
+    [SerializeField] private string mDefaultHint = "按 Tab 切换随机卡牌，鼠标指向卡牌查看描述";
 
     private readonly List<CardDefinition> mRandomPool = new List<CardDefinition>();
     private CardDefinition mCurrentCard;
@@ -126,7 +126,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
             ShowRandomCard();
         }
@@ -136,7 +136,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
 
     private void LateUpdate()
     {
-        if (mDescriptionText == null)
+        if (mDescriptionText == null || UIGameplayPanel.IsSidePanelHovered)
         {
             return;
         }

@@ -47,9 +47,8 @@ flowchart LR
 - 以 `Assets/Docs` 中的游戏设计案为准，避免脱离现有设定自行扩展。如用户要求与设计案冲突，应停下并询问。
 - 修改或新增功能时，优先复用项目内已有的框架、模块和资源组织方式。但是如果用户的诉求明确有破坏性、侵入性，则以在基础框架编程规范下实现用户需求为第一要务。
 - 如果执行过程中发现领域层代码缺少必要事件、ActionKit 动作、状态变更或队列触发点，AI 应回到既有架构内补齐，不得绕过架构直接在表现层硬写逻辑。
-- **游戏配置（SO）**：静态数据与效果定义已 ScriptableObject 化，由 Master 汇总 5 个子库，运行时经 `GameplayBootstrap` → `TableNine.ConfigureGameConfig()` 注入 `ConfigModel`；`EffectSystem` / `SkillSystem` / `SkillBehaviorExecutor` 均读 SO，不再依赖运行时 Factory。
-- **ScriptableObject 资产目录**：`Assets/ScriptableObjects/`（Master 在根目录；五个子库在 `GameConfig/`）
 - 测试注入：`TableNineTestConfig.EnsureProductionConfigLoaded()`（EditMode 自动 resolver）
+- 当用户要求：快速落地测试、驱动尝试、演示时，请在打开场景单独新建临时测试对象挂载脚本演示功能，确保能够快速演示相关效果并且能够无痛移除、不影响后续场景纯净开发，Assets/Tests 是放纯临时测试脚本的地方。
 
 ### 游戏配置编辑器
 
@@ -59,6 +58,9 @@ flowchart LR
 | 总控窗口 | 菜单 `TableNine/Game Config/Edit Master Config` | `TableNineGameConfigEditorWindow`：统一入口、侧栏路由、引用回退 |
 | 子库 | `GameConfig/TableNine{Character,Card,Skill,Relic,Effect}Config.asset` | 各 `TableNine*ConfigEditorWindow` 专项编辑列表数据 |
 | 同步 / 校验 | 菜单 `Sync From Code Defaults` / `Validate` | 实现于 `TableNineGameConfigSync` |
+
+- **游戏配置（SO）**：静态数据与效果定义已 ScriptableObject 化，由 Master 汇总 5 个子库，运行时经 `GameplayBootstrap` → `TableNine.ConfigureGameConfig()` 注入 `ConfigModel`；`EffectSystem` / `SkillSystem` / `SkillBehaviorExecutor` 均读 SO，不再依赖运行时 Factory。
+- **ScriptableObject 资产目录**：`Assets/ScriptableObjects/`（Master 在根目录；五个子库在 `GameConfig/`）
 
 **路由关系：**
 
