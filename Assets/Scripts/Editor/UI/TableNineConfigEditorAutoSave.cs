@@ -39,6 +39,8 @@ public static class TableNineConfigEditorAutoSave
         return toggle;
     }
 
+    private const string TrackerElementName = "TableNineConfigEditorAutoSaveTracker";
+
     public static void BindContentRoot(VisualElement root, SerializedObject serializedObject, UnityEngine.Object asset)
     {
         if (root == null || serializedObject == null || asset == null)
@@ -46,7 +48,13 @@ public static class TableNineConfigEditorAutoSave
             return;
         }
 
-        root.TrackSerializedObjectValue(serializedObject, _ =>
+        // Track on a disposable child, not the persistent content root. Re-binding the root
+        // after tab switches throws: "An element can track properties on only one serializedObject at a time".
+        var tracker = new VisualElement { name = TrackerElementName };
+        tracker.style.display = DisplayStyle.None;
+        root.Add(tracker);
+
+        tracker.TrackSerializedObjectValue(serializedObject, _ =>
         {
             PersistIfEnabled(serializedObject, asset);
         });
