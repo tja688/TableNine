@@ -173,7 +173,33 @@ public sealed class TableNineGameConfigInspector : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        var palette = WarmConsoleThemePalette.Master;
+        var master = (TableNineGameConfig)target;
+
+        var prevBg = GUI.backgroundColor;
+        GUI.backgroundColor = palette.AccentStrong;
+        if (GUILayout.Button("打开总控窗口", GUILayout.Height(28)))
+        {
+            TableNineGameConfigEditorWindow.Open(master);
+        }
+
+        GUI.backgroundColor = prevBg;
+
+        var pathStyle = new GUIStyle(EditorStyles.miniLabel)
+        {
+            normal = { textColor = palette.TextPath }
+        };
+        EditorGUILayout.LabelField("游戏配置 Master", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField($"{CountLinkedSubConfigs(master)}/5 子库已链接", pathStyle);
+        EditorGUILayout.LabelField(AssetDatabase.GetAssetPath(master), pathStyle);
+        EditorGUILayout.Space(8);
+
+        if (GUILayout.Button("刷新全部配置窗口", GUILayout.Height(24)))
+        {
+            TableNineConfigEditorRefresh.RefreshAllOpenEditors();
+        }
+
+        EditorGUILayout.Space(4);
 
         if (GUILayout.Button("Sync From Code Defaults"))
         {
@@ -184,5 +210,24 @@ public sealed class TableNineGameConfigInspector : Editor
         {
             TableNineGameConfigSync.ValidateMenu();
         }
+
+        EditorGUILayout.Space(8);
+        DrawDefaultInspector();
+    }
+
+    private static int CountLinkedSubConfigs(TableNineGameConfig master)
+    {
+        if (master == null)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        if (master.CharacterConfig != null) count++;
+        if (master.CardConfig != null) count++;
+        if (master.SkillConfig != null) count++;
+        if (master.RelicConfig != null) count++;
+        if (master.EffectConfig != null) count++;
+        return count;
     }
 }

@@ -10,6 +10,7 @@ public abstract class WarmConsoleConfigEditorWindowBase : EditorWindow
     protected WarmConsoleUiSkin Skin { get; private set; }
     protected SerializedObject TargetSo { get; private set; }
     protected ScriptableObject TargetAsset { get; private set; }
+    public ScriptableObject CurrentTargetAsset => TargetAsset;
 
     protected readonly List<WarmConsoleUiSkin.NavEntry> NavEntries = new List<WarmConsoleUiSkin.NavEntry>();
 

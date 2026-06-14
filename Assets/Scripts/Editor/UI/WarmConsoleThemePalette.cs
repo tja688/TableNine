@@ -61,6 +61,19 @@ public sealed class WarmConsoleThemePalette
         PageDesc = pageDesc;
     }
 
+    public static WarmConsoleThemePalette Master => Create(
+        root: (0.10f, 0.085f, 0.07f),
+        content: (0.09f, 0.075f, 0.06f),
+        sidebar: (0.12f, 0.095f, 0.08f),
+        header: (0.13f, 0.10f, 0.08f),
+        statCard: (0.16f, 0.12f, 0.09f),
+        sectionCard: (0.15f, 0.12f, 0.095f),
+        accentStrong: (0.92f, 0.72f, 0.32f),
+        accentGold: (0.98f, 0.82f, 0.48f),
+        accentMid: (0.86f, 0.66f, 0.30f),
+        accentWeak: (0.58f, 0.42f, 0.20f),
+        navSelected: (0.34f, 0.24f, 0.13f));
+
     public static WarmConsoleThemePalette Character => Create(
         root: (0.10f, 0.085f, 0.07f),
         content: (0.09f, 0.075f, 0.06f),
