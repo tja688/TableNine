@@ -45,18 +45,19 @@ public static class TableNineGameConfigSync
         var effectConfig = LoadOrCreate<TableNineEffectConfig>("TableNineEffectConfig.asset");
         var master = LoadOrCreateMaster();
 
-        characterConfig.Characters = CloneList(config.Characters);
-        cardConfig.CardDecks = CloneList(config.CardDecks);
-        cardConfig.Cards = CloneList(config.Cards);
+        characterConfig.Characters = PreserveCharacterVisuals(CloneList(config.Characters), characterConfig.Characters);
+        cardConfig.CardDecks = PreserveDeckVisuals(CloneList(config.CardDecks), cardConfig.CardDecks);
+        cardConfig.Cards = PreserveCardVisuals(CloneList(config.Cards), cardConfig.Cards);
+        ApplyTutorCardIconsFromSkills(cardConfig.Cards, skillConfig.Skills);
         cardConfig.MonsterDeckRules = CloneList(config.MonsterDeckRules);
-        skillConfig.Skills = CloneList(config.Skills);
+        skillConfig.Skills = PreserveSkillVisuals(CloneList(config.Skills), skillConfig.Skills);
         skillConfig.SkillBindings = new List<SkillEffectBinding>(SkillEffectRegistry.ExportAllBindings());
         skillConfig.SkillBehaviorRules = SkillBehaviorRuleDefaults.Build();
 
-        relicConfig.Relics = CloneList(config.Relics);
+        relicConfig.Relics = PreserveRelicVisuals(CloneList(config.Relics), relicConfig.Relics);
         relicConfig.Rooms = CloneList(config.Rooms);
 
-        effectConfig.EffectGraphs = MergeEffectGraphs();
+        effectConfig.EffectGraphs = PreserveEffectVisuals(MergeEffectGraphs(), effectConfig.EffectGraphs);
         effectConfig.HelpCardEffectMappings = new List<HelpCardEffectMapping>(EffectGraphRegistry.ExportHelpCardMappings());
 
         EditorUtility.SetDirty(characterConfig);
@@ -166,6 +167,212 @@ public static class TableNineGameConfigSync
     private static List<T> CloneList<T>(IReadOnlyList<T> source)
     {
         return new List<T>(source);
+    }
+
+    private static List<CharacterDefinition> PreserveCharacterVisuals(
+        List<CharacterDefinition> next,
+        IReadOnlyList<CharacterDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, character => character?.CharacterId, PreserveCharacterSprites);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].CharacterId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static List<CardDeckDefinition> PreserveDeckVisuals(
+        List<CardDeckDefinition> next,
+        IReadOnlyList<CardDeckDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, deck => deck?.DeckId, PreserveDeckSprites);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].DeckId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static List<CardDefinition> PreserveCardVisuals(
+        List<CardDefinition> next,
+        IReadOnlyList<CardDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, card => card?.CardId, PreserveCardSprites);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].CardId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static List<SkillDefinition> PreserveSkillVisuals(
+        List<SkillDefinition> next,
+        IReadOnlyList<SkillDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, skill => skill?.SkillId, PreserveSkillSprite);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].SkillId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static List<RelicDefinition> PreserveRelicVisuals(
+        List<RelicDefinition> next,
+        IReadOnlyList<RelicDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, relic => relic?.RelicId, PreserveRelicSprite);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].RelicId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static List<EffectGraphDefinition> PreserveEffectVisuals(
+        List<EffectGraphDefinition> next,
+        IReadOnlyList<EffectGraphDefinition> previous)
+    {
+        var visuals = BuildLookup(previous, graph => graph?.EffectGraphId, PreserveEffectSprite);
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (visuals.TryGetValue(next[i].EffectGraphId, out var apply))
+            {
+                apply(next[i]);
+            }
+        }
+
+        return next;
+    }
+
+    private static Dictionary<string, Action<TTarget>> BuildLookup<TSource, TTarget>(
+        IReadOnlyList<TSource> previous,
+        Func<TSource, string> getKey,
+        Func<TSource, Action<TTarget>> createApply)
+        where TTarget : class
+    {
+        var lookup = new Dictionary<string, Action<TTarget>>();
+        if (previous == null)
+        {
+            return lookup;
+        }
+
+        for (var i = 0; i < previous.Count; i++)
+        {
+            var source = previous[i];
+            var key = getKey(source);
+            if (string.IsNullOrWhiteSpace(key) || lookup.ContainsKey(key))
+            {
+                continue;
+            }
+
+            lookup[key] = createApply(source);
+        }
+
+        return lookup;
+    }
+
+    private static Action<CharacterDefinition> PreserveCharacterSprites(CharacterDefinition previous)
+    {
+        return next =>
+        {
+            next.Image = previous.Image ?? next.Image;
+        };
+    }
+
+    private static Action<CardDeckDefinition> PreserveDeckSprites(CardDeckDefinition previous)
+    {
+        return next =>
+        {
+            next.DefaultFaceImage = previous.DefaultFaceImage ?? next.DefaultFaceImage;
+            next.DefaultBackImage = previous.DefaultBackImage ?? next.DefaultBackImage;
+        };
+    }
+
+    private static Action<CardDefinition> PreserveCardSprites(CardDefinition previous)
+    {
+        return next =>
+        {
+            next.Image = previous.Image ?? next.Image;
+            next.FaceImageOverride = previous.FaceImageOverride ?? next.FaceImageOverride;
+            next.BackImageOverride = previous.BackImageOverride ?? next.BackImageOverride;
+        };
+    }
+
+    private static Action<SkillDefinition> PreserveSkillSprite(SkillDefinition previous)
+    {
+        return next => next.Image = previous.Image ?? next.Image;
+    }
+
+    private static Action<RelicDefinition> PreserveRelicSprite(RelicDefinition previous)
+    {
+        return next => next.Image = previous.Image ?? next.Image;
+    }
+
+    private static void ApplyTutorCardIconsFromSkills(
+        IReadOnlyList<CardDefinition> cards,
+        IReadOnlyList<SkillDefinition> skills)
+    {
+        if (cards == null || skills == null)
+        {
+            return;
+        }
+
+        var skillImages = new Dictionary<string, Sprite>();
+        for (var i = 0; i < skills.Count; i++)
+        {
+            var skill = skills[i];
+            if (skill == null || string.IsNullOrWhiteSpace(skill.SkillId) || skill.Image == null)
+            {
+                continue;
+            }
+
+            skillImages[skill.SkillId] = skill.Image;
+        }
+
+        for (var i = 0; i < cards.Count; i++)
+        {
+            var card = cards[i];
+            if (card == null || card.CardType != CardType.Tutor || card.Image != null)
+            {
+                continue;
+            }
+
+            if (card.SkillIds == null || card.SkillIds.Count == 0)
+            {
+                continue;
+            }
+
+            if (skillImages.TryGetValue(card.SkillIds[0], out var image))
+            {
+                card.Image = image;
+            }
+        }
+    }
+
+    private static Action<EffectGraphDefinition> PreserveEffectSprite(EffectGraphDefinition previous)
+    {
+        return next => next.Image = previous.Image ?? next.Image;
     }
 }
 

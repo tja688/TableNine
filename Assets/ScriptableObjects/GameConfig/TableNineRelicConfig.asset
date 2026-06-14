@@ -15,7 +15,7 @@ MonoBehaviour:
   Relics:
   - RelicId: relic_lucky_coin
     DisplayName: "\u5E78\u8FD0\u786C\u5E01"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: ea5e66472ec15ba449eb91205bf51291, type: 3}
     Quality: 1
     StatAttackBonus: 0
     StatArmorBonus: 0
@@ -25,7 +25,7 @@ MonoBehaviour:
     Description: "\u51FB\u8D25\u7CBE\u82F1\u5C42\u4E3B\u52A0\u91D1\u5E01\u5361"
   - RelicId: relic_iron_shield
     DisplayName: "\u94C1\u76FE"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 274d598bf0ac8e84393ea50bde18d129, type: 3}
     Quality: 2
     StatAttackBonus: 0
     StatArmorBonus: 1
@@ -35,7 +35,7 @@ MonoBehaviour:
     Description: "\u53D7\u5230\u4F24\u5BB3\u51CF\u5C111\u70B9"
   - RelicId: relic_sharp_sword
     DisplayName: "\u9510\u5229\u957F\u5251"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: be695edcfac81a24893b82e1c309a4db, type: 3}
     Quality: 2
     StatAttackBonus: 1
     StatArmorBonus: 0
@@ -45,7 +45,7 @@ MonoBehaviour:
     Description: "\u672C\u5173\u6BCF\u79FB\u9664\u602A\u653B\u51FB+1"
   - RelicId: relic_vitality_charm
     DisplayName: "\u6D3B\u529B\u62A4\u7B26"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: f6531caccbfcc164bb2f55e2803f11ef, type: 3}
     Quality: 2
     StatAttackBonus: 0
     StatArmorBonus: 0
@@ -55,7 +55,7 @@ MonoBehaviour:
     Description: "\u6BCF\u5173\u7ED3\u675F\u6062\u590D6\u751F\u547D"
   - RelicId: relic_blood_fang
     DisplayName: "\u55DC\u8840\u4E4B\u7259"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: e877a4e80a9058145bfb6dca4236531a, type: 3}
     Quality: 2
     StatAttackBonus: 1
     StatArmorBonus: 0
@@ -65,7 +65,7 @@ MonoBehaviour:
     Description: "\u79FB\u9664\u602A\u7269\u65F6\u6062\u590D2\u751F\u547D"
   - RelicId: relic_gold_sword
     DisplayName: "\u91D1\u5251"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 1462ff852c19ad84c89cdb497958871b, type: 3}
     Quality: 3
     StatAttackBonus: 8
     StatArmorBonus: 0
@@ -75,7 +75,7 @@ MonoBehaviour:
     Description: "\u6BCF\u6218\u4E00\u6B21\u653B\u51FB\u52A0\u6210-1"
   - RelicId: relic_dragon_armor
     DisplayName: "\u9F99\u9CDE\u7532"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 357c90a1baadc7a46a02464dad3fe962, type: 3}
     Quality: 3
     StatAttackBonus: 0
     StatArmorBonus: 1
@@ -85,7 +85,7 @@ MonoBehaviour:
     Description: "\u6240\u6709\u602A\u7269\u653B\u51FB-1"
   - RelicId: relic_golden_chest
     DisplayName: "\u91D1\u8272\u5B9D\u7BB1"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 4a0c2e7b4e2c0b144921558195c46659, type: 3}
     Quality: 3
     StatAttackBonus: 0
     StatArmorBonus: 0
@@ -95,7 +95,7 @@ MonoBehaviour:
     Description: "\u83B7\u53D6\u65F6\u52A0\u4E24\u5F20\u91D1\u5B9D\u7BB1\u5361"
   - RelicId: relic_berserker_axe
     DisplayName: "\u72C2\u6218\u58EB\u65A7"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 66b34cc2cff86f148b682cc672909140, type: 3}
     Quality: 3
     StatAttackBonus: 1
     StatArmorBonus: 0
@@ -105,7 +105,7 @@ MonoBehaviour:
     Description: "\u534A\u8840\u4EE5\u4E0B\u65F6\u653B\u51FB+3"
   - RelicId: relic_wood_shield
     DisplayName: "\u6728\u76FE"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: feb43a03692800c408ec126b009b4b62, type: 3}
     Quality: 1
     StatAttackBonus: 0
     StatArmorBonus: 2
@@ -115,7 +115,7 @@ MonoBehaviour:
     Description: "\u62A4\u7532+2"
   - RelicId: relic_wood_sword
     DisplayName: "\u6728\u5251"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 2172446f3d08820438341d3ed2bf34ce, type: 3}
     Quality: 1
     StatAttackBonus: 2
     StatArmorBonus: 0
@@ -125,7 +125,7 @@ MonoBehaviour:
     Description: "\u653B\u51FB+2"
   - RelicId: relic_wood_armor
     DisplayName: "\u6728\u7532"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: b747d6c5966cdeb4bad4b115bdb8bdbf, type: 3}
     Quality: 1
     StatAttackBonus: 0
     StatArmorBonus: 0
@@ -135,7 +135,7 @@ MonoBehaviour:
     Description: "\u751F\u547D\u4E0A\u9650+3"
   - RelicId: relic_living_flesh
     DisplayName: "\u6D3B\u8089"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 0df2d14832802cd4886ce8b951bb7223, type: 3}
     Quality: 2
     StatAttackBonus: 0
     StatArmorBonus: 0
@@ -145,7 +145,7 @@ MonoBehaviour:
     Description: "\u751F\u547D\u4E0A\u9650+5"
   - RelicId: relic_thorn_armor
     DisplayName: "\u8346\u68D8\u7532"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: 71234ddc4a12a1a4f9a9e108c092384a, type: 3}
     Quality: 2
     StatAttackBonus: 0
     StatArmorBonus: 1
@@ -155,7 +155,7 @@ MonoBehaviour:
     Description: "\u53D7\u51FB\u53CD\u5F391\u70B9\u4F24\u5BB3"
   - RelicId: relic_phoenix_feather
     DisplayName: "\u51E4\u51F0\u7FBD\u6BDB"
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: df27d412624229f4087c90e2b1d5ff4e, type: 3}
     Quality: 3
     StatAttackBonus: 0
     StatArmorBonus: 0
