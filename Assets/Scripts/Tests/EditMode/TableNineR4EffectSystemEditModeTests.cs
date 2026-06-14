@@ -102,13 +102,13 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var cardUid = SpawnHelpCardToItemSlot(GameConfigIds.HelpAttributeUpId);
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
-        var defenseBefore = playerRuntime.BaseDefense;
+        var defenseBefore = playerRuntime.BaseArmor;
         var armorBefore = playerRuntime.CurrentArmor;
 
         UseItemSlotHelpCard(cardUid);
-        TableNine.Interface.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Defense));
+        TableNine.Interface.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Armor));
 
-        Assert.That(playerRuntime.BaseDefense, Is.EqualTo(defenseBefore + 1));
+        Assert.That(playerRuntime.BaseArmor, Is.EqualTo(defenseBefore + 1));
         Assert.That(playerRuntime.CurrentArmor, Is.EqualTo(armorBefore + 1));
     }
 
@@ -152,7 +152,7 @@ public sealed class TableNineR4EffectSystemEditModeTests
         var playerAttack = collectionModel.GetCard(playerModel.PlayerCardUid).BaseAttack;
         targetRuntime.CurrentHp = 12;
         targetRuntime.CurrentArmor = 0;
-        targetRuntime.BaseDefense = 0;
+        targetRuntime.BaseArmor = 0;
 
         UseItemSlotHelpCard(uid);
         TableNine.Interface.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(3)));

@@ -23,21 +23,21 @@ public sealed class TableNineStage3EditModeTests
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
 
         AssertHelpCardTag(configModel, GameConfigIds.HelpPotionId, HelpCardSystemTag.Recovery);
-        AssertHelpCardTag(configModel, GameConfigIds.HelpDurableShieldId, HelpCardSystemTag.Defense);
+        AssertHelpCardTag(configModel, GameConfigIds.HelpDurableShieldId, HelpCardSystemTag.Armor);
         AssertHelpCardTag(configModel, GameConfigIds.HelpThrowingKnifeId, HelpCardSystemTag.DirectDamage);
         AssertHelpCardTag(configModel, GameConfigIds.HelpTeleportId, HelpCardSystemTag.Displacement);
         AssertHelpCardTag(configModel, GameConfigIds.HelpAttributeUpId, HelpCardSystemTag.Special);
     }
 
     [Test]
-    public void Imp_Initial_Help_Deck_Excludes_Attribute_Up_Card()
+    public void Imp_Initial_Help_Deck_Includes_Attribute_Up_Card()
     {
         TableNine.InitArchitecture();
         var configModel = TableNine.Interface.GetModel<IConfigModel>();
         var character = configModel.GetCharacterDefinition(GameConfigIds.CharacterImpId);
 
-        CollectionAssert.DoesNotContain(character.InitialHelpCardIds, GameConfigIds.HelpAttributeUpId);
-        Assert.That(character.InitialHelpCardIds.Count, Is.EqualTo(7));
+        CollectionAssert.Contains(character.InitialHelpCardIds, GameConfigIds.HelpAttributeUpId);
+        Assert.That(character.InitialHelpCardIds.Count, Is.EqualTo(8));
     }
 
     [Test]

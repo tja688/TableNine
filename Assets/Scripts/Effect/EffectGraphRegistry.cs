@@ -331,7 +331,7 @@ public static class EffectGraphRegistry
     private static EffectAtomDefinition ModifyArmor(int delta)
     {
         return Atom(EffectAtomTypes.ModifyStat,
-            ("stat", nameof(StatType.Armor)),
+            ("stat", nameof(StatType.CurrentArmor)),
             ("delta", delta.ToString()),
             ("target", "player"));
     }

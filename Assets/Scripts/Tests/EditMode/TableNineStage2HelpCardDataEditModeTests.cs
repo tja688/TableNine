@@ -123,7 +123,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         Assert.That(deckModel.HelpCardStates[uid.Value].IsPermanentlyRemoved, Is.True);
         Assert.That(
             player.BaseAttack > attackBefore ||
-            player.BaseDefense > 1 ||
+            player.BaseArmor > 1 ||
             playerModel.Gold.Value >= 50 ||
             playerModel.Relics.Count > 0,
             Is.True);
@@ -154,7 +154,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var target = collectionModel.GetCard(targetUid);
         target.CurrentHp = 20;
         target.CurrentArmor = 0;
-        target.BaseDefense = 0;
+        target.BaseArmor = 0;
 
         TableNine.Interface.SendCommand(new ChangeArmorCommand(playerModel.PlayerCardUid, 3, "test_setup"));
         Assert.That(collectionModel.GetCard(playerModel.PlayerCardUid).CurrentArmor, Is.EqualTo(4));
@@ -184,7 +184,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(3));
         var target = collectionModel.GetCard(targetUid);
         target.CurrentArmor = 7;
-        target.BaseDefense = 0;
+        target.BaseArmor = 0;
 
         var uid = SpawnHelpCardToItemSlot(GameConfigIds.HelpKidnapId);
         UseItemSlotHelpCard(uid);
@@ -229,7 +229,7 @@ public sealed class TableNineStage2HelpCardDataEditModeTests
         var definition = configModel.GetCardDefinition(cardId);
         Assert.That(definition.BaseHp, Is.EqualTo(hp), cardId);
         Assert.That(definition.BaseAttack, Is.EqualTo(attack), cardId);
-        Assert.That(definition.BaseDefense, Is.EqualTo(defense), cardId);
+        Assert.That(definition.BaseArmor, Is.EqualTo(defense), cardId);
     }
 
     private static void AssertHelpCard(

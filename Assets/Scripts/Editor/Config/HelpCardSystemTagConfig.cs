@@ -5,7 +5,7 @@ public static class HelpCardSystemTagConfig
     private static readonly Dictionary<string, HelpCardSystemTag> TagsByCardId = new Dictionary<string, HelpCardSystemTag>
     {
         { GameConfigIds.HelpPotionId, HelpCardSystemTag.Recovery },
-        { GameConfigIds.HelpBlessingId, HelpCardSystemTag.Defense },
+        { GameConfigIds.HelpBlessingId, HelpCardSystemTag.Armor },
         { GameConfigIds.HelpThrowingKnifeId, HelpCardSystemTag.DirectDamage },
         { GameConfigIds.HelpFireballId, HelpCardSystemTag.DirectDamage },
         { GameConfigIds.HelpSpinWheelId, HelpCardSystemTag.Displacement },
@@ -14,7 +14,7 @@ public static class HelpCardSystemTagConfig
         { GameConfigIds.HelpBombId, HelpCardSystemTag.DirectDamage },
         { GameConfigIds.HelpSwapId, HelpCardSystemTag.Displacement },
         { GameConfigIds.HelpSmasherId, HelpCardSystemTag.DirectDamage },
-        { GameConfigIds.HelpDurableShieldId, HelpCardSystemTag.Defense },
+        { GameConfigIds.HelpDurableShieldId, HelpCardSystemTag.Armor },
         { GameConfigIds.HelpBearTrapId, HelpCardSystemTag.DirectDamage },
         { GameConfigIds.HelpTeleportId, HelpCardSystemTag.Displacement },
         { GameConfigIds.HelpBloodConvertId, HelpCardSystemTag.Displacement },
@@ -23,8 +23,8 @@ public static class HelpCardSystemTagConfig
         { GameConfigIds.HelpCommonChestId, HelpCardSystemTag.Economy },
         { GameConfigIds.HelpHealingSpringId, HelpCardSystemTag.Recovery },
         { GameConfigIds.HelpCrashTutorialId, HelpCardSystemTag.Hp },
-        { GameConfigIds.HelpShieldStrikeTutorialId, HelpCardSystemTag.Defense },
-        { GameConfigIds.HelpKidnapId, HelpCardSystemTag.Defense },
+        { GameConfigIds.HelpShieldStrikeTutorialId, HelpCardSystemTag.Armor },
+        { GameConfigIds.HelpKidnapId, HelpCardSystemTag.Armor },
         { GameConfigIds.HelpBlueChestId, HelpCardSystemTag.Economy },
         { GameConfigIds.HelpWatchtowerId, HelpCardSystemTag.DirectDamage },
         { GameConfigIds.HelpMultiplierTowerId, HelpCardSystemTag.Special },

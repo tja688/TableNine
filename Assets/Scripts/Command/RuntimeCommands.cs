@@ -161,7 +161,7 @@ public sealed class DealOpeningCardsCommand : AbstractCommand
         }
 
         deckSystem.UpdateNextBattlePreview();
-        this.GetSystem<IStatSystem>().FillArmorFromDefenseAtNodeStart();
+        this.GetSystem<IStatSystem>().FillArmorFromArmorStatAtNodeStart();
         this.GetSystem<ISkillSystem>().Trigger(SkillTrigger.OnNodeStart, new TriggerContext(), this);
         flowModel.SetPhase(FlowPhase.PlayerControl);
     }
@@ -1140,7 +1140,7 @@ public sealed class ApplyStatChangeCommand : AbstractCommand
 
     protected override void OnExecute()
     {
-        if (StatType == StatType.Armor)
+        if (StatType == StatType.CurrentArmor)
         {
             this.SendCommand(new ChangeArmorCommand(TargetUid, Delta, CauseId));
             return;
@@ -1157,8 +1157,8 @@ public sealed class ApplyStatChangeCommand : AbstractCommand
             case StatType.Attack:
                 runtime.BaseAttack = ApplyNonNegativeDelta(runtime.BaseAttack, Delta);
                 break;
-            case StatType.Defense:
-                runtime.BaseDefense = ApplyNonNegativeDelta(runtime.BaseDefense, Delta);
+            case StatType.Armor:
+                runtime.BaseArmor = ApplyNonNegativeDelta(runtime.BaseArmor, Delta);
                 if (Delta > 0)
                 {
                     var oldArmor = runtime.CurrentArmor;
@@ -1569,9 +1569,9 @@ public sealed class ResolveAttributeChoiceCommand : AbstractCommand
                 this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.Attack, 1, "help_attribute"));
                 message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrAttack);
                 break;
-            case AttributeUpgradeChoice.Defense:
-                this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.Defense, 1, "help_attribute"));
-                message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrDefense);
+            case AttributeUpgradeChoice.Armor:
+                this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.Armor, 1, "help_attribute"));
+                message = DescriptionPanelTexts.Get(DescriptionPanelTextKeys.MsgAttrArmor);
                 break;
             case AttributeUpgradeChoice.MaxHp:
                 this.SendCommand(new ApplyStatChangeCommand(playerModel.PlayerCardUid, StatType.MaxHp, 2, "help_attribute"));

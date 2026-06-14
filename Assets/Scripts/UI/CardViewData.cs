@@ -13,7 +13,6 @@ public sealed class CardViewData
     public int MaxHp;
     public int CurrentArmor;
     public int Attack;
-    public int Defense;
     public int DamageReduction;
     public bool HasFirstStrike;
     public string Description;
@@ -62,11 +61,11 @@ public static class CardViewDataFactory
         switch (data.Type)
         {
             case CardType.Player:
-                return $"玩家\nHP {data.CurrentHp}/{data.MaxHp} ARM {data.CurrentArmor}\nATK {data.Attack} DEF {data.Defense}{pendingText}";
+                return $"玩家\nHP {data.CurrentHp}/{data.MaxHp}\nATK {data.Attack} ARM {data.CurrentArmor}{pendingText}";
             case CardType.Monster:
                 var firstStrike = data.HasFirstStrike ? "\n先攻" : string.Empty;
                 var damageReduction = data.DamageReduction > 0 ? $" DR {data.DamageReduction}" : string.Empty;
-                return $"{data.DisplayName}\nHP {data.CurrentHp}/{data.MaxHp} ARM {data.CurrentArmor}\nATK {data.Attack} DEF {data.Defense}{damageReduction}{firstStrike}{pendingText}";
+                return $"{data.DisplayName}\nHP {data.CurrentHp}/{data.MaxHp}\nATK {data.Attack} ARM {data.CurrentArmor}{damageReduction}{firstStrike}{pendingText}";
             case CardType.Help:
                 return itemSlot
                     ? $"{data.DisplayName}\n道具槽\n点击使用{pendingText}"
@@ -90,7 +89,6 @@ public static class CardViewDataFactory
             MaxHp = stats.MaxHp,
             CurrentArmor = stats.CurrentArmor,
             Attack = stats.Attack,
-            Defense = stats.Defense,
             DamageReduction = stats.DamageReduction,
             HasFirstStrike = stats.HasFirstStrike,
             SpriteId = runtime.DefinitionId,
@@ -113,7 +111,6 @@ public static class CardViewDataFactory
             MaxHp = stats.MaxHp,
             CurrentArmor = stats.CurrentArmor,
             Attack = stats.Attack,
-            Defense = stats.Defense,
             DamageReduction = stats.DamageReduction,
             HasFirstStrike = stats.HasFirstStrike,
             SpriteId = runtime.DefinitionId,

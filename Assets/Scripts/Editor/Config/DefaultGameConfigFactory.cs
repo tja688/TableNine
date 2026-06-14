@@ -52,7 +52,7 @@ public static partial class DefaultGameConfigFactory
             Description = "关卡结束白帮助卡三选一",
             BaseHp = 10,
             BaseAttack = 3,
-            BaseDefense = 1,
+            BaseArmor = 1,
             InitialSkillIds = new List<string> { SkillLightFootedId },
             InitialHelpCardIds = new List<string>
             {
@@ -62,7 +62,8 @@ public static partial class DefaultGameConfigFactory
                 HelpCommonChestId,
                 HelpThrowingKnifeId,
                 HelpThrowingKnifeId,
-                HelpThrowingKnifeId
+                HelpThrowingKnifeId,
+                HelpAttributeUpId
             }
         });
 
@@ -184,7 +185,7 @@ public static partial class DefaultGameConfigFactory
             MonsterLevel = MonsterLevel.Level1,
             BaseHp = 6,
             BaseAttack = 2,
-            BaseDefense = 0
+            BaseArmor = 0
         });
         config.Cards.Add(new CardDefinition
         {
@@ -197,7 +198,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 2,
             BaseHp = 2,
             BaseAttack = 3,
-            BaseDefense = 1,
+            BaseArmor = 1,
             SkillIds = new List<string> { SkillSpadeCubId }
         });
         config.Cards.Add(new CardDefinition
@@ -211,7 +212,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 2,
             BaseHp = 4,
             BaseAttack = 2,
-            BaseDefense = 0,
+            BaseArmor = 0,
             SkillIds = new List<string> { SkillHeartCubId }
         });
         config.Cards.Add(new CardDefinition
@@ -225,7 +226,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 2,
             BaseHp = 1,
             BaseAttack = 2,
-            BaseDefense = 3,
+            BaseArmor = 3,
             SkillIds = new List<string> { SkillDiamondCubId }
         });
         config.Cards.Add(new CardDefinition
@@ -239,7 +240,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 2,
             BaseHp = 2,
             BaseAttack = 2,
-            BaseDefense = 2,
+            BaseArmor = 2,
             SkillIds = new List<string> { SkillClubCubId }
         });
 
@@ -252,10 +253,10 @@ public static partial class DefaultGameConfigFactory
         {
             RelicId = RelicWoodShieldId,
             DisplayName = "木盾",
-            Description = "防御+2",
+            Description = "护甲+2",
             Quality = CardQuality.White,
             StatAttackBonus = 0,
-            StatDefenseBonus = 2,
+            StatArmorBonus = 2,
             StatMaxHpBonus = 0
         });
         config.Relics.Add(new RelicDefinition
@@ -265,7 +266,7 @@ public static partial class DefaultGameConfigFactory
             Description = "攻击+2",
             Quality = CardQuality.White,
             StatAttackBonus = 2,
-            StatDefenseBonus = 0,
+            StatArmorBonus = 0,
             StatMaxHpBonus = 0
         });
         config.Relics.Add(new RelicDefinition
@@ -275,7 +276,7 @@ public static partial class DefaultGameConfigFactory
             Description = "生命上限+3",
             Quality = CardQuality.White,
             StatAttackBonus = 0,
-            StatDefenseBonus = 0,
+            StatArmorBonus = 0,
             StatMaxHpBonus = 3
         });
         config.Relics.Add(new RelicDefinition
@@ -285,7 +286,7 @@ public static partial class DefaultGameConfigFactory
             Description = "生命上限+5",
             Quality = CardQuality.Blue,
             StatAttackBonus = 0,
-            StatDefenseBonus = 0,
+            StatArmorBonus = 0,
             StatMaxHpBonus = 5
         });
         config.Relics.Add(new RelicDefinition
@@ -295,7 +296,7 @@ public static partial class DefaultGameConfigFactory
             Description = "受击反弹1点伤害",
             Quality = CardQuality.Blue,
             StatAttackBonus = 0,
-            StatDefenseBonus = 1,
+            StatArmorBonus = 1,
             StatMaxHpBonus = 0
         });
         config.Relics.Add(new RelicDefinition
@@ -305,7 +306,7 @@ public static partial class DefaultGameConfigFactory
             Description = "致命伤防止死亡并消耗",
             Quality = CardQuality.Gold,
             StatAttackBonus = 0,
-            StatDefenseBonus = 0,
+            StatArmorBonus = 0,
             StatMaxHpBonus = 0,
             IsOneShot = true
         });

@@ -17,7 +17,7 @@ MonoBehaviour:
     DisplayName: "\u5E78\u8FD0\u786C\u5E01"
     Quality: 1
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -26,7 +26,7 @@ MonoBehaviour:
     DisplayName: "\u94C1\u76FE"
     Quality: 2
     StatAttackBonus: 0
-    StatDefenseBonus: 1
+    StatArmorBonus: 1
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -35,7 +35,7 @@ MonoBehaviour:
     DisplayName: "\u9510\u5229\u957F\u5251"
     Quality: 2
     StatAttackBonus: 1
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -44,7 +44,7 @@ MonoBehaviour:
     DisplayName: "\u6D3B\u529B\u62A4\u7B26"
     Quality: 2
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 6
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -53,7 +53,7 @@ MonoBehaviour:
     DisplayName: "\u55DC\u8840\u4E4B\u7259"
     Quality: 2
     StatAttackBonus: 1
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -62,7 +62,7 @@ MonoBehaviour:
     DisplayName: "\u91D1\u5251"
     Quality: 3
     StatAttackBonus: 8
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -71,7 +71,7 @@ MonoBehaviour:
     DisplayName: "\u9F99\u9CDE\u7532"
     Quality: 3
     StatAttackBonus: 0
-    StatDefenseBonus: 1
+    StatArmorBonus: 1
     StatMaxHpBonus: 6
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -80,7 +80,7 @@ MonoBehaviour:
     DisplayName: "\u91D1\u8272\u5B9D\u7BB1"
     Quality: 3
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 1
@@ -89,7 +89,7 @@ MonoBehaviour:
     DisplayName: "\u72C2\u6218\u58EB\u65A7"
     Quality: 3
     StatAttackBonus: 1
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -98,7 +98,7 @@ MonoBehaviour:
     DisplayName: "\u6728\u76FE"
     Quality: 1
     StatAttackBonus: 0
-    StatDefenseBonus: 2
+    StatArmorBonus: 2
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -107,7 +107,7 @@ MonoBehaviour:
     DisplayName: "\u6728\u5251"
     Quality: 1
     StatAttackBonus: 2
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -116,7 +116,7 @@ MonoBehaviour:
     DisplayName: "\u6728\u7532"
     Quality: 1
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 3
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -125,7 +125,7 @@ MonoBehaviour:
     DisplayName: "\u6D3B\u8089"
     Quality: 2
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 5
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -134,7 +134,7 @@ MonoBehaviour:
     DisplayName: "\u8346\u68D8\u7532"
     Quality: 2
     StatAttackBonus: 0
-    StatDefenseBonus: 1
+    StatArmorBonus: 1
     StatMaxHpBonus: 0
     IsOneShot: 0
     ExcludeFromPool: 0
@@ -143,7 +143,7 @@ MonoBehaviour:
     DisplayName: "\u51E4\u51F0\u7FBD\u6BDB"
     Quality: 3
     StatAttackBonus: 0
-    StatDefenseBonus: 0
+    StatArmorBonus: 0
     StatMaxHpBonus: 0
     IsOneShot: 1
     ExcludeFromPool: 0

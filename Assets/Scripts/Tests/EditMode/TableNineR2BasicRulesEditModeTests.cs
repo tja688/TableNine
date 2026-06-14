@@ -28,7 +28,7 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats();
 
-        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Defense));
+        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Armor));
     }
 
     [Test]
@@ -45,7 +45,7 @@ public sealed class TableNineR2BasicRulesEditModeTests
         TableNine.Interface.SendCommand(new StartNodeCommand(1, 2));
 
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats();
-        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Defense));
+        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Armor));
     }
 
     [Test]
@@ -57,7 +57,7 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
-        var defenseBefore = player.BaseDefense;
+        var defenseBefore = player.BaseArmor;
         var armorBefore = player.CurrentArmor;
 
         ArmorChangedEvent? armorEvent = null;
@@ -66,12 +66,12 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var unRegisterDirty = TableNine.Interface.RegisterEvent<StatsDirtyEvent>(e => dirtyEvent = e);
 
         TableNine.Interface.SendCommand(new ApplyStatChangeCommand(
-            playerModel.PlayerCardUid, StatType.Defense, 1, "test_defense_up"));
+            playerModel.PlayerCardUid, StatType.Armor, 1, "test_defense_up"));
 
         unRegisterArmor.UnRegister();
         unRegisterDirty.UnRegister();
 
-        Assert.That(player.BaseDefense, Is.EqualTo(defenseBefore + 1));
+        Assert.That(player.BaseArmor, Is.EqualTo(defenseBefore + 1));
         Assert.That(player.CurrentArmor, Is.EqualTo(armorBefore + 1));
         Assert.That(armorEvent.HasValue, Is.True);
         Assert.That(armorEvent.Value.OldArmor, Is.EqualTo(armorBefore));
@@ -170,14 +170,14 @@ public sealed class TableNineR2BasicRulesEditModeTests
         var combatSystem = TableNine.Interface.GetSystem<ICombatSystem>();
 
         var damage = combatSystem.CalculateDamage(
-            new EffectiveStats { Attack = 5, Defense = 0 },
-            new EffectiveStats { Attack = 0, Defense = 99, DamageReduction = 0 });
+            new EffectiveStats { Attack = 5, Armor = 0 },
+            new EffectiveStats { Attack = 0, Armor = 99, DamageReduction = 0 });
 
         Assert.That(damage, Is.EqualTo(5));
 
         var reduced = combatSystem.CalculateDamage(
-            new EffectiveStats { Attack = 5, Defense = 0 },
-            new EffectiveStats { Attack = 0, Defense = 99, DamageReduction = 2 });
+            new EffectiveStats { Attack = 5, Armor = 0 },
+            new EffectiveStats { Attack = 0, Armor = 99, DamageReduction = 2 });
 
         Assert.That(reduced, Is.EqualTo(3));
     }

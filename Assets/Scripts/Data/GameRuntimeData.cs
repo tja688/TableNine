@@ -148,7 +148,7 @@ public enum ChestTier
 public enum AttributeUpgradeChoice
 {
     Attack,
-    Defense,
+    Armor,
     MaxHp
 }
 
@@ -202,7 +202,7 @@ public enum HelpCardSystemTag
 {
     None,
     DirectDamage,
-    Defense,
+    Armor,
     Recovery,
     Displacement,
     Attack,
@@ -214,10 +214,10 @@ public enum HelpCardSystemTag
 public enum StatType
 {
     Attack,
-    Defense,
+    Armor,
     MaxHp,
     CurrentHp,
-    Armor
+    CurrentArmor
 }
 
 [Serializable]
@@ -344,7 +344,8 @@ public sealed class CharacterDefinition
     public string Description;
     public int BaseHp;
     public int BaseAttack;
-    public int BaseDefense;
+    [FormerlySerializedAs("BaseArmor")]
+    public int BaseArmor;
     public List<string> InitialSkillIds = new List<string>();
     public List<string> InitialHelpCardIds = new List<string>();
 }
@@ -365,7 +366,8 @@ public sealed class CardDefinition
     public int Price;
     public int BaseHp;
     public int BaseAttack;
-    public int BaseDefense;
+    [FormerlySerializedAs("BaseArmor")]
+    public int BaseArmor;
     [FormerlySerializedAs("IsPermanentRemoveOnUse")]
     [SerializeField]
     internal bool LegacyIsPermanentRemoveOnUse;
@@ -460,7 +462,7 @@ public sealed class CardRuntime
     public int MaxHp;
     public int CurrentArmor;
     public int BaseAttack;
-    public int BaseDefense;
+    public int BaseArmor;
     public List<string> SkillIds = new List<string>();
 
     public bool HasSkill(string skillId)
@@ -556,7 +558,7 @@ public struct EffectiveStats
     public int MaxHp;
     public int CurrentArmor;
     public int Attack;
-    public int Defense;
+    public int Armor;
     public int DamageReduction;
     public bool HasFirstStrike;
 }
@@ -692,7 +694,8 @@ public sealed class RelicDefinition
     public Sprite Image;
     public CardQuality Quality;
     public int StatAttackBonus;
-    public int StatDefenseBonus;
+    [FormerlySerializedAs("StatArmorBonus")]
+    public int StatArmorBonus;
     public int StatMaxHpBonus;
     public bool IsOneShot;
     public bool ExcludeFromPool;
@@ -722,7 +725,7 @@ public sealed class RelicInstance
     public string DisplayName;
     public CardQuality Quality;
     public int StatAttackBonus;
-    public int StatDefenseBonus;
+    public int StatArmorBonus;
     public int StatMaxHpBonus;
     public bool IsOneShot;
     public bool HasTriggered;
@@ -736,7 +739,7 @@ public sealed class RelicInstance
             DisplayName = definition.DisplayName,
             Quality = definition.Quality,
             StatAttackBonus = definition.StatAttackBonus,
-            StatDefenseBonus = definition.StatDefenseBonus,
+            StatArmorBonus = definition.StatArmorBonus,
             StatMaxHpBonus = definition.StatMaxHpBonus,
             IsOneShot = definition.IsOneShot,
             HasTriggered = false,
@@ -759,8 +762,8 @@ public static class HelpCardSystemTagUtility
         {
             case HelpCardSystemTag.DirectDamage:
                 return "直伤";
-            case HelpCardSystemTag.Defense:
-                return "防御";
+            case HelpCardSystemTag.Armor:
+                return "护甲";
             case HelpCardSystemTag.Recovery:
                 return "恢复";
             case HelpCardSystemTag.Displacement:

@@ -25,7 +25,7 @@ MonoBehaviour:
     Price: 30
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -44,7 +44,7 @@ MonoBehaviour:
     Price: 20
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -63,7 +63,7 @@ MonoBehaviour:
     Price: 100
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -82,7 +82,7 @@ MonoBehaviour:
     Price: 100
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -101,7 +101,7 @@ MonoBehaviour:
     Price: 30
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -120,7 +120,7 @@ MonoBehaviour:
     Price: 100
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -139,7 +139,7 @@ MonoBehaviour:
     Price: 20
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -158,7 +158,7 @@ MonoBehaviour:
     Price: 15
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -177,7 +177,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 6
     BaseAttack: 2
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -196,7 +196,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 2
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -216,7 +216,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 4
     BaseAttack: 2
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -236,7 +236,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 1
     BaseAttack: 2
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -256,7 +256,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 2
     BaseAttack: 2
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -276,7 +276,7 @@ MonoBehaviour:
     Price: 150
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -295,7 +295,7 @@ MonoBehaviour:
     Price: 400
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -314,7 +314,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 6
     BaseAttack: 4
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -334,7 +334,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 9
     BaseAttack: 3
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -354,7 +354,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 3
     BaseAttack: 0
-    BaseDefense: 9
+    BaseArmor: 9
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -374,7 +374,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 6
     BaseAttack: 3
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -394,7 +394,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 12
     BaseAttack: 6
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -414,7 +414,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 16
     BaseAttack: 4
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -434,7 +434,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 8
     BaseAttack: 4
-    BaseDefense: 8
+    BaseArmor: 8
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -454,7 +454,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 12
     BaseAttack: 4
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -474,7 +474,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 20
     BaseAttack: 7
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -494,7 +494,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 30
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -514,7 +514,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 12
     BaseAttack: 5
-    BaseDefense: 13
+    BaseArmor: 13
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -534,7 +534,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 20
     BaseAttack: 5
-    BaseDefense: 5
+    BaseArmor: 5
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -554,7 +554,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 44
     BaseAttack: 1
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -575,7 +575,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 121
     BaseAttack: 11
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -596,7 +596,7 @@ MonoBehaviour:
     Price: 30
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -615,7 +615,7 @@ MonoBehaviour:
     Price: 20
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -634,7 +634,7 @@ MonoBehaviour:
     Price: 30
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -653,7 +653,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -672,7 +672,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -691,7 +691,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -710,7 +710,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -729,7 +729,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -748,7 +748,7 @@ MonoBehaviour:
     Price: 80
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -767,7 +767,7 @@ MonoBehaviour:
     Price: 80
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -786,7 +786,7 @@ MonoBehaviour:
     Price: 150
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -805,7 +805,7 @@ MonoBehaviour:
     Price: 150
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -824,7 +824,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -843,7 +843,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -862,7 +862,7 @@ MonoBehaviour:
     Price: 30
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -881,7 +881,7 @@ MonoBehaviour:
     Price: 50
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -900,7 +900,7 @@ MonoBehaviour:
     Price: 80
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -919,7 +919,7 @@ MonoBehaviour:
     Price: 100
     BaseHp: 0
     BaseAttack: 0
-    BaseDefense: 0
+    BaseArmor: 0
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 1
@@ -938,7 +938,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 7
     BaseAttack: 2
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -957,7 +957,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 2
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -977,7 +977,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 4
     BaseAttack: 2
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -997,7 +997,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 1
     BaseAttack: 2
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1017,7 +1017,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 2
     BaseAttack: 2
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1037,7 +1037,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 7
     BaseAttack: 4
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1057,7 +1057,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 10
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1077,7 +1077,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 3
     BaseAttack: 1
-    BaseDefense: 10
+    BaseArmor: 10
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1097,7 +1097,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 7
     BaseAttack: 3
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1117,7 +1117,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 14
     BaseAttack: 7
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1137,7 +1137,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 19
     BaseAttack: 4
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1157,7 +1157,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 9
     BaseAttack: 4
-    BaseDefense: 9
+    BaseArmor: 9
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1177,7 +1177,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 14
     BaseAttack: 4
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1197,7 +1197,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 24
     BaseAttack: 8
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1217,7 +1217,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 36
     BaseAttack: 1
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1237,7 +1237,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 14
     BaseAttack: 6
-    BaseDefense: 15
+    BaseArmor: 15
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1257,7 +1257,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 24
     BaseAttack: 6
-    BaseDefense: 6
+    BaseArmor: 6
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1277,7 +1277,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 9
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1296,7 +1296,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 3
     BaseAttack: 4
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1316,7 +1316,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 6
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1336,7 +1336,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 1
     BaseAttack: 3
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1356,7 +1356,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 3
     BaseAttack: 3
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1376,7 +1376,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 9
     BaseAttack: 6
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1396,7 +1396,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 13
     BaseAttack: 4
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1416,7 +1416,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 4
     BaseAttack: 1
-    BaseDefense: 13
+    BaseArmor: 13
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1436,7 +1436,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 9
     BaseAttack: 4
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1456,7 +1456,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 18
     BaseAttack: 9
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1476,7 +1476,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 24
     BaseAttack: 6
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1496,7 +1496,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 12
     BaseAttack: 6
-    BaseDefense: 12
+    BaseArmor: 12
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1516,7 +1516,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 18
     BaseAttack: 6
-    BaseDefense: 6
+    BaseArmor: 6
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1536,7 +1536,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 30
     BaseAttack: 10
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1556,7 +1556,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 45
     BaseAttack: 1
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1576,7 +1576,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 18
     BaseAttack: 7
-    BaseDefense: 19
+    BaseArmor: 19
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1596,7 +1596,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 30
     BaseAttack: 7
-    BaseDefense: 7
+    BaseArmor: 7
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1616,7 +1616,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 55
     BaseAttack: 2
-    BaseDefense: 2
+    BaseArmor: 2
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1637,7 +1637,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 150
     BaseAttack: 12
-    BaseDefense: 1
+    BaseArmor: 1
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1658,7 +1658,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 66
     BaseAttack: 2
-    BaseDefense: 3
+    BaseArmor: 3
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0
@@ -1679,7 +1679,7 @@ MonoBehaviour:
     Price: 0
     BaseHp: 180
     BaseAttack: 10
-    BaseDefense: 4
+    BaseArmor: 4
     LegacyIsPermanentRemoveOnUse: 0
     RestoreAfterNode: 0
     RestoreAfterNodeAuthoritative: 0

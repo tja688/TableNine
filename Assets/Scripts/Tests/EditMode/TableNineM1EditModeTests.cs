@@ -161,8 +161,8 @@ public sealed class TableNineM1EditModeTests
         TableNine.InitArchitecture();
         var combatSystem = TableNine.Interface.GetSystem<ICombatSystem>();
         var damage = combatSystem.CalculateDamage(
-            new EffectiveStats { Attack = 1, Defense = 0 },
-            new EffectiveStats { Attack = 0, Defense = 5, DamageReduction = 5 });
+            new EffectiveStats { Attack = 1, Armor = 0 },
+            new EffectiveStats { Attack = 0, Armor = 5, DamageReduction = 5 });
 
         Assert.That(damage, Is.EqualTo(0));
     }
@@ -188,7 +188,7 @@ public sealed class TableNineM1EditModeTests
         var adjacentMonsterUid = MoveAnyAdjacentMonsterWithoutFirstStrikeToSlot2();
         var monsterRuntime = collectionModel.GetCard(adjacentMonsterUid);
         monsterRuntime.CurrentHp = 1;
-        monsterRuntime.BaseDefense = 0;
+        monsterRuntime.BaseArmor = 0;
         monsterRuntime.CurrentArmor = 0;
 
         var goldBefore = playerModel.Gold.Value;

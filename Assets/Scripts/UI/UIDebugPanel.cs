@@ -166,7 +166,7 @@ public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
         var monsterDetail = this.SendQuery(new GetMonsterRemainingDetailQuery());
 
         builder.AppendLine($"BoardHash: {boardHash}  RunHash: {runHash}");
-        builder.AppendLine($"Player: hp={player.CurrentHp}/{player.MaxHp} armor={player.CurrentArmor} atk={stats.Attack} def={stats.Defense} dr={stats.DamageReduction} gold={playerModel.Gold.Value}");
+        builder.AppendLine($"Player: hp={player.CurrentHp}/{player.MaxHp} armor={player.CurrentArmor} atk={stats.Attack} armorStat={stats.Armor} dr={stats.DamageReduction} gold={playerModel.Gold.Value}");
         builder.AppendLine($"BattleDeck: {deckModel.BattleDrawPile.Count}  Next: {deckModel.NextBattleCardPreview.Value.DisplayName}");
         builder.AppendLine($"MonsterCheck: {monsterDetail}");
         builder.AppendLine($"Replay: entries={replay.Entries.Count} lastHash={mLastReplayHash} matched={mLastReplayHashMatched}");
@@ -182,7 +182,7 @@ public sealed class UIDebugPanel : MonoBehaviour, IController, ICanSendEvent
             }
 
             var card = collectionModel.GetCard(uid.Value);
-            builder.AppendLine($"  [{slot}] {card.DefinitionId} uid={card.Uid.Value} hp={card.CurrentHp}/{card.MaxHp} armor={card.CurrentArmor} atk={card.BaseAttack} def={card.BaseDefense}");
+            builder.AppendLine($"  [{slot}] {card.DefinitionId} uid={card.Uid.Value} hp={card.CurrentHp}/{card.MaxHp} armor={card.CurrentArmor} atk={card.BaseAttack} baseArmor={card.BaseArmor}");
         }
 
         builder.AppendLine("HelpDeck:");

@@ -133,12 +133,12 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
         var monster = SpawnMonster(GameConfigIds.MonsterDiamond2Id);
         PlaceMonster(monster, new BoardSlotNo(7));
-        var defenseBefore = collectionModel.GetCard(monster).BaseDefense;
+        var defenseBefore = collectionModel.GetCard(monster).BaseArmor;
 
         boardSystem.RotateClockwise();
 
         Assert.That(collectionModel.GetCard(monster).BoardSlot.Value.Value, Is.EqualTo(4));
-        Assert.That(collectionModel.GetCard(monster).BaseDefense, Is.EqualTo(defenseBefore + 2));
+        Assert.That(collectionModel.GetCard(monster).BaseArmor, Is.EqualTo(defenseBefore + 2));
     }
 
     [Test]
@@ -214,7 +214,7 @@ public sealed class TableNineStage1MonsterSkillEditModeTests
         var definition = configModel.GetCardDefinition(cardId);
         Assert.That(definition.BaseHp, Is.EqualTo(hp), cardId);
         Assert.That(definition.BaseAttack, Is.EqualTo(attack), cardId);
-        Assert.That(definition.BaseDefense, Is.EqualTo(defense), cardId);
+        Assert.That(definition.BaseArmor, Is.EqualTo(defense), cardId);
     }
 
     private static void StartRun(int seed)

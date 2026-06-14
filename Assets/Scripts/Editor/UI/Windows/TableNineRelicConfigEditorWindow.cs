@@ -107,7 +107,7 @@ public sealed class TableNineRelicConfigEditorWindow : WarmConsoleConfigEditorWi
 
         contentRoot.Add(Skin.CreateStatsGrid(
             ("攻击", $"+{element.FindPropertyRelative("StatAttackBonus").intValue}", "攻击加成"),
-            ("防御", $"+{element.FindPropertyRelative("StatDefenseBonus").intValue}", "防御加成"),
+            ("护甲", $"+{element.FindPropertyRelative("StatArmorBonus").intValue}", "护甲加成"),
             ("生命", $"+{element.FindPropertyRelative("StatMaxHpBonus").intValue}", "最大生命加成"),
             ("品质", element.FindPropertyRelative("Quality").enumDisplayNames[element.FindPropertyRelative("Quality").enumValueIndex], "遗物品质")));
 
@@ -124,7 +124,7 @@ public sealed class TableNineRelicConfigEditorWindow : WarmConsoleConfigEditorWi
         form.Add(Skin.CreateSectionCard("属性加成", "遗物提供的数值加成。", section =>
         {
             ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                "StatAttackBonus", "StatDefenseBonus", "StatMaxHpBonus");
+                "StatAttackBonus", "StatArmorBonus", "StatMaxHpBonus");
         }));
 
         form.Add(Skin.CreateSectionCard("池规则", "一次性与随机池设置。", section =>

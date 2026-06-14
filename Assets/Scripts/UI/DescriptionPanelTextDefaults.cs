@@ -42,7 +42,7 @@ public static class DescriptionPanelTextDefaults
             Entry(DescriptionPanelTextKeys.MsgNotImplemented, "未接入", "{0}暂未接入效果", "UseHelpCardCommand，模板"),
             Entry(DescriptionPanelTextKeys.MsgThrowingKnifeHit, "飞刀命中", "飞刀命中{0}，6点伤害", "ResolveThrowingKnifeTargetCommand，模板"),
             Entry(DescriptionPanelTextKeys.MsgAttrAttack, "攻击提升", "属性提升：攻击+1", "ResolveAttributeChoiceCommand"),
-            Entry(DescriptionPanelTextKeys.MsgAttrDefense, "防御提升", "属性提升：防御+1", "ResolveAttributeChoiceCommand"),
+            Entry(DescriptionPanelTextKeys.MsgAttrArmor, "护甲提升", "属性提升：护甲+1", "ResolveAttributeChoiceCommand"),
             Entry(DescriptionPanelTextKeys.MsgAttrMaxHp, "生命提升", "属性提升：生命+2", "ResolveAttributeChoiceCommand"),
             Entry(DescriptionPanelTextKeys.MsgRoomGold, "金币房", "金币房：获得{0}金币", "ChooseRoomCommand，模板"),
             Entry(DescriptionPanelTextKeys.MsgRoomAttribute, "温泉房", "温泉房：生命上限+{0}并回满生命", "ChooseRoomCommand，模板"),

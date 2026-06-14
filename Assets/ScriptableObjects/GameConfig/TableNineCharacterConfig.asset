@@ -18,7 +18,7 @@ MonoBehaviour:
     Description: "\u5173\u5361\u7ED3\u675F\u767D\u5E2E\u52A9\u5361\u4E09\u9009\u4E00"
     BaseHp: 10
     BaseAttack: 3
-    BaseDefense: 1
+    BaseArmor: 1
     InitialSkillIds:
     - skill_light_footed
     InitialHelpCardIds:
@@ -29,3 +29,4 @@ MonoBehaviour:
     - help_throwing_knife
     - help_throwing_knife
     - help_throwing_knife
+    - help_attribute_up

@@ -37,7 +37,7 @@ public static class SkillBehaviorExecutor
                     }
 
                     break;
-                case SkillBehaviorKind.EffectiveStatDefenseBonus:
+                case SkillBehaviorKind.EffectiveStatArmorBonus:
                     if (boardSlot.HasValue && MatchesSlot(boardSlot.Value, rule))
                     {
                         defense += rule.IntValue;
@@ -62,7 +62,7 @@ public static class SkillBehaviorExecutor
                     }
 
                     break;
-                case SkillBehaviorKind.AuraDefenseBonusFromOtherMonster:
+                case SkillBehaviorKind.AuraArmorBonusFromOtherMonster:
                     if (!runtime.HasSkill(rule.AuraSourceSkillId) &&
                         HasAuraMonster(boardModel, collectionModel, rule.AuraSourceSkillId, LeftColumnSlots))
                     {

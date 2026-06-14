@@ -13,7 +13,7 @@ public static class ConfigEditorFieldLabels
             ["Description"] = ("描述", "说明面板文案，最多 25 字。"),
             ["BaseHp"] = ("基础生命", "角色初始最大生命值。"),
             ["BaseAttack"] = ("基础攻击", "角色初始攻击力。"),
-            ["BaseDefense"] = ("基础防御", "角色初始防御力。"),
+            ["BaseArmor"] = ("基础护甲", "角色初始护甲属性。"),
             ["InitialSkillIds"] = ("初始技能", "开局拥有的技能 ID 列表。"),
             ["InitialHelpCardIds"] = ("初始援助卡", "开局援助卡组中的卡牌 ID。"),
 
@@ -52,7 +52,7 @@ public static class ConfigEditorFieldLabels
 
             ["RelicId"] = ("遗物 ID", "运行时唯一标识。"),
             ["StatAttackBonus"] = ("攻击加成", "遗物提供的攻击加成。"),
-            ["StatDefenseBonus"] = ("防御加成", "遗物提供的防御加成。"),
+            ["StatArmorBonus"] = ("护甲加成", "遗物提供的护甲属性加成。"),
             ["StatMaxHpBonus"] = ("生命加成", "遗物提供的最大生命加成。"),
             ["IsOneShot"] = ("一次性", "触发后是否消耗。"),
             ["ExcludeFromPool"] = ("排除出池", "是否不出现在随机池中。"),

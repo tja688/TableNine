@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 public enum SaveRunReason
 {
@@ -15,7 +16,7 @@ public enum SaveRunReason
 [Serializable]
 public sealed class RunSaveData
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     public int SchemaVersion = CurrentSchemaVersion;
     public int Seed;
@@ -27,7 +28,8 @@ public sealed class RunSaveData
     public int NextCardUid;
     public int Gold;
     public int PlayerBaseAttack;
-    public int PlayerBaseDefense;
+    [FormerlySerializedAs("PlayerBaseArmor")]
+    public int PlayerBaseArmor;
     public int PlayerCurrentHp;
     public int PlayerMaxHp;
     public List<string> SkillIds = new List<string>();
@@ -66,7 +68,8 @@ public sealed class CardRuntimeSaveData
     public int MaxHp;
     public int CurrentArmor;
     public int BaseAttack;
-    public int BaseDefense;
+    [FormerlySerializedAs("BaseArmor")]
+    public int BaseArmor;
     public List<string> SkillIds = new List<string>();
 }
 

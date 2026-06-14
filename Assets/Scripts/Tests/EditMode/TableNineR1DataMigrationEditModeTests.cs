@@ -28,7 +28,7 @@ public sealed class TableNineR1DataMigrationEditModeTests
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats();
 
-        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Defense),
+        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Armor),
             "R2：节点开始后护甲按有效防御填充，而非保持 0");
     }
 
@@ -149,9 +149,9 @@ public sealed class TableNineR1DataMigrationEditModeTests
 
         var player = TableNine.Interface.GetModel<ICollectionModel>().GetCard(playerModel.PlayerCardUid);
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats();
-        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Defense + 3));
+        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Armor + 3));
         Assert.That(armorEvent.HasValue, Is.True);
-        Assert.That(armorEvent.Value.NewArmor, Is.EqualTo(stats.Defense + 3));
+        Assert.That(armorEvent.Value.NewArmor, Is.EqualTo(stats.Armor + 3));
         Assert.That(dirtyEvent.HasValue, Is.True);
     }
 

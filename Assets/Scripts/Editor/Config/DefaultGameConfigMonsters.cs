@@ -153,7 +153,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 1,
             BaseHp = 44,
             BaseAttack = 1,
-            BaseDefense = 1
+            BaseArmor = 1
         });
         config.Cards.Add(new CardDefinition
         {
@@ -166,7 +166,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 11,
             BaseHp = 121,
             BaseAttack = 11,
-            BaseDefense = 0
+            BaseArmor = 0
         });
     }
 
@@ -192,7 +192,7 @@ public static partial class DefaultGameConfigFactory
             Rank = rank,
             BaseHp = hp,
             BaseAttack = attack,
-            BaseDefense = defense
+            BaseArmor = defense
         });
     }
 }

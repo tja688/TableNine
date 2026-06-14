@@ -113,7 +113,7 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
         contentRoot.Add(Skin.CreateStatsGrid(
             ("生命", element.FindPropertyRelative("BaseHp").intValue.ToString(), "怪物基础生命"),
             ("攻击", element.FindPropertyRelative("BaseAttack").intValue.ToString(), "怪物基础攻击"),
-            ("防御", element.FindPropertyRelative("BaseDefense").intValue.ToString(), "怪物基础防御"),
+            ("护甲", element.FindPropertyRelative("BaseArmor").intValue.ToString(), "怪物基础护甲"),
             ("价格", element.FindPropertyRelative("Price").intValue.ToString(), "商店/奖励价格")));
 
         var form = new VisualElement();
@@ -131,7 +131,7 @@ public sealed class TableNineCardConfigEditorWindow : WarmConsoleConfigEditorWin
             form.Add(Skin.CreateSectionCard("怪物属性", "花色、点数与战斗数值。", section =>
             {
                 ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                    "MonsterLevel", "Suit", "Rank", "BaseHp", "BaseAttack", "BaseDefense", "SkillIds");
+                    "MonsterLevel", "Suit", "Rank", "BaseHp", "BaseAttack", "BaseArmor", "SkillIds");
             }));
         }
         else if (cardType == CardType.Help)

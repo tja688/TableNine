@@ -24,8 +24,8 @@ public sealed class TableNineR0BaselineEditModeTests
         var combatSystem = TableNine.Interface.GetSystem<ICombatSystem>();
 
         var damage = combatSystem.CalculateDamage(
-            new EffectiveStats { Attack = 5, Defense = 0 },
-            new EffectiveStats { Attack = 0, Defense = 3, DamageReduction = 3 });
+            new EffectiveStats { Attack = 5, Armor = 0 },
+            new EffectiveStats { Attack = 0, Armor = 3, DamageReduction = 3 });
 
         Assert.That(damage, Is.EqualTo(2));
     }

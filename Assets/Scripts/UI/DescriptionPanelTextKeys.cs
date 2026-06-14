@@ -18,7 +18,7 @@ public static class DescriptionPanelTextKeys
     public const string MsgNotImplemented = "msg.not_implemented";
     public const string MsgThrowingKnifeHit = "msg.throwing_knife_hit";
     public const string MsgAttrAttack = "msg.attr_attack";
-    public const string MsgAttrDefense = "msg.attr_defense";
+    public const string MsgAttrArmor = "msg.attr_armor";
     public const string MsgAttrMaxHp = "msg.attr_max_hp";
     public const string MsgRoomGold = "msg.room_gold";
     public const string MsgRoomAttribute = "msg.room_attribute";

@@ -518,7 +518,7 @@ public interface IStatSystem : ISystem
 {
     EffectiveStats GetEffectivePlayerStats();
     EffectiveStats GetEffectiveMonsterStats(CardUid monsterUid);
-    void FillArmorFromDefenseAtNodeStart();
+    void FillArmorFromArmorStatAtNodeStart();
 }
 
 public sealed class StatSystem : AbstractSystem, IStatSystem
@@ -539,7 +539,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
 
         var attack = playerRuntime.BaseAttack;
-        var defense = playerRuntime.BaseDefense;
+        var armor = playerRuntime.BaseArmor;
         var maxHp = playerRuntime.MaxHp;
         var currentHp = playerRuntime.CurrentHp;
 
@@ -552,7 +552,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
 
             // Use instance fields (populated from RelicDefinition via FromDefinition)
             attack += relic.StatAttackBonus;
-            defense += relic.StatDefenseBonus;
+            armor += relic.StatArmorBonus;
             maxHp += relic.StatMaxHpBonus;
             currentHp += relic.StatMaxHpBonus;
         }
@@ -560,7 +560,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         if (HasWoodSet(playerModel))
         {
             attack += 2;
-            defense += 2;
+            armor += 2;
             maxHp += 8;
             currentHp += 8;
         }
@@ -571,7 +571,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             MaxHp = maxHp,
             CurrentArmor = playerRuntime.CurrentArmor,
             Attack = attack,
-            Defense = defense,
+            Armor = armor,
             DamageReduction = 0,
             HasFirstStrike = HasFirstStrike(playerRuntime, configModel)
         };
@@ -584,7 +584,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         var monsterRuntime = collectionModel.GetCard(monsterUid);
 
         var attack = monsterRuntime.BaseAttack;
-        var defense = monsterRuntime.BaseDefense;
+        var armor = monsterRuntime.BaseArmor;
         var maxHp = monsterRuntime.MaxHp;
         var currentHp = monsterRuntime.CurrentHp;
         var damageReduction = 0;
@@ -597,7 +597,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             collectionModel,
             configModel.GetEffectiveStatBehaviorRules(),
             ref attack,
-            ref defense,
+            ref armor,
             ref damageReduction,
             ref hasFirstStrike,
             configModel);
@@ -608,7 +608,7 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
             MaxHp = maxHp,
             CurrentArmor = monsterRuntime.CurrentArmor,
             Attack = attack,
-            Defense = defense,
+            Armor = armor,
             DamageReduction = damageReduction,
             HasFirstStrike = hasFirstStrike
         };
@@ -773,13 +773,13 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
         ((IBelongToArchitecture)this).GetArchitecture().SendCommand(command);
     }
 
-    public void FillArmorFromDefenseAtNodeStart()
+    public void FillArmorFromArmorStatAtNodeStart()
     {
         var playerModel = this.GetModel<IPlayerModel>();
         var collectionModel = this.GetModel<ICollectionModel>();
         var boardModel = this.GetModel<IBoardModel>();
 
-        FillArmorFromDefense(playerModel.PlayerCardUid, GetEffectivePlayerStats());
+        FillArmorFromArmorStat(playerModel.PlayerCardUid, GetEffectivePlayerStats());
 
         for (var i = 0; i < BoardSlotUtility.ClockwiseRing.Length; i++)
         {
@@ -795,23 +795,23 @@ public sealed class StatSystem : AbstractSystem, IStatSystem
                 continue;
             }
 
-            FillArmorFromDefense(uid.Value, GetEffectiveMonsterStats(uid.Value));
+            FillArmorFromArmorStat(uid.Value, GetEffectiveMonsterStats(uid.Value));
         }
     }
 
-    private void FillArmorFromDefense(CardUid uid, EffectiveStats stats)
+    private void FillArmorFromArmorStat(CardUid uid, EffectiveStats stats)
     {
         var collectionModel = this.GetModel<ICollectionModel>();
         var runtime = collectionModel.GetCard(uid);
         var oldArmor = runtime.CurrentArmor;
-        var newArmor = stats.Defense < 0 ? 0 : stats.Defense;
+        var newArmor = stats.Armor < 0 ? 0 : stats.Armor;
         if (oldArmor == newArmor)
         {
             return;
         }
 
         runtime.CurrentArmor = newArmor;
-        this.SendEvent(new ArmorChangedEvent(uid, oldArmor, newArmor, "node_start_defense"));
+        this.SendEvent(new ArmorChangedEvent(uid, oldArmor, newArmor, "node_start_armor"));
         this.SendEvent(new StatsDirtyEvent(uid));
     }
 }

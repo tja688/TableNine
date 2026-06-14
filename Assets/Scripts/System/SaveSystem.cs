@@ -65,7 +65,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
 
         var playerRuntime = collectionModel.GetCard(playerModel.PlayerCardUid);
         save.PlayerBaseAttack = playerRuntime.BaseAttack;
-        save.PlayerBaseDefense = playerRuntime.BaseDefense;
+        save.PlayerBaseArmor = playerRuntime.BaseArmor;
         save.PlayerCurrentHp = playerRuntime.CurrentHp;
         save.PlayerMaxHp = playerRuntime.MaxHp;
 
@@ -176,7 +176,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             return false;
         }
 
-        var save = JsonUtility.FromJson<RunSaveData>(json);
+        var save = JsonUtility.FromJson<RunSaveData>(MigrateSaveJson(json));
         if (save == null || !IsSupportedSchema(save.SchemaVersion))
         {
             return false;
@@ -256,7 +256,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
         playerModel.PlayerCardUid = playerUid;
         var playerRuntime = collectionModel.GetCard(playerUid);
         playerRuntime.BaseAttack = save.PlayerBaseAttack;
-        playerRuntime.BaseDefense = save.PlayerBaseDefense;
+        playerRuntime.BaseArmor = save.PlayerBaseArmor;
         playerRuntime.CurrentHp = save.PlayerCurrentHp;
         playerRuntime.MaxHp = save.PlayerMaxHp;
 
@@ -423,7 +423,19 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
 
     private static bool IsSupportedSchema(int schemaVersion)
     {
-        return schemaVersion == 1 || schemaVersion == RunSaveData.CurrentSchemaVersion;
+        return schemaVersion >= 1 && schemaVersion <= RunSaveData.CurrentSchemaVersion;
+    }
+
+    private static string MigrateSaveJson(string json)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return json;
+        }
+
+        return json
+            .Replace("\"PlayerBaseDefense\"", "\"PlayerBaseArmor\"")
+            .Replace("\"BaseDefense\"", "\"BaseArmor\"");
     }
 
     private static void NormalizeLegacySave(RunSaveData save)
@@ -494,7 +506,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             MaxHp = runtime.MaxHp,
             CurrentArmor = runtime.CurrentArmor,
             BaseAttack = runtime.BaseAttack,
-            BaseDefense = runtime.BaseDefense,
+            BaseArmor = runtime.BaseArmor,
             SkillIds = new List<string>(runtime.SkillIds)
         };
     }
@@ -515,7 +527,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             MaxHp = save.MaxHp,
             CurrentArmor = save.CurrentArmor,
             BaseAttack = save.BaseAttack,
-            BaseDefense = save.BaseDefense,
+            BaseArmor = save.BaseArmor,
             SkillIds = new List<string>(save.SkillIds)
         };
     }
@@ -528,7 +540,7 @@ public sealed class SaveSystem : AbstractSystem, ISaveSystem
             DisplayName = relic.DisplayName,
             Quality = relic.Quality,
             StatAttackBonus = relic.StatAttackBonus,
-            StatDefenseBonus = relic.StatDefenseBonus,
+            StatArmorBonus = relic.StatArmorBonus,
             StatMaxHpBonus = relic.StatMaxHpBonus,
             IsOneShot = relic.IsOneShot,
             HasTriggered = relic.HasTriggered,

@@ -98,7 +98,7 @@ public sealed class ApplyBloodConvertRewardCommand : AbstractCommand
                 this.SendCommand(new ApplyStatChangeCommand(playerUid, StatType.Attack, 1, causeId));
                 break;
             case 1:
-                this.SendCommand(new ApplyStatChangeCommand(playerUid, StatType.Defense, 1, causeId));
+                this.SendCommand(new ApplyStatChangeCommand(playerUid, StatType.Armor, 1, causeId));
                 break;
             case 2:
                 this.SendCommand(new ApplyEffectGoldCommand(50));

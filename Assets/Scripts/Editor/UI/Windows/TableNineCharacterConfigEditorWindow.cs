@@ -83,7 +83,7 @@ public sealed class TableNineCharacterConfigEditorWindow : WarmConsoleConfigEdit
         contentRoot.Add(Skin.CreateStatsGrid(
             ("生命", element.FindPropertyRelative("BaseHp").intValue.ToString(), "基础最大生命"),
             ("攻击", element.FindPropertyRelative("BaseAttack").intValue.ToString(), "基础攻击力"),
-            ("防御", element.FindPropertyRelative("BaseDefense").intValue.ToString(), "基础防御力")));
+            ("护甲", element.FindPropertyRelative("BaseArmor").intValue.ToString(), "基础护甲")));
 
         var form = new VisualElement();
         var spritePanel = new SpritePreviewPanel(Skin);
@@ -104,7 +104,7 @@ public sealed class TableNineCharacterConfigEditorWindow : WarmConsoleConfigEdit
         form.Add(Skin.CreateSectionCard("基础属性", "战斗初始数值。", section =>
         {
             ConfigEditorPropertyBuilder.AddProperties(section, Skin, TargetSo, element,
-                "BaseHp", "BaseAttack", "BaseDefense");
+                "BaseHp", "BaseAttack", "BaseArmor");
         }));
 
         contentRoot.Add(Skin.CreateFormWithSpritePreview(form, spritePanel));

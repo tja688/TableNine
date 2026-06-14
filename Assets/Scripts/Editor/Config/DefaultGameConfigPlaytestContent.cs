@@ -301,7 +301,7 @@ public static partial class DefaultGameConfigFactory
             DisplayName = "铁盾",
             Description = "受到伤害减少1点",
             Quality = CardQuality.Blue,
-            StatDefenseBonus = 1
+            StatArmorBonus = 1
         });
         config.Relics.Add(new RelicDefinition
         {
@@ -341,7 +341,7 @@ public static partial class DefaultGameConfigFactory
             DisplayName = "龙鳞甲",
             Description = "所有怪物攻击-1",
             Quality = CardQuality.Gold,
-            StatDefenseBonus = 1,
+            StatArmorBonus = 1,
             StatMaxHpBonus = 6
         });
         config.Relics.Add(new RelicDefinition
@@ -371,7 +371,7 @@ public static partial class DefaultGameConfigFactory
         var woodShield = FindRelic(config, RelicWoodShieldId);
         if (woodShield != null)
         {
-            woodShield.StatDefenseBonus = 1;
+            woodShield.StatArmorBonus = 1;
         }
 
         var woodSword = FindRelic(config, RelicWoodSwordId);
@@ -450,7 +450,7 @@ public static partial class DefaultGameConfigFactory
                 Rank = source.Rank,
                 BaseHp = ScaleStat(source.BaseHp, scale),
                 BaseAttack = ScaleStat(source.BaseAttack, scale),
-                BaseDefense = ScaleStat(source.BaseDefense, scale),
+                BaseArmor = ScaleStat(source.BaseArmor, scale),
                 SkillIds = new List<string>(source.SkillIds)
             });
         }
@@ -499,7 +499,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 1,
             BaseHp = 55,
             BaseAttack = 2,
-            BaseDefense = 2,
+            BaseArmor = 2,
             SkillIds = new List<string> { SkillDuelId, SkillWarDanceId }
         });
         config.Cards.Add(new CardDefinition
@@ -513,7 +513,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 11,
             BaseHp = 150,
             BaseAttack = 12,
-            BaseDefense = 1,
+            BaseArmor = 1,
             SkillIds = new List<string> { SkillViolenceId, SkillSpadeRoyaltyId }
         });
         config.Cards.Add(new CardDefinition
@@ -527,7 +527,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 1,
             BaseHp = 66,
             BaseAttack = 2,
-            BaseDefense = 3,
+            BaseArmor = 3,
             SkillIds = new List<string> { SkillDuelId, SkillWarDanceId }
         });
         config.Cards.Add(new CardDefinition
@@ -541,7 +541,7 @@ public static partial class DefaultGameConfigFactory
             Rank = 11,
             BaseHp = 180,
             BaseAttack = 10,
-            BaseDefense = 4,
+            BaseArmor = 4,
             SkillIds = new List<string> { SkillViolenceId, SkillSpadeRoyaltyId }
         });
     }

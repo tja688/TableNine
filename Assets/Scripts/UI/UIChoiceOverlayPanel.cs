@@ -156,7 +156,7 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
 
         if (mPassText != null)
         {
-            mPassText.text = mMode == ChoiceOverlayMode.AttributeUpgrade ? "左:攻 中:防 右:血" : mPassText.text;
+            mPassText.text = mMode == ChoiceOverlayMode.AttributeUpgrade ? "左:攻 中:甲 右:血" : mPassText.text;
         }
 
         if (mChoiceButtons == null || mChoiceButtons.Length < 3)
@@ -165,7 +165,7 @@ public sealed class UIChoiceOverlayPanel : MonoBehaviour, IController
         }
 
         mChoiceButtons[0].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Attack)));
-        mChoiceButtons[1].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Defense)));
+        mChoiceButtons[1].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.Armor)));
         mChoiceButtons[2].onClick.AddListener(() => this.SendCommand(new ResolveAttributeChoiceCommand(AttributeUpgradeChoice.MaxHp)));
     }
 

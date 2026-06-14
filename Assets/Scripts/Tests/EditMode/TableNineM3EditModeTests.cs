@@ -1025,7 +1025,7 @@ public sealed class TableNineM3EditModeTests
 
         var statsAfter = statSystem.GetEffectivePlayerStats();
 
-        Assert.That(statsAfter.Defense - statsBefore.Defense, Is.EqualTo(2), "木盾应 +2 防御");
+        Assert.That(statsAfter.Armor - statsBefore.Armor, Is.EqualTo(2), "木盾应 +2 护甲");
         Assert.That(statsAfter.Attack - statsBefore.Attack, Is.EqualTo(2), "木剑应 +2 攻击");
     }
 

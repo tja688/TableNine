@@ -53,7 +53,7 @@ public interface IPlayerModel : IModel
     BindableProperty<int> Gold { get; }
     int BaseHp { get; }
     int BaseAttack { get; }
-    int BaseDefense { get; }
+    int BaseArmor { get; }
     IReadOnlyList<string> SkillIds { get; }
     IReadOnlyList<RelicInstance> Relics { get; }
     int MaxRelicCount { get; }
@@ -74,7 +74,7 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
     public BindableProperty<int> Gold => mGold;
     public int BaseHp { get; private set; }
     public int BaseAttack { get; private set; }
-    public int BaseDefense { get; private set; }
+    public int BaseArmor { get; private set; }
     public IReadOnlyList<string> SkillIds => mSkillIds;
     public IReadOnlyList<RelicInstance> Relics => mRelics;
     public int MaxRelicCount => 12;
@@ -122,7 +122,7 @@ public sealed class PlayerModel : AbstractModel, IPlayerModel
         PlayerCardUid = playerCardUid;
         BaseHp = characterDefinition.BaseHp;
         BaseAttack = characterDefinition.BaseAttack;
-        BaseDefense = characterDefinition.BaseDefense;
+        BaseArmor = characterDefinition.BaseArmor;
         mGold.Value = 0;
         mSkillIds.Clear();
         mSkillIds.AddRange(characterDefinition.InitialSkillIds);
@@ -363,7 +363,7 @@ public sealed class CollectionModel : AbstractModel, ICollectionModel
             MaxHp = definition.BaseHp,
             CurrentArmor = 0,
             BaseAttack = definition.BaseAttack,
-            BaseDefense = definition.BaseDefense,
+            BaseArmor = definition.BaseArmor,
             SkillIds = new List<string>(definition.InitialSkillIds)
         };
 
@@ -404,7 +404,7 @@ public sealed class CollectionModel : AbstractModel, ICollectionModel
             MaxHp = definition.BaseHp,
             CurrentArmor = 0,
             BaseAttack = definition.BaseAttack,
-            BaseDefense = definition.BaseDefense,
+            BaseArmor = definition.BaseArmor,
             SkillIds = new List<string>(definition.SkillIds)
         };
 

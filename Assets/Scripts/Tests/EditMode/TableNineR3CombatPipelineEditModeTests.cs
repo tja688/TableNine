@@ -52,7 +52,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         var monster = collectionModel.GetCard(monsterUid);
         monster.CurrentHp = 1;
         monster.CurrentArmor = 0;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var playerHpBefore = collectionModel.GetCard(playerModel.PlayerCardUid).CurrentHp;
         var damageEvents = new List<DamageAppliedEvent>();
@@ -107,7 +107,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         var monster = collectionModel.GetCard(monsterUid);
         monster.CurrentHp = 3;
         monster.CurrentArmor = 0;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.BaseAttack = 1;
@@ -140,7 +140,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         monster.CurrentHp = 999;
         monster.CurrentArmor = 0;
         monster.BaseAttack = 4;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentArmor = 0;
@@ -174,7 +174,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         monster.CurrentHp = 999;
         monster.CurrentArmor = 0;
         monster.BaseAttack = 999;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
@@ -200,7 +200,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         monster.CurrentHp = 999;
         monster.CurrentArmor = 0;
         monster.BaseAttack = 999;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.CurrentHp = 5;
@@ -262,7 +262,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         monster.CurrentHp = 999;
         monster.CurrentArmor = 0;
         monster.BaseAttack = 0;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
@@ -289,7 +289,7 @@ public sealed class TableNineR3CombatPipelineEditModeTests
         monster.CurrentHp = 999;
         monster.CurrentArmor = 0;
         monster.BaseAttack = 1;
-        monster.BaseDefense = 0;
+        monster.BaseArmor = 0;
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         player.BaseAttack = 1;

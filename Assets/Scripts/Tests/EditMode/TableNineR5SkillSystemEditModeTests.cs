@@ -245,7 +245,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         Assert.That(statsWithTwoPieces.Attack, Is.GreaterThan(statsBefore.Attack));
         Assert.That(statsWithFullSet.Attack - statsWithTwoPieces.Attack, Is.EqualTo(2));
-        Assert.That(statsWithFullSet.Defense - statsWithTwoPieces.Defense, Is.EqualTo(2));
+        Assert.That(statsWithFullSet.Armor - statsWithTwoPieces.Armor, Is.EqualTo(2));
         Assert.That(statsWithFullSet.MaxHp - statsWithTwoPieces.MaxHp, Is.EqualTo(woodArmorHpBonus + 8));
     }
 
@@ -262,7 +262,7 @@ public sealed class TableNineR5SkillSystemEditModeTests
 
         var player = collectionModel.GetCard(playerModel.PlayerCardUid);
         var stats = TableNine.Interface.GetSystem<IStatSystem>().GetEffectivePlayerStats();
-        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Defense));
+        Assert.That(player.CurrentArmor, Is.EqualTo(stats.Armor));
     }
 
     [Test]
