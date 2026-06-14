@@ -132,6 +132,7 @@ public static partial class DefaultGameConfigFactory
     {
         AddPlaytestSkills(config);
         AddPlaytestHelpCards(config);
+        AddPlaytestTutorCards(config);
         AddPlaytestRelics(config);
         AddScaledLayerMonsters(config);
     }
@@ -270,6 +271,45 @@ public static partial class DefaultGameConfigFactory
             blessing.Quality = CardQuality.White;
             blessing.Price = 20;
         }
+    }
+
+    private static void AddPlaytestTutorCards(GameConfigSet config)
+    {
+        var tutorPool = GameConfigIds.TutorSkillPoolIds;
+        for (var i = 0; i < tutorPool.Length; i++)
+        {
+            var skillId = tutorPool[i];
+            SkillDefinition skill = null;
+            for (var j = 0; j < config.Skills.Count; j++)
+            {
+                if (config.Skills[j].SkillId == skillId)
+                {
+                    skill = config.Skills[j];
+                    break;
+                }
+            }
+
+            if (skill == null)
+            {
+                continue;
+            }
+
+            config.Cards.Add(TutorCard(skill));
+        }
+    }
+
+    private static CardDefinition TutorCard(SkillDefinition skill)
+    {
+        return new CardDefinition
+        {
+            CardId = GameConfigIds.GetTutorCardId(skill.SkillId),
+            DisplayName = skill.DisplayName,
+            Description = string.Empty,
+            CardType = CardType.Tutor,
+            Quality = CardQuality.Gold,
+            DeckId = GameConfigIds.DeckTutorId,
+            SkillIds = new List<string> { skill.SkillId }
+        };
     }
 
     private static CardDefinition HelpCard(string id, string name, CardQuality quality, int price, bool permanentRemove, string description = null)

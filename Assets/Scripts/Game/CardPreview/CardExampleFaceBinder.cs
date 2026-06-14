@@ -23,7 +23,7 @@ public static class CardExampleFaceBinder
 
         ApplyDeckSprites(root, card, config);
         ApplyMainIcon(root, card, config);
-        ApplyEntryIcons(root, card, config, showStats);
+        ApplyEntryIcons(root, card, config, showStats && card.CardType != CardType.Tutor);
     }
 
     private static void ApplyDeckSprites(Transform root, CardDefinition card, IConfigModel config)
@@ -69,9 +69,25 @@ public static class CardExampleFaceBinder
             return;
         }
 
-        var sprite = config.GetCardMainImage(card.CardId);
+        var sprite = ResolveMainIconSprite(card, config);
         renderer.sprite = sprite;
         renderer.enabled = sprite != null;
+    }
+
+    private static Sprite ResolveMainIconSprite(CardDefinition card, IConfigModel config)
+    {
+        var sprite = config.GetCardMainImage(card.CardId);
+        if (sprite != null)
+        {
+            return sprite;
+        }
+
+        if (card.CardType != CardType.Tutor || card.SkillIds == null || card.SkillIds.Count == 0)
+        {
+            return null;
+        }
+
+        return config.GetSkillDefinition(card.SkillIds[0])?.Image;
     }
 
     private static void ApplyEntryIcons(Transform root, CardDefinition card, IConfigModel config, bool showStats)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// DescriptionPanel 文案长度规则。换行符与空格均计入字数。
@@ -47,6 +48,33 @@ public static class DescriptionPanelTextRules
         }
 
         return text.Substring(0, MaxLength);
+    }
+
+    public static string FormatDisplayLines(IReadOnlyList<string> lines)
+    {
+        if (lines == null || lines.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var line = Clamp(lines[i]?.Trim() ?? string.Empty);
+            if (string.IsNullOrEmpty(line))
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append('\n');
+            }
+
+            builder.Append(line);
+        }
+
+        return builder.ToString();
     }
 
     public static bool TrySanitize(string text, out string sanitized, out bool wasTruncated, out bool hadLineBreak)

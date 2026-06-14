@@ -51,6 +51,12 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
             mDescriptionText = FindDescriptionText();
         }
 
+        if (mDescriptionText != null)
+        {
+            mDescriptionText.enableWordWrapping = true;
+            mDescriptionText.overflowMode = TMPro.TextOverflowModes.Overflow;
+        }
+
         mHoverCollider = mCardRoot.GetComponent<Collider2D>();
         if (mHoverCollider == null)
         {
@@ -123,6 +129,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
         var config = this.GetModel<IConfigModel>();
         AddCards(config.GetCardsByType(CardType.Monster));
         AddCards(config.GetCardsByType(CardType.Help));
+        AddCards(config.GetCardsByType(CardType.Tutor));
     }
 
     private void AddCards(IReadOnlyList<CardDefinition> cards)
@@ -140,7 +147,7 @@ public sealed class RandomCardPreviewDemo : MonoBehaviour, IController
                 continue;
             }
 
-            if (card.CardType is CardType.Player or CardType.Room or CardType.Tutor)
+            if (card.CardType is CardType.Player or CardType.Room)
             {
                 continue;
             }

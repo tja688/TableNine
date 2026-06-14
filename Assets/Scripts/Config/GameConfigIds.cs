@@ -4,6 +4,7 @@ public static class GameConfigIds
 
     public const string DeckCommonId = "deck_common";
     public const string DeckClownId = "deck_clown";
+    public const string DeckTutorId = "deck_tutor";
     public const string DeckWeakEliteId = "deck_weak_elite";
     public const string DeckStrongEliteId = "deck_strong_elite";
     public const string DeckBossId = "deck_boss";
@@ -161,6 +162,11 @@ public static class GameConfigIds
         SkillTowerChildId,
         SkillFirstStrikeId
     };
+
+    public static string GetTutorCardId(string skillId)
+    {
+        return string.IsNullOrWhiteSpace(skillId) ? string.Empty : $"tutor_{skillId}";
+    }
 
     public static string GetEliteMonsterId(int layer)
     {

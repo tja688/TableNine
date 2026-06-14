@@ -35,7 +35,7 @@ public sealed class TableNineCardDeckConfigEditModeTests
     {
         var config = DefaultGameConfigFactory.Create();
 
-        Assert.That(config.CardDecks.Count, Is.EqualTo(5));
+        Assert.That(config.CardDecks.Count, Is.EqualTo(6));
         Assert.That(FindDeck(config, GameConfigIds.DeckCommonId).DeckKind, Is.EqualTo(CardDeckKind.Common));
         Assert.That(FindDeck(config, GameConfigIds.DeckClownId).Faction, Is.EqualTo(CardDeckFaction.Player));
         Assert.That(FindCard(config, GameConfigIds.HelpPotionId).DeckId, Is.EqualTo(GameConfigIds.DeckCommonId));

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 
 public static class CardPreviewDescriptionComposer
 {
@@ -11,18 +10,39 @@ public static class CardPreviewDescriptionComposer
         }
 
         var parts = new List<string>();
-        AppendIfPresent(parts, card.Description);
-
-        if (card.CardType == CardType.Monster)
+        if (card.CardType == CardType.Tutor)
         {
-            AppendMonsterSkillDescriptions(config, card, parts);
+            AppendTutorSkillDescriptions(config, card, parts);
         }
-        else if (card.CardType == CardType.Help)
+        else
         {
-            AppendHelpEffectDescriptions(config, card, parts);
+            AppendIfPresent(parts, card.Description);
+
+            if (card.CardType == CardType.Monster)
+            {
+                AppendMonsterSkillDescriptions(config, card, parts);
+            }
+            else if (card.CardType == CardType.Help)
+            {
+                AppendHelpEffectDescriptions(config, card, parts);
+            }
         }
 
-        return DescriptionPanelTextRules.Clamp(JoinParts(parts));
+        return DescriptionPanelTextRules.FormatDisplayLines(parts);
+    }
+
+    private static void AppendTutorSkillDescriptions(IConfigModel config, CardDefinition card, List<string> parts)
+    {
+        if (card.SkillIds == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < card.SkillIds.Count; i++)
+        {
+            var skill = config.GetSkillDefinition(card.SkillIds[i]);
+            AppendIfPresent(parts, skill?.Description);
+        }
     }
 
     private static void AppendMonsterSkillDescriptions(IConfigModel config, CardDefinition card, List<string> parts)
@@ -74,7 +94,7 @@ public static class CardPreviewDescriptionComposer
             return string.Empty;
         }
 
-        var builder = new StringBuilder();
+        var builder = new System.Text.StringBuilder();
         for (var i = 0; i < graph.Atoms.Count; i++)
         {
             var summary = SummarizeAtom(graph.Atoms[i]);
@@ -174,21 +194,5 @@ public static class CardPreviewDescriptionComposer
         }
 
         parts.Add(trimmed);
-    }
-
-    private static string JoinParts(IReadOnlyList<string> parts)
-    {
-        if (parts == null || parts.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(parts[0]);
-        for (var i = 1; i < parts.Count; i++)
-        {
-            builder.Append(parts[i]);
-        }
-
-        return builder.ToString();
     }
 }

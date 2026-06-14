@@ -361,7 +361,7 @@ public static partial class DefaultGameConfigFactory
         {
             DeckId = GameConfigIds.DeckCommonId,
             DisplayName = "通用牌组",
-            Description = "所有职业共享的帮助卡与导师卡",
+            Description = "所有职业共享的帮助卡",
             Faction = CardDeckFaction.Player,
             DeckKind = CardDeckKind.Common
         });
@@ -372,6 +372,14 @@ public static partial class DefaultGameConfigFactory
             Description = "小丑职业专属帮助卡",
             Faction = CardDeckFaction.Player,
             DeckKind = CardDeckKind.Class
+        });
+        config.CardDecks.Add(new CardDeckDefinition
+        {
+            DeckId = GameConfigIds.DeckTutorId,
+            DisplayName = "导师牌组",
+            Description = "导师奖励技能卡的专属卡面与卡背",
+            Faction = CardDeckFaction.Player,
+            DeckKind = CardDeckKind.Custom
         });
         config.CardDecks.Add(new CardDeckDefinition
         {
@@ -413,7 +421,11 @@ public static partial class DefaultGameConfigFactory
             {
                 card.DeckId = GameConfigIds.DeckClownId;
             }
-            else if (card.CardType == CardType.Help || card.CardType == CardType.Tutor)
+            else if (card.CardType == CardType.Tutor)
+            {
+                card.DeckId = GameConfigIds.DeckTutorId;
+            }
+            else if (card.CardType == CardType.Help)
             {
                 card.DeckId = GameConfigIds.DeckCommonId;
             }

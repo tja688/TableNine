@@ -141,7 +141,12 @@ public static class CardDeckDefinitionMigration
             return GameConfigIds.DeckClownId;
         }
 
-        if (card.CardType == CardType.Help || card.CardType == CardType.Tutor)
+        if (card.CardType == CardType.Tutor)
+        {
+            return GameConfigIds.DeckTutorId;
+        }
+
+        if (card.CardType == CardType.Help)
         {
             return GameConfigIds.DeckCommonId;
         }
