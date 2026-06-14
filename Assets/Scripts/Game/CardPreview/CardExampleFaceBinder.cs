@@ -21,8 +21,37 @@ public static class CardExampleFaceBinder
         SetActive(root, "CardAttackIcon", showStats);
         SetActive(root, "CardDefenseIcon", showStats);
 
+        ApplyDeckSprites(root, card, config);
         ApplyMainIcon(root, card, config);
         ApplyEntryIcons(root, card, config, showStats);
+    }
+
+    private static void ApplyDeckSprites(Transform root, CardDefinition card, IConfigModel config)
+    {
+        ApplySprite(root, "CardFront", config.GetEffectiveCardFaceImage(card.CardId));
+        ApplySprite(root, "CardBack", config.GetEffectiveCardBackImage(card.CardId));
+    }
+
+    private static void ApplySprite(Transform root, string childName, Sprite sprite)
+    {
+        var child = FindChild(root, childName);
+        if (child == null)
+        {
+            return;
+        }
+
+        var renderer = child.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        if (sprite != null)
+        {
+            renderer.sprite = sprite;
+        }
+
+        renderer.enabled = renderer.sprite != null;
     }
 
     private static void ApplyMainIcon(Transform root, CardDefinition card, IConfigModel config)
@@ -40,7 +69,7 @@ public static class CardExampleFaceBinder
             return;
         }
 
-        var sprite = config.GetCardMainImage(card.CardId) ?? config.GetEffectiveCardFaceImage(card.CardId);
+        var sprite = config.GetCardMainImage(card.CardId);
         renderer.sprite = sprite;
         renderer.enabled = sprite != null;
     }

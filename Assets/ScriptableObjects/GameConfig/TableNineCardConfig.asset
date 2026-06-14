@@ -18,36 +18,36 @@ MonoBehaviour:
     Description: "\u6240\u6709\u804C\u4E1A\u5171\u4EAB\u7684\u5E2E\u52A9\u5361\u4E0E\u5BFC\u5E08\u5361"
     Faction: 0
     DeckKind: 0
-    DefaultFaceImage: {fileID: 21300000, guid: c54552f444f477942931ce22825293dd, type: 3}
-    DefaultBackImage: {fileID: 21300000, guid: 8cab36edeeb9c4b4ea20bb8e7b95f521, type: 3}
+    DefaultFaceImage: {fileID: 21300000, guid: 53a001d20416f8b45954d08f204ef195, type: 3}
+    DefaultBackImage: {fileID: 21300000, guid: 53a001d20416f8b45954d08f204ef195, type: 3}
   - DeckId: deck_clown
     DisplayName: "\u5C0F\u4E11\u724C\u7EC4"
     Description: "\u5C0F\u4E11\u804C\u4E1A\u4E13\u5C5E\u5E2E\u52A9\u5361"
     Faction: 0
     DeckKind: 1
-    DefaultFaceImage: {fileID: 21300000, guid: 65e3c2128805c6b428bce76ee201d5d8, type: 3}
-    DefaultBackImage: {fileID: 21300000, guid: d39571196c95e464c8c20d3846021f52, type: 3}
+    DefaultFaceImage: {fileID: 21300000, guid: 846a58c11a0aaf942831640ed6b027f0, type: 3}
+    DefaultBackImage: {fileID: 21300000, guid: 846a58c11a0aaf942831640ed6b027f0, type: 3}
   - DeckId: deck_weak_elite
     DisplayName: "\u5F31\u7CBE\u82F1\u724C\u7EC4"
     Description: "\u6BCF\u5C42\u4E00\u81F3\u4E09\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
     Faction: 1
     DeckKind: 2
-    DefaultFaceImage: {fileID: 21300000, guid: e844ee9ff82bd914b98cd10ef615bd2e, type: 3}
-    DefaultBackImage: {fileID: 21300000, guid: b6f2cb35371bc9f4193a5378f1119516, type: 3}
+    DefaultFaceImage: {fileID: 21300000, guid: 312a7cc5950babd48b641fa76c516418, type: 3}
+    DefaultBackImage: {fileID: 21300000, guid: 312a7cc5950babd48b641fa76c516418, type: 3}
   - DeckId: deck_strong_elite
     DisplayName: "\u5F3A\u7CBE\u82F1\u724C\u7EC4"
     Description: "\u6BCF\u5C42\u56DB\u81F3\u516D\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
     Faction: 1
     DeckKind: 3
-    DefaultFaceImage: {fileID: 21300000, guid: e844ee9ff82bd914b98cd10ef615bd2e, type: 3}
-    DefaultBackImage: {fileID: 21300000, guid: 2d9f2e2b637660645893712cce35983b, type: 3}
+    DefaultFaceImage: {fileID: 21300000, guid: c8936405c3565304fa6f907bf338e521, type: 3}
+    DefaultBackImage: {fileID: 21300000, guid: c8936405c3565304fa6f907bf338e521, type: 3}
   - DeckId: deck_boss
     DisplayName: "\u5C42\u4E3B\u724C\u7EC4"
     Description: "\u6BCF\u5C42\u4E03\u81F3\u4E5D\u8282\u70B9\u4F7F\u7528\u7684\u602A\u7269\u724C\u7EC4"
     Faction: 1
     DeckKind: 4
-    DefaultFaceImage: {fileID: 21300000, guid: e844ee9ff82bd914b98cd10ef615bd2e, type: 3}
-    DefaultBackImage: {fileID: 21300000, guid: 1e7916f7f5575db44a0227e7d4d08bc1, type: 3}
+    DefaultFaceImage: {fileID: 21300000, guid: 65e3c2128805c6b428bce76ee201d5d8, type: 3}
+    DefaultBackImage: {fileID: 21300000, guid: 65e3c2128805c6b428bce76ee201d5d8, type: 3}
   Cards:
   - CardId: help_potion
     DisplayName: "\u6062\u590D\u836F\u6C34"
