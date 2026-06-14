@@ -2579,6 +2579,75 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1824194012
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1824194014}
+  - component: {fileID: 1824194013}
+  m_Layer: 0
+  m_Name: CircularGalleryWorldDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1824194013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1824194012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09ee6569dba4eff4bb8d66b9c29f74d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mControlPointStart: {x: -12.5, y: -0.5, z: 0}
+  mControlPointMid: {x: 0, y: 3.5, z: 0}
+  mControlPointEnd: {x: 12.5, y: -0.5, z: 0}
+  mCardCount: 8
+  mWorldCardHeight: 3.6370294
+  mBaseSortingOrder: 430
+  mEntryCardDuration: 0.6
+  mEntryStagger: 0.06
+  mEntryEase: 9
+  mEntrySideOffset: 5
+  mSpringStiffness: 260
+  mSpringDamping: 20
+  mLinkedSlot: {fileID: 0}
+  mLinkedBoardSlotNo: 2
+  mLinkedSlotSnapDistance: 1.5
+  mJudgmentCenter: {x: 0, y: -0.5}
+  mJudgmentSize: {x: 27, y: 6}
+  mCollapseDuration: 0.35
+  mCollapseStagger: 0.03
+  mCardPrefab: {fileID: 0}
+  mCardFaceTemplate: {fileID: 0}
+  mPlayerCardTemplate: {fileID: 0}
+  mDescriptionText: {fileID: 0}
+  mCamera: {fileID: 0}
+  mDefaultHint: "\u62D6\u62FD\u6216\u6EDA\u8F6E\u6D4F\u89C8\u5F27\u7EBF\u724C\u5217\uFF1B\u60AC\u505C\u67E5\u770B\u63CF\u8FF0\uFF1B\u70B9\u9009\u5361\u724C\u540E\u70B9\u51FB\u7A7A\u767D\u786E\u8BA4"
+--- !u!4 &1824194014
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1824194012}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1921541178
 GameObject:
   m_ObjectHideFlags: 0
@@ -3146,7 +3215,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2088808409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3184,8 +3253,14 @@ MonoBehaviour:
   mEntryStagger: 0.08
   mEntryDuration: 0.7
   mTargetSlot: {fileID: 1931230193}
-  mFallDuration: 0.55
-  mFallExtraY: 8
+  mFallLaunchUpward: 3.4
+  mFallGravity: 24
+  mFallHorizontalReach: 4.2
+  mFallHorizontalReachStep: 0.9
+  mFallSpinMin: 55
+  mFallSpinMax: 145
+  mFallStaggerStep: 0.04
+  mFallBelowScreenPadding: 1.2
   mMoveToSlotDuration: 0.5
   mMoveToSlotDelay: 0.12
   mCardPrefab: {fileID: 0}
@@ -3347,3 +3422,4 @@ SceneRoots:
   - {fileID: 874526316}
   - {fileID: 2027708410}
   - {fileID: 2088808410}
+  - {fileID: 1824194014}

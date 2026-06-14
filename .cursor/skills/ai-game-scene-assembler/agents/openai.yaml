@@ -1,0 +1,3 @@
+interface:
+  display_name: "AI Game Scene Assembler"
+  short_description: "Assemble rough game micro-prototypes into coherent AI-assisted scene flows."
