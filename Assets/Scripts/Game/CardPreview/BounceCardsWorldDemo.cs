@@ -40,8 +40,8 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
 
     [Header("Selection")]
     [SerializeField] private Transform mTargetSlot;
-    [SerializeField] private float mFallDuration = 0.55f;
-    [SerializeField] private float mFallExtraY = 8f;
+    [SerializeField] private float mFallDuration = 0.75f;
+    [SerializeField] private float mFallBelowScreenPadding = 1.2f;
     [SerializeField] private float mMoveToSlotDuration = 0.5f;
     [SerializeField] private float mMoveToSlotDelay = 0.12f;
 
@@ -435,23 +435,35 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
         }
 
         var start = entry.Wrapper.position;
-        var direction = index < mCards.Count / 2 ? -1f : 1f;
-        var target = start + new Vector3(direction * Random.Range(1.2f, 2.4f), -mFallExtraY, 0f);
-        var targetRot = entry.BaseLocalRotationZ + direction * Random.Range(18f, 36f);
+        var target = GetFallOffScreenTarget(start);
+        var fallDistance = Mathf.Max(0.1f, start.y - target.y);
+        var duration = Mathf.Max(mFallDuration, fallDistance * 0.12f);
 
-        var sequence = DOTween.Sequence();
-        sequence.Append(entry.Wrapper.DOMove(target, mFallDuration).SetEase(Ease.InQuad));
-        sequence.Join(entry.Wrapper.DOLocalRotate(new Vector3(0f, 0f, targetRot), mFallDuration).SetEase(Ease.InQuad));
-        sequence.Join(entry.Wrapper.DOScale(Vector3.zero, mFallDuration * 0.85f).SetEase(Ease.InBack));
-        sequence.OnComplete(() =>
-        {
-            if (entry.Wrapper != null)
+        entry.Wrapper
+            .DOMove(target, duration)
+            .SetEase(Ease.InQuad)
+            .OnComplete(() =>
             {
-                entry.Wrapper.gameObject.SetActive(false);
-            }
+                if (entry.Wrapper != null)
+                {
+                    entry.Wrapper.gameObject.SetActive(false);
+                }
 
-            onComplete?.Invoke();
-        });
+                onComplete?.Invoke();
+            });
+    }
+
+    private Vector3 GetFallOffScreenTarget(Vector3 start)
+    {
+        if (mCamera == null)
+        {
+            return start + new Vector3(0f, -12f, 0f);
+        }
+
+        var depth = Mathf.Abs(start.z - mCamera.transform.position.z);
+        var belowScreen = mCamera.ViewportToWorldPoint(new Vector3(0.5f, -0.2f, depth));
+        var targetY = belowScreen.y - mFallBelowScreenPadding - mWorldCardHeight * 0.5f;
+        return new Vector3(start.x, targetY, start.z);
     }
 
     private void ResolveTargetSlot()
