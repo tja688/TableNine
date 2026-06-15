@@ -2579,6 +2579,69 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1820207701
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1820207703}
+  - component: {fileID: 1820207702}
+  m_Layer: 0
+  m_Name: DockCardsWorldDemo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1820207702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1820207701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4e5f6a7b8c90123456789abcdef0123, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mCardCount: 5
+  mBaseItemSizePixels: 50
+  mMagnificationPixels: 70
+  mProximityPixels: 200
+  mItemGapPixels: 16
+  mSpringStiffness: 150
+  mSpringDamping: 12
+  mHoverLiftPixels: 18
+  mLongPressDuration: 0.35
+  mSelectedLiftPixels: 10
+  mDragReturnDuration: 0.25
+  mCardPrefab: {fileID: 0}
+  mCardFaceTemplate: {fileID: 0}
+  mPlayerCardTemplate: {fileID: 0}
+  mWorldCardHeight: 3.6370294
+  mBaseSortingOrder: 440
+  mViewportY: 0.1
+  mCamera: {fileID: 0}
+  mDefaultHint: "\u60AC\u505C\u653E\u5927\u67E5\u770B\u63CF\u8FF0\uFF1B\u70B9\u51FB\u9009\u4E2D\uFF0C\u957F\u6309\u9009\u4E2D\u5361\u62D6\u52A8"
+--- !u!4 &1820207703
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1820207701}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1824194012
 GameObject:
   m_ObjectHideFlags: 0
@@ -3423,3 +3486,4 @@ SceneRoots:
   - {fileID: 2027708410}
   - {fileID: 2088808410}
   - {fileID: 1824194014}
+  - {fileID: 1820207703}
