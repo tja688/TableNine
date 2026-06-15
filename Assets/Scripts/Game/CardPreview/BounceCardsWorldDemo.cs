@@ -61,6 +61,11 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
     [SerializeField] private Camera mCamera;
     [SerializeField] private string mDefaultHint = "悬停卡牌查看描述；点击选择后其余卡牌掉落，选中卡移至 CardSlot1";
 
+    [Header("Background Blur")]
+    [SerializeField] private bool mEnableBackgroundBlur = true;
+    [SerializeField] private float mBlurTargetIntensity = 0.92f;
+    [SerializeField] private UIPopupPanel mPopupPanel;
+
     private readonly List<BounceCardEntry> mCards = new List<BounceCardEntry>();
     private readonly List<Tween> mHoverTweens = new List<Tween>();
 
@@ -70,6 +75,8 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
     private float mEntryBlockRemaining;
     private bool mSelectionLocked;
     private string mDefaultDescription;
+    private BackgroundBlurSession mBlurSession;
+    private Transform mBlurFocusedWrapper;
 
     public IArchitecture GetArchitecture()
     {
@@ -129,11 +136,14 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
         mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
         ResolveTargetSlot();
         BuildCards();
+        BeginBackgroundBlur();
         PlayEntryAnimation();
     }
 
     private void OnDestroy()
     {
+        mBlurSession?.Dispose();
+        mBlurSession = null;
         KillHoverTweens();
         if (mComposer != null)
         {
@@ -167,6 +177,7 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
         }
 
         mHoveredIndex = hovered;
+        UpdateBackgroundBlurFocus();
         if (hovered < 0)
         {
             AnimateReset();
@@ -416,6 +427,7 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
         }
 
         ApplySortingOrder(selected.CardView, mBaseSortingOrder + mCards.Count + 40);
+        ShowSelectionPopup(selected);
         selectedWrapper
             .DOLocalRotate(Vector3.zero, mMoveToSlotDuration)
             .SetDelay(mMoveToSlotDelay)
@@ -549,6 +561,76 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
 
             pool.Add(card);
         }
+    }
+
+    private void BeginBackgroundBlur()
+    {
+        if (!mEnableBackgroundBlur || mCards.Count == 0)
+        {
+            return;
+        }
+
+        mBlurSession = BackgroundBlur.Push(0f);
+        var duration = Mathf.Max(0.35f, mEntryDelay + mEntryDuration * 0.85f);
+        DOTween.To(() => 0f, value => mBlurSession.SetIntensity(value), mBlurTargetIntensity, duration)
+            .SetEase(Ease.OutCubic);
+    }
+
+    private void SetBlurFocus(Transform wrapper)
+    {
+        if (mBlurSession == null || mBlurFocusedWrapper == wrapper)
+        {
+            return;
+        }
+
+        if (mBlurFocusedWrapper != null)
+        {
+            mBlurSession.Unfocus(mBlurFocusedWrapper);
+        }
+
+        mBlurFocusedWrapper = wrapper;
+        if (mBlurFocusedWrapper != null)
+        {
+            mBlurSession.Focus(mBlurFocusedWrapper);
+        }
+    }
+
+    private void UpdateBackgroundBlurFocus()
+    {
+        if (mBlurSession == null || mSelectionLocked)
+        {
+            return;
+        }
+
+        Transform target = null;
+        if (mHoveredIndex >= 0 && mHoveredIndex < mCards.Count)
+        {
+            target = mCards[mHoveredIndex].Wrapper;
+        }
+
+        SetBlurFocus(target);
+    }
+
+    private void ShowSelectionPopup(BounceCardEntry selected)
+    {
+        if (selected?.Definition == null)
+        {
+            return;
+        }
+
+        if (mPopupPanel == null)
+        {
+            mPopupPanel = Object.FindObjectOfType<UIPopupPanel>(true);
+        }
+
+        if (mPopupPanel == null)
+        {
+            return;
+        }
+
+        mBlurSession?.Focus(selected.Wrapper);
+        mBlurFocusedWrapper = selected.Wrapper;
+        mPopupPanel.Show($"已选择：{selected.Definition.DisplayName}");
     }
 
     private float GetBaseOffsetX(int index)
