@@ -86,9 +86,9 @@ public sealed class CardFakeShatterTuning
     public float SizeVariation = 0.2f;
 
     [Header("粒子扰动")]
-    [Tooltip("噪声模块强度。飞行中的轻微飘动；过高会像火焰抖动。")]
+    [Tooltip("噪声模块强度。物理碎裂默认关闭；开启后中段会像被二次加速一样乱飘。")]
     [Range(0f, 0.6f)]
-    public float NoiseStrength = 0.22f;
+    public float NoiseStrength = 0f;
 
     [Header("撞击闪白")]
     [Tooltip("碎裂前是否闪白。关闭则撞击后立刻碎裂。")]

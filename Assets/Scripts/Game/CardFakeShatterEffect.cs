@@ -15,7 +15,7 @@ public sealed class CardFakeShatterSettings
     public float HitDirectionBias = 0.72f;
     public float LateralSpread = 0.55f;
     public float FadeStart = 1f;
-    public float NoiseStrength = 0.22f;
+    public float NoiseStrength = 0f;
     public float GridJitter = 0.38f;
     public float ShardSkipChance = 0.12f;
     public float PositionJitter = 0.045f;
@@ -31,6 +31,23 @@ public sealed class CardFakeShatterSettings
     public float RuntimeVarianceStrength = 1f;
 
     public static CardFakeShatterSettings Default => new CardFakeShatterSettings();
+
+    public const float MinimumPhysicalLifetime = 10.25f;
+
+    /// <summary>
+    /// 纠正 Profile / Asset 里残留的旧寿命与渐隐参数，保证碎片至少活到 MinimumPhysicalLifetime。
+    /// </summary>
+    public void SanitizePhysicalShardLifetime()
+    {
+        Lifetime = Mathf.Max(Lifetime, MinimumPhysicalLifetime);
+        LifetimeRandom = Mathf.Max(0f, LifetimeRandom);
+        if (FadeStart < 0.999f)
+        {
+            FadeStart = 1f;
+        }
+
+        NoiseStrength = 0f;
+    }
 
     public CardFakeShatterSettings Clone()
     {
@@ -97,7 +114,7 @@ public sealed class CardFakeShatterSettings
             HitDirectionBias = 0.7f,
             LateralSpread = 0.5f + shardCount * 0.006f,
             FadeStart = 1f,
-            NoiseStrength = 0.18f + shardCount * 0.003f,
+            NoiseStrength = 0f,
             GridJitter = 0.34f + shardCount * 0.004f,
             ShardSkipChance = 0.1f + shardCount * 0.002f,
             DirectionChaos = 0.42f + shardCount * 0.004f,
@@ -177,6 +194,7 @@ public static class CardFakeShatterEffect
                 settings.ApplyRuntimeVariance();
             }
 
+            settings.SanitizePhysicalShardLifetime();
             return settings;
         }
 
@@ -186,6 +204,7 @@ public static class CardFakeShatterEffect
             fallback.ApplyRuntimeVariance();
         }
 
+        fallback.SanitizePhysicalShardLifetime();
         return fallback;
     }
 
@@ -244,6 +263,7 @@ public static class CardFakeShatterEffect
         }
 
         settings ??= ResolveSettings(0);
+        settings.SanitizePhysicalShardLifetime();
         var originalColor = faceRenderer.color;
         var visualRoot = FindCardVisualRoot(faceRenderer);
 
@@ -257,11 +277,19 @@ public static class CardFakeShatterEffect
         }
 
         var burstObject = new GameObject("TableNine Card Shatter Burst");
+        burstObject.transform.SetParent(null);
         var shatter = burstObject.AddComponent<ParticleSpriteShatter2D>();
         shatter.Configure(settings);
         var particleLifetime = shatter.Shatter(faceRenderer, worldImpactPoint, worldHitDirection, backRenderer);
         HideCardVisual(visualRoot, faceRenderer, backRenderer);
-        Object.Destroy(burstObject, Mathf.Max(particleLifetime, settings.Lifetime + settings.LifetimeRandom) + 1.5f);
+        if (particleLifetime > 0.001f)
+        {
+            Object.Destroy(burstObject, particleLifetime + 1.5f);
+        }
+        else
+        {
+            Object.Destroy(burstObject);
+        }
 
         yield return new WaitForSeconds(settings.PostShatterBlockDuration);
     }

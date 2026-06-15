@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,7 +9,8 @@ using UnityEngine;
 public sealed class ParticleSpriteShatter2D : MonoBehaviour
 {
     private const int MaxMeshesPerParticleRenderer = 4;
-    private const float MinimumPhysicalLifetime = 10.25f;
+    private const float MinimumPhysicalLifetime = CardFakeShatterSettings.MinimumPhysicalLifetime;
+    private const int ShardSortingOrderBoost = 120;
 
     private struct ShardSpec
     {
@@ -33,7 +35,7 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
     [SerializeField] private float mHitDirectionBias = 0.72f;
     [SerializeField] private float mLateralSpread = 0.55f;
     [SerializeField] private float mFadeStart = 1f;
-    [SerializeField] private float mNoiseStrength = 0.22f;
+    [SerializeField] private float mNoiseStrength = 0f;
     [SerializeField] private float mGridJitter = 0.38f;
     [SerializeField] private float mShardSkipChance = 0.12f;
     [SerializeField] private float mPositionJitter = 0.045f;
@@ -96,8 +98,7 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
         }
 
         EnsureParticleSystem();
-        StopAndClearParticleSystems();
-        ReleaseOwnedMeshes();
+        CleanupForReuse();
         mShardSpecs.Clear();
 
         var sprite = sourceRenderer.sprite;
@@ -128,6 +129,9 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
         EnsureParticleBatchCapacity(batchCount);
         ConfigureParticleBatches(shardCount, sourceRenderer);
         EmitShards(sourceRenderer, worldHitDirection, shardCount);
+        ApplyLifetimeToAllParticleSystems(GetBaseParticleLifetime());
+        LogParticleDiagnostics(shardCount);
+        StartSurvivalDiagnostics();
 
         if (mHideOriginalOnShatter)
         {
@@ -143,11 +147,6 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
 
     public void Cleanup()
     {
-        if (mParticleSystem != null)
-        {
-            StopAndClearParticleSystems();
-        }
-
         ReleaseOwnedMeshes();
         mShardMeshes = null;
         mShardSpecs.Clear();
@@ -157,6 +156,16 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
             DestroyOwnedObject(mRuntimeMaterial);
             mRuntimeMaterial = null;
         }
+    }
+
+    private void CleanupForReuse()
+    {
+        if (mParticleSystem != null)
+        {
+            StopAndClearParticleSystems();
+        }
+
+        Cleanup();
     }
 
     private void OnDestroy()
@@ -235,6 +244,8 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
 
         particleRenderer.renderMode = ParticleSystemRenderMode.Mesh;
         particleRenderer.alignment = ParticleSystemRenderSpace.Local;
+        particleRenderer.minParticleSize = 0f;
+        particleRenderer.maxParticleSize = 1000f;
     }
 
     private void ConfigureParticleBatches(int shardCount, SpriteRenderer sourceRenderer)
@@ -262,28 +273,91 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
             }
 
             particleRenderer.sortingLayerID = sourceRenderer.sortingLayerID;
-            particleRenderer.sortingOrder = sourceRenderer.sortingOrder;
+            particleRenderer.sortingOrder = sourceRenderer.sortingOrder + ShardSortingOrderBoost;
             particleRenderer.material = mRuntimeMaterial;
             particleRenderer.SetMeshes(batchMeshes, meshCount);
 
-            ConfigureModules(particleSystem, shardCount, sourceRenderer.color);
+            ConfigureModules(particleSystem, meshCount, sourceRenderer.color);
             particleSystem.Clear(true);
             particleSystem.Play(true);
         }
     }
 
-    private void ConfigureModules(ParticleSystem particleSystem, int shardCount, Color startColor)
+    private void ApplyLifetimeToAllParticleSystems(float lifetime)
+    {
+        var lifetimeCurve = new ParticleSystem.MinMaxCurve(lifetime);
+        var particleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        for (var i = 0; i < particleSystems.Length; i++)
+        {
+            var particleSystem = particleSystems[i];
+            if (particleSystem == null)
+            {
+                continue;
+            }
+
+            var main = particleSystem.main;
+            main.startLifetime = lifetimeCurve;
+            DisableVisualFadeModules(particleSystem);
+        }
+    }
+
+    private static void DisableVisualFadeModules(ParticleSystem particleSystem)
+    {
+        var colorOverLifetime = particleSystem.colorOverLifetime;
+        colorOverLifetime.enabled = false;
+
+        var sizeOverLifetime = particleSystem.sizeOverLifetime;
+        sizeOverLifetime.enabled = false;
+
+        var rotationOverLifetime = particleSystem.rotationOverLifetime;
+        rotationOverLifetime.enabled = false;
+
+        var sizeBySpeed = particleSystem.sizeBySpeed;
+        sizeBySpeed.enabled = false;
+
+        var colorBySpeed = particleSystem.colorBySpeed;
+        colorBySpeed.enabled = false;
+
+        var rotationBySpeed = particleSystem.rotationBySpeed;
+        rotationBySpeed.enabled = false;
+
+        var textureSheetAnimation = particleSystem.textureSheetAnimation;
+        textureSheetAnimation.enabled = false;
+
+        var trails = particleSystem.trails;
+        trails.enabled = false;
+
+        var lights = particleSystem.lights;
+        lights.enabled = false;
+
+        var customData = particleSystem.customData;
+        customData.enabled = false;
+
+        var noise = particleSystem.noise;
+        noise.enabled = false;
+
+        var collision = particleSystem.collision;
+        collision.enabled = false;
+
+        var trigger = particleSystem.trigger;
+        trigger.enabled = false;
+
+        var externalForces = particleSystem.externalForces;
+        externalForces.enabled = false;
+    }
+
+    private void ConfigureModules(ParticleSystem particleSystem, int particlesInBatch, Color startColor)
     {
         particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         var main = particleSystem.main;
         main.gravityModifier = mGravity;
-        main.maxParticles = Mathf.Max(shardCount, 160);
+        main.maxParticles = Mathf.Max(particlesInBatch + 8, 32);
         main.startColor = startColor;
         main.startLifetime = GetBaseParticleLifetime();
         main.startSpeed = 0f;
         main.simulationSpeed = 1f;
-        main.duration = Mathf.Max(GetMaxParticleLifetime() + 2f, 12f);
+        main.duration = Mathf.Max(GetMaxParticleLifetime() + 2f, MinimumPhysicalLifetime + 2f);
         main.loop = false;
         main.stopAction = ParticleSystemStopAction.None;
 
@@ -299,39 +373,7 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
         var forceOverLifetime = particleSystem.forceOverLifetime;
         forceOverLifetime.enabled = false;
 
-        var sizeOverLifetime = particleSystem.sizeOverLifetime;
-        sizeOverLifetime.enabled = false;
-
-        var rotationOverLifetime = particleSystem.rotationOverLifetime;
-        rotationOverLifetime.enabled = false;
-
-        var noise = particleSystem.noise;
-        noise.enabled = mNoiseStrength > 0.001f;
-        noise.strength = mNoiseStrength;
-        noise.frequency = Random.Range(0.55f, 1.35f);
-        noise.scrollSpeed = Random.Range(0.2f, 0.75f);
-        noise.positionAmount = Random.Range(0.02f, 0.08f);
-
-        var colorOverLifetime = particleSystem.colorOverLifetime;
-        colorOverLifetime.enabled = false;
-        if (mFadeStart < 0.999f)
-        {
-            colorOverLifetime.enabled = true;
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(Color.white, 0f),
-                    new GradientColorKey(Color.white, 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(1f, 0f),
-                    new GradientAlphaKey(1f, Mathf.Clamp01(mFadeStart)),
-                    new GradientAlphaKey(0f, 1f)
-                });
-            colorOverLifetime.color = gradient;
-        }
+        DisableVisualFadeModules(particleSystem);
     }
 
     private void EnsureMaterial(SpriteRenderer sourceRenderer)
@@ -340,6 +382,7 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
         if (mRuntimeMaterial != null && mRuntimeMaterial.mainTexture == texture)
         {
             mRuntimeMaterial.color = sourceRenderer.color;
+            ApplyRuntimeMaterialToAllRenderers();
             return;
         }
 
@@ -359,7 +402,25 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
             mainTexture = texture,
             color = sourceRenderer.color
         };
-        mParticleRenderer.material = mRuntimeMaterial;
+
+        ApplyRuntimeMaterialToAllRenderers();
+    }
+
+    private void ApplyRuntimeMaterialToAllRenderers()
+    {
+        if (mRuntimeMaterial == null)
+        {
+            return;
+        }
+
+        var renderers = GetComponentsInChildren<ParticleSystemRenderer>(true);
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].material = mRuntimeMaterial;
+            }
+        }
     }
 
     private void BuildRandomShards(Sprite sprite, bool flipX, bool flipY)
@@ -549,6 +610,76 @@ public sealed class ParticleSpriteShatter2D : MonoBehaviour
             mParticleSystems[i / MaxMeshesPerParticleRenderer].Emit(emitParams, 1);
         }
     }
+
+    private int GetTotalAliveParticleCount()
+    {
+        var total = 0;
+        var particleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        for (var i = 0; i < particleSystems.Length; i++)
+        {
+            if (particleSystems[i] != null)
+            {
+                total += particleSystems[i].particleCount;
+            }
+        }
+
+        return total;
+    }
+
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+    private void LogParticleDiagnostics(int shardCount)
+    {
+        var particleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        for (var i = 0; i < particleSystems.Length; i++)
+        {
+            var particleSystem = particleSystems[i];
+            if (particleSystem == null || !particleSystem.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            var main = particleSystem.main;
+            Debug.Log(
+                $"[Shatter] {particleSystem.name} emitLifetime={GetBaseParticleLifetime():F2} " +
+                $"main.startLifetime={main.startLifetime.constant:F2} maxParticles={main.maxParticles} " +
+                $"colorFade={particleSystem.colorOverLifetime.enabled} sizeFade={particleSystem.sizeOverLifetime.enabled} " +
+                $"alive={particleSystem.particleCount}",
+                particleSystem);
+        }
+
+        Debug.Log($"[Shatter] batches={particleSystems.Length} shards={shardCount} totalAlive={GetTotalAliveParticleCount()}");
+    }
+
+    private void StartSurvivalDiagnostics()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        StartCoroutine(SurvivalDiagnosticsRoutine());
+#endif
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private IEnumerator SurvivalDiagnosticsRoutine()
+    {
+        var elapsed = 0f;
+        var nextCheckpoint = 1f;
+        while (elapsed < GetMaxParticleLifetime() + 0.5f)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+            if (elapsed + 0.001f < nextCheckpoint)
+            {
+                continue;
+            }
+
+            Debug.Log($"[Shatter] t={nextCheckpoint:F0}s totalAlive={GetTotalAliveParticleCount()}");
+            nextCheckpoint = nextCheckpoint < 3f ? 3f
+                : nextCheckpoint < 5f ? 5f
+                : nextCheckpoint < 10f ? 10f
+                : nextCheckpoint + 10f;
+        }
+    }
+#endif
 
     private float GetBaseParticleLifetime()
     {

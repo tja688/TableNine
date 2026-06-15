@@ -50,7 +50,22 @@ public sealed class CardFakeShatterTuningProfile : MonoBehaviour
             settings.ApplyRuntimeVariance();
         }
 
+        settings.SanitizePhysicalShardLifetime();
         return settings;
+    }
+
+    private void OnValidate()
+    {
+        if (mInlineTuning != null)
+        {
+            mInlineTuning.Lifetime = Mathf.Max(mInlineTuning.Lifetime, CardFakeShatterSettings.MinimumPhysicalLifetime);
+            if (mInlineTuning.FadeStart < 0.999f)
+            {
+                mInlineTuning.FadeStart = 1f;
+            }
+
+            mInlineTuning.NoiseStrength = 0f;
+        }
     }
 
 #if UNITY_EDITOR
