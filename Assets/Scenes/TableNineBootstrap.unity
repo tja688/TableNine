@@ -743,6 +743,108 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
+--- !u!1001 &110469982
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 464982973}
+    m_Modifications:
+    - target: {fileID: 736547127082148962, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_Name
+      value: PlayerCard
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 750
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+--- !u!224 &110469983 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+  m_PrefabInstance: {fileID: 110469982}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &125079499
 GameObject:
   m_ObjectHideFlags: 0
@@ -918,7 +1020,8 @@ Transform:
   m_LocalPosition: {x: 2.5054, y: -1.7266502, z: 0}
   m_LocalScale: {x: 1.8185147, y: 1.8185147, z: 1.8185147}
   m_ConstrainProportionsScale: 1
-  m_Children: []
+  m_Children:
+  - {fileID: 110469983}
   m_Father: {fileID: 1573821133}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &464982974
@@ -1094,6 +1197,9 @@ MonoBehaviour:
   mDeckLeftTextName: DeckLeftText
   mDeckWorldOffset: {x: 0, y: 0, z: -0.08}
   mSlotWorldOffset: {x: 0, y: 0, z: -0.08}
+  mDescriptionText: {fileID: 0}
+  mDefaultHint: 
+  mTopCardHoverBoundsPadding: {x: 0.08, y: 0.08, z: 1}
   mCardPrefab: {fileID: 0}
   mCardFaceTemplate: {fileID: 0}
   mPlayerCardTemplate: {fileID: 0}
@@ -1104,23 +1210,24 @@ MonoBehaviour:
   mInitialCardCount: 20
   mOnlyShowTopDeckCard: 1
   mHorizontalSpacing: 0.035
-  mDeckRelayoutDuration: 0.16
+  mDeckRelayoutDuration: 0.09
   mDeckRelayoutEase: 6
   mAlternateMonsterAndHelp: 1
   mFirstSpawnType: 1
   mDefaultAimAngleZ: 90
-  mAimSpringStiffness: 92
-  mAimSpringDamping: 13.5
-  mMaxAimAngularSpeed: 980
+  mAimSpringStiffness: 190
+  mAimSpringDamping: 21
+  mMaxAimAngularSpeed: 1680
   mAimSettleEpsilon: 0.02
-  mDealDuration: 0.54
-  mDealArcHeight: 0.8
+  mDealDuration: 0.32
+  mDealArcHeight: 0.55
   mDealMoveEase: 9
   mLandingRotationEase: 27
-  mLandingRotationOvershoot: 1.35
-  mDealScaleMultiplier: 1.08
+  mLandingRotationOvershoot: 1.55
+  mDealScaleMultiplier: 1.11
   mDealScaleEase: 6
   mSpawnOnStart: 1
+  mDisableWhenIntegratedNineGridDemoExists: 1
   mDestroySpawnedCardsOnDestroy: 1
 --- !u!4 &711808707
 Transform:
@@ -1756,29 +1863,59 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76386e67712d427ea7bb3312cbdec247, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mSpawnKey: 49
-  mMoveKey: 50
-  mClearKey: 0
+  mDealAllKey: 49
+  mDeckSlot: {fileID: 0}
+  mDeckSlotName: CardDeckSlot
   mBoardRoot: {fileID: 0}
   mBoardRootName: NineGrid Main CardSlots
+  mDeckLeftText: {fileID: 0}
+  mDeckLeftTextName: DeckLeftText
+  mDeckWorldOffset: {x: 0, y: 0, z: -0.08}
   mCardWorldOffset: {x: 0, y: 0, z: -0.02}
   mCardPrefab: {fileID: 0}
   mCardFaceTemplate: {fileID: 0}
   mPlayerCardTemplate: {fileID: 0}
   mWorldCardHeight: 3.6370294
   mSortingLayerName: Cards_Front
+  mDeckSortingOrder: 620
+  mFlyingSortingOrder: 840
   mBaseSortingOrder: 560
+  mInitialCardCount: 20
+  mOnlyShowTopDeckCard: 1
+  mHorizontalSpacing: 0.035
+  mDeckRelayoutDuration: 0.03
+  mDeckRelayoutEase: 6
   mAlternateMonsterAndHelp: 1
   mFirstSpawnType: 1
   mMonsterCardId: 
   mHelpCardId: 
-  mMoveDuration: 0.34
+  mPreDealAimDuration: 0.027
+  mPreDealAimEase: 6
+  mDealDuration: 0.107
+  mDealArcHeight: 0.55
+  mDealMoveEase: 9
+  mLandingRotationEase: 27
+  mLandingRotationOvershoot: 1.55
+  mDealScaleMultiplier: 1.11
+  mDealScaleEase: 6
+  mMoveDuration: 0.28
   mMoveEase: 4
   mEnableHopArc: 1
-  mHopArcHeight: 0.18
+  mHopArcHeight: 0.16
   mEnableHopScale: 1
   mHopScaleMultiplier: 1.08
   mHopScaleEase: 6
+  mDescriptionText: {fileID: 0}
+  mDefaultHint: 
+  mTopCardHoverBoundsPadding: {x: 0.08, y: 0.08, z: 1}
+  mBoardHoverScaleMultiplier: 1.06
+  mBoardHoverSpringStiffness: 150
+  mBoardHoverSpringDamping: 12
+  mBoardHoverSortingBoost: 80
+  mCardHitBoundsPadding: {x: 0.08, y: 0.08, z: 1}
+  mSlotHitBoundsPadding: {x: 0.08, y: 0.08, z: 1}
+  mSlotFallbackHitRadius: 1.1
+  mSpawnDeckOnStart: 1
   mDestroySpawnedCardsOnDestroy: 1
 --- !u!4 &1231144722
 Transform:

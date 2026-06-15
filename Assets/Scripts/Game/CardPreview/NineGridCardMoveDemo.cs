@@ -1,28 +1,37 @@
 using System.Collections.Generic;
 using DG.Tweening;
 using QFramework;
+using TMPro;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
 /// <summary>
-/// 临时测试：按 1 在九宫格外圈补一张正式烘焙卡，按 2 让已生成卡牌顺时针跳一格。
+/// 世界空间九宫格发牌与外圈跳格演示：按 1 按正式外圈顺序发牌，鼠标点击卡牌触发旋转。
 /// </summary>
 [DefaultExecutionOrder(260)]
 public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 {
     private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
     private const string DefaultBoardRootName = "NineGrid Main CardSlots";
+    private const string DefaultDeckSlotName = "CardDeckSlot";
+    private const string DefaultDeckLeftTextName = "DeckLeftText";
+    private const string DefaultPlayerCardName = "PlayerCard";
 
     [Header("Input")]
-    [SerializeField] private KeyCode mSpawnKey = KeyCode.Alpha1;
-    [SerializeField] private KeyCode mMoveKey = KeyCode.Alpha2;
-    [SerializeField] private KeyCode mClearKey = KeyCode.None;
+    [SerializeField] private KeyCode mDealAllKey = KeyCode.Alpha1;
 
-    [Header("Slots")]
+    [Header("Scene")]
+    [SerializeField] private Transform mDeckSlot;
+    [SerializeField] private string mDeckSlotName = DefaultDeckSlotName;
     [SerializeField] private Transform mBoardRoot;
     [SerializeField] private string mBoardRootName = DefaultBoardRootName;
+    [SerializeField] private Transform mPlayerCard;
+    [SerializeField] private string mPlayerCardName = DefaultPlayerCardName;
+    [SerializeField] private TextMeshProUGUI mDeckLeftText;
+    [SerializeField] private string mDeckLeftTextName = DefaultDeckLeftTextName;
+    [SerializeField] private Vector3 mDeckWorldOffset = new Vector3(0f, 0f, -0.08f);
     [SerializeField] private Vector3 mCardWorldOffset = new Vector3(0f, 0f, -0.02f);
 
     [Header("Card Pipeline")]
@@ -31,35 +40,81 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
     [SerializeField] private GameObject mPlayerCardTemplate;
     [SerializeField] private float mWorldCardHeight = BakedCardRenderDataFactory.CanonicalWorldCardHeight;
     [SerializeField] private string mSortingLayerName = "Cards_Front";
+    [SerializeField] private int mDeckSortingOrder = 620;
+    [SerializeField] private int mFlyingSortingOrder = 840;
     [SerializeField] private int mBaseSortingOrder = 560;
 
-    [Header("Spawn")]
+    [Header("Deck")]
+    [SerializeField] private int mInitialCardCount = 20;
+    [SerializeField] private bool mOnlyShowTopDeckCard = true;
+    [SerializeField] private float mHorizontalSpacing = 0.035f;
+    [SerializeField] private float mDeckRelayoutDuration = 0.03f;
+    [SerializeField] private Ease mDeckRelayoutEase = Ease.OutQuad;
     [SerializeField] private bool mAlternateMonsterAndHelp = true;
     [SerializeField] private CardType mFirstSpawnType = CardType.Monster;
     [SerializeField] private string mMonsterCardId;
     [SerializeField] private string mHelpCardId;
 
+    [Header("Deal")]
+    [SerializeField] private float mPreDealAimDuration = 0.027f;
+    [SerializeField] private Ease mPreDealAimEase = Ease.OutQuad;
+    [SerializeField] private float mDealDuration = 0.107f;
+    [SerializeField] private float mDealArcHeight = 0.55f;
+    [SerializeField] private Ease mDealMoveEase = Ease.OutCubic;
+    [SerializeField] private Ease mLandingRotationEase = Ease.OutBack;
+    [SerializeField] private float mLandingRotationOvershoot = 1.55f;
+    [SerializeField] private float mDealScaleMultiplier = 1.11f;
+    [SerializeField] private Ease mDealScaleEase = Ease.OutQuad;
+
     [Header("Move")]
-    [SerializeField] private float mMoveDuration = 0.34f;
+    [SerializeField] private float mMoveDuration = 0.28f;
     [SerializeField] private Ease mMoveEase = Ease.InOutSine;
     [SerializeField] private bool mEnableHopArc = true;
-    [SerializeField] private float mHopArcHeight = 0.18f;
+    [SerializeField] private float mHopArcHeight = 0.16f;
     [SerializeField] private bool mEnableHopScale = true;
     [SerializeField] private float mHopScaleMultiplier = 1.08f;
     [SerializeField] private Ease mHopScaleEase = Ease.OutQuad;
 
+    [Header("Description")]
+    [SerializeField] private TMP_Text mDescriptionText;
+    [SerializeField] private string mDefaultHint;
+    [SerializeField] private Vector3 mTopCardHoverBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
+
+    [Header("Board Hover")]
+    [SerializeField] private float mBoardHoverScaleMultiplier = 1.06f;
+    [SerializeField] private float mBoardHoverSpringStiffness = 150f;
+    [SerializeField] private float mBoardHoverSpringDamping = 12f;
+    [SerializeField] private int mBoardHoverSortingBoost = 80;
+
+    [Header("Mouse")]
+    [SerializeField] private Vector3 mCardHitBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
+    [SerializeField] private Vector3 mSlotHitBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
+    [SerializeField] private float mSlotFallbackHitRadius = 1.1f;
+
     [Header("Cleanup")]
+    [SerializeField] private bool mSpawnDeckOnStart = true;
     [SerializeField] private bool mDestroySpawnedCardsOnDestroy = true;
 
     private readonly Dictionary<int, DemoCardEntry> mCardsBySlot = new Dictionary<int, DemoCardEntry>();
+    private readonly List<DemoCardEntry> mDeckCards = new List<DemoCardEntry>();
+    private readonly List<SlotInfo> mSlots = new List<SlotInfo>();
     private readonly List<CardDefinition> mMonsterPool = new List<CardDefinition>();
     private readonly List<CardDefinition> mHelpPool = new List<CardDefinition>();
 
     private BakedCardFaceComposer mComposer;
-    private bool mIsMoving;
+    private Camera mMainCamera;
+    private bool mIsSequencing;
     private int mSpawnCount;
     private int mMonsterCursor;
     private int mHelpCursor;
+    private bool mHoveringTopDeck;
+    private int mHoveredBoardSlotNo = -1;
+    private string mDefaultDescription;
+    private bool mDescriptionOwned;
+    private Vector3 mPlayerCardBaseScale = Vector3.one;
+    private float mPlayerCardCurrentHoverScale = 1f;
+    private float mPlayerCardHoverScaleVelocity;
+    private bool mPlayerCardBaseScaleCached;
 
     public IArchitecture GetArchitecture()
     {
@@ -85,142 +140,218 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         }
 
         mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+        InitializeDescriptionPanel();
         BuildPools();
+        RebuildSlots();
+
+        if (mSpawnDeckOnStart)
+        {
+            SpawnInitialDeck();
+        }
+
+        UpdateDeckLeftText();
     }
 
     private void Update()
     {
-        if (mSpawnKey != KeyCode.None && Input.GetKeyDown(mSpawnKey))
+        if (!EnsureReady())
         {
-            SpawnNextCard();
+            return;
         }
 
-        if (mMoveKey != KeyCode.None && Input.GetKeyDown(mMoveKey))
+        var interactionBlocked = mIsSequencing || UIGameplayPanel.IsSidePanelHovered;
+        if (interactionBlocked)
         {
-            MoveClockwiseOneStep();
+            SuppressHoverInteraction();
+            UpdateDescriptionPanel();
+        }
+        else
+        {
+            UpdateHoverState();
+            UpdateDescriptionPanel();
         }
 
-        if (mClearKey != KeyCode.None && Input.GetKeyDown(mClearKey))
+        UpdateBoardHoverVisuals(Time.deltaTime);
+
+        if (interactionBlocked)
         {
-            ClearSpawnedCards();
+            return;
+        }
+
+        if (mDealAllKey != KeyCode.None && Input.GetKeyDown(mDealAllKey))
+        {
+            DealAllOuterRingSlots();
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            HandleRightClick();
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            HandleLeftClick();
         }
     }
 
     private void OnDestroy()
     {
-        foreach (var pair in mCardsBySlot)
-        {
-            pair.Value.Tween?.Kill();
-            if (mDestroySpawnedCardsOnDestroy && pair.Value.Root != null)
-            {
-                DestroyUnityObject(pair.Value.Root.gameObject);
-            }
-        }
-
+        RestoreDescriptionIfOwned();
+        ResetBoardHoverVisuals(true);
+        CleanupEntries(mDeckCards);
+        CleanupEntries(mCardsBySlot.Values);
+        mDeckCards.Clear();
         mCardsBySlot.Clear();
         mComposer?.Dispose();
         mComposer = null;
     }
 
-    [ContextMenu("Spawn Next Card")]
-    public void SpawnNextCard()
+    [ContextMenu("Reset Demo Deck")]
+    public void ResetDemoDeck()
     {
-        if (mIsMoving || !EnsureReady())
+        CleanupEntries(mDeckCards);
+        CleanupEntries(mCardsBySlot.Values);
+        mDeckCards.Clear();
+        mCardsBySlot.Clear();
+        mIsSequencing = false;
+        mSpawnCount = 0;
+        mMonsterCursor = 0;
+        mHelpCursor = 0;
+        mHoveringTopDeck = false;
+        mHoveredBoardSlotNo = -1;
+        ResetBoardHoverVisuals(true);
+
+        if (!EnsureReady())
         {
             return;
         }
 
-        if (!NineGridOuterRingUtility.TryGetFirstEmptySlot(slotNo => mCardsBySlot.ContainsKey(slotNo), out var slotNo))
+        if (mComposer == null)
         {
-            Debug.Log("[NineGridCardMoveDemo] Outer ring is full. Press 2 to move, or clear demo cards before spawning more.");
-            return;
+            mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
         }
 
-        var definition = ResolveNextDefinition();
-        if (definition == null)
-        {
-            Debug.LogWarning("[NineGridCardMoveDemo] No monster/help card definition is available.");
-            return;
-        }
+        BuildPools();
+        RebuildSlots();
+        SpawnInitialDeck();
+        UpdateDeckLeftText();
+    }
 
-        if (!TryGetSlotTransform(slotNo, out var slotTransform))
-        {
-            Debug.LogWarning($"[NineGridCardMoveDemo] Missing CardSlot{slotNo} under {mBoardRootName}.");
-            return;
-        }
-
-        var entry = CreateCardEntry(definition, slotNo, slotTransform.position + mCardWorldOffset);
-        if (entry == null)
+    [ContextMenu("Deal All Outer Ring Slots")]
+    public void DealAllOuterRingSlots()
+    {
+        if (mIsSequencing || !EnsureReady())
         {
             return;
         }
 
-        mCardsBySlot[slotNo] = entry;
-        mSpawnCount++;
+        var emptySlots = new List<int>();
+        for (var i = 0; i < NineGridOuterRingUtility.Count; i++)
+        {
+            var slotNo = NineGridOuterRingUtility.GetSlotAt(i);
+            if (!mCardsBySlot.ContainsKey(slotNo))
+            {
+                emptySlots.Add(slotNo);
+            }
+        }
+
+        if (emptySlots.Count == 0 || mDeckCards.Count == 0)
+        {
+            return;
+        }
+
+        mIsSequencing = true;
+        DealSlotsSequentially(emptySlots, 0, () => mIsSequencing = false);
     }
 
     [ContextMenu("Move Clockwise One Step")]
     public void MoveClockwiseOneStep()
     {
-        if (mIsMoving || mCardsBySlot.Count == 0 || !EnsureReady())
+        if (mIsSequencing || !EnsureReady())
         {
             return;
         }
 
-        var movingEntries = new List<DemoCardMove>();
-        var nextMap = new Dictionary<int, DemoCardEntry>();
-        for (var i = 0; i < NineGridOuterRingUtility.Count; i++)
-        {
-            var fromSlot = NineGridOuterRingUtility.GetSlotAt(i);
-            if (!mCardsBySlot.TryGetValue(fromSlot, out var entry))
-            {
-                continue;
-            }
-
-            var toSlot = NineGridOuterRingUtility.GetNextClockwiseSlot(fromSlot);
-            if (!TryGetSlotTransform(toSlot, out var toTransform))
-            {
-                Debug.LogWarning($"[NineGridCardMoveDemo] Missing destination CardSlot{toSlot} under {mBoardRootName}.");
-                return;
-            }
-
-            movingEntries.Add(new DemoCardMove(entry, fromSlot, toSlot, toTransform.position + mCardWorldOffset));
-            nextMap[toSlot] = entry;
-        }
-
-        mCardsBySlot.Clear();
-        foreach (var pair in nextMap)
-        {
-            pair.Value.SlotNo = pair.Key;
-            mCardsBySlot[pair.Key] = pair.Value;
-        }
-
-        PlayMoveTweens(movingEntries);
+        mIsSequencing = true;
+        MoveClockwiseOneStep(() => mIsSequencing = false);
     }
 
-    [ContextMenu("Clear Spawned Cards")]
-    public void ClearSpawnedCards()
+    private void HandleLeftClick()
     {
-        foreach (var pair in mCardsBySlot)
+        if (TryFindHoveredCardSlot(out _))
         {
-            pair.Value.Tween?.Kill();
-            if (pair.Value.Root != null)
-            {
-                DestroyUnityObject(pair.Value.Root.gameObject);
-            }
+            mIsSequencing = true;
+            MoveClockwiseOneStep(() => mIsSequencing = false);
+            return;
         }
 
-        mCardsBySlot.Clear();
-        mIsMoving = false;
+        if (mDeckCards.Count > 0)
+        {
+            return;
+        }
+
+        if (TryFindHoveredSlot(out var slot) &&
+            NineGridOuterRingUtility.IsOuterRingSlot(slot.SlotNo) &&
+            !mCardsBySlot.ContainsKey(slot.SlotNo))
+        {
+            mIsSequencing = true;
+            MoveClockwiseOneStep(() => mIsSequencing = false);
+        }
+    }
+
+    private void HandleRightClick()
+    {
+        if (!TryFindHoveredCardSlot(out var slotNo))
+        {
+            return;
+        }
+
+        mIsSequencing = true;
+        RemoveCardAt(slotNo);
+
+        if (mDeckCards.Count > 0)
+        {
+            DealNextCardToSlot(slotNo, () => MoveClockwiseOneStep(() => mIsSequencing = false));
+        }
+        else
+        {
+            MoveClockwiseOneStep(() => mIsSequencing = false);
+        }
     }
 
     private bool EnsureReady()
     {
+        if (mDeckSlot == null)
+        {
+            mDeckSlot = GameObject.Find(string.IsNullOrWhiteSpace(mDeckSlotName)
+                ? DefaultDeckSlotName
+                : mDeckSlotName)?.transform;
+        }
+
         if (mBoardRoot == null)
         {
             mBoardRoot = GameObject.Find(string.IsNullOrWhiteSpace(mBoardRootName)
                 ? DefaultBoardRootName
                 : mBoardRootName)?.transform;
+        }
+
+        if (mDeckLeftText == null)
+        {
+            var textObject = GameObject.Find(string.IsNullOrWhiteSpace(mDeckLeftTextName)
+                ? DefaultDeckLeftTextName
+                : mDeckLeftTextName);
+            if (textObject != null)
+            {
+                mDeckLeftText = textObject.GetComponent<TextMeshProUGUI>();
+            }
+        }
+
+        if (mDeckSlot == null)
+        {
+            Debug.LogError($"[NineGridCardMoveDemo] Could not find deck slot '{mDeckSlotName}'.");
+            return false;
         }
 
         if (mBoardRoot == null)
@@ -229,12 +360,67 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
             return false;
         }
 
+        EnsurePlayerCardResolved();
+
         if (!TableNine.IsInitialized)
         {
             TableNine.InitArchitecture();
         }
 
         return TableNine.IsInitialized;
+    }
+
+    private void EnsurePlayerCardResolved()
+    {
+        if (mPlayerCard != null)
+        {
+            CachePlayerCardBaseScale();
+            return;
+        }
+
+        if (mBoardRoot == null)
+        {
+            return;
+        }
+
+        var playerSlot = FindChild(mBoardRoot, "CardSlot5ForPlayer");
+        if (playerSlot == null)
+        {
+            return;
+        }
+
+        mPlayerCard = FindChild(playerSlot, string.IsNullOrWhiteSpace(mPlayerCardName)
+            ? DefaultPlayerCardName
+            : mPlayerCardName);
+        CachePlayerCardBaseScale();
+    }
+
+    private void CachePlayerCardBaseScale()
+    {
+        if (mPlayerCard == null || mPlayerCardBaseScaleCached)
+        {
+            return;
+        }
+
+        mPlayerCardBaseScale = mPlayerCard.localScale;
+        mPlayerCardBaseScaleCached = true;
+    }
+
+    private void InitializeDescriptionPanel()
+    {
+        if (mDescriptionText == null)
+        {
+            mDescriptionText = FindDescriptionText();
+        }
+
+        if (mDescriptionText == null)
+        {
+            return;
+        }
+
+        mDescriptionText.enableWordWrapping = true;
+        mDescriptionText.overflowMode = TextOverflowModes.Overflow;
+        mDefaultDescription = mDescriptionText.text;
     }
 
     private void BuildPools()
@@ -261,6 +447,49 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
                 target.Add(source[i]);
             }
         }
+    }
+
+    private void RebuildSlots()
+    {
+        mSlots.Clear();
+        if (mBoardRoot == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < mBoardRoot.childCount; i++)
+        {
+            var child = mBoardRoot.GetChild(i);
+            if (!TryResolveSlotNo(child.name, out var slotNo))
+            {
+                continue;
+            }
+
+            mSlots.Add(new SlotInfo(slotNo, child, child.GetComponent<SpriteRenderer>()));
+        }
+    }
+
+    private void SpawnInitialDeck()
+    {
+        var count = Mathf.Max(0, mInitialCardCount);
+        for (var i = 0; i < count; i++)
+        {
+            var definition = ResolveNextDefinition();
+            if (definition == null)
+            {
+                Debug.LogWarning("[NineGridCardMoveDemo] No monster/help card definition is available.");
+                break;
+            }
+
+            var entry = CreateCardEntry(definition, ResolveDeckCenter(), Quaternion.Euler(0f, 0f, 90f), mDeckSortingOrder + mSpawnCount);
+            if (entry != null)
+            {
+                mDeckCards.Add(entry);
+                mSpawnCount++;
+            }
+        }
+
+        LayoutDeckLine(true);
     }
 
     private CardDefinition ResolveNextDefinition()
@@ -304,12 +533,12 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         return definition;
     }
 
-    private DemoCardEntry CreateCardEntry(CardDefinition definition, int slotNo, Vector3 worldPosition)
+    private DemoCardEntry CreateCardEntry(CardDefinition definition, Vector3 worldPosition, Quaternion rotation, int sortingOrder)
     {
-        var rootObject = new GameObject($"MoveDemo_{slotNo}_{definition.CardType}_{definition.CardId}");
-        rootObject.transform.SetParent(mBoardRoot, true);
+        var rootObject = new GameObject($"NineGridCard_{mSpawnCount:00}_{definition.CardType}_{definition.CardId}");
+        rootObject.transform.SetParent(transform, true);
         rootObject.transform.position = worldPosition;
-        rootObject.transform.rotation = Quaternion.identity;
+        rootObject.transform.rotation = rotation;
         rootObject.transform.localScale = Vector3.one;
 
         var cardObject = mCardPrefab != null
@@ -345,18 +574,200 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         }
 
         cardView.ShowBaked(sprites);
-        ApplySortingOrder(cardView, mBaseSortingOrder + mSpawnCount);
+        cardView.DisplayAdapter?.SetFaceVisible(true);
+        ApplySortingOrder(cardView, sortingOrder);
 
-        return new DemoCardEntry(rootObject.transform, slotNo, rootObject.transform.localScale);
+        return new DemoCardEntry(rootObject.transform, definition, rootObject.transform.localScale);
     }
 
-    private void PlayMoveTweens(IReadOnlyList<DemoCardMove> moves)
+    private void LayoutDeckLine(bool instant)
     {
-        mIsMoving = true;
+        var center = ResolveDeckCenter();
+        var half = (mDeckCards.Count - 1) * 0.5f;
+        for (var i = 0; i < mDeckCards.Count; i++)
+        {
+            var entry = mDeckCards[i];
+            if (entry.Root == null)
+            {
+                continue;
+            }
+
+            var isTop = i == mDeckCards.Count - 1;
+            var target = mOnlyShowTopDeckCard
+                ? center + new Vector3(0f, 0f, -0.002f * i)
+                : center + new Vector3((i - half) * mHorizontalSpacing, 0f, -0.002f * i);
+
+            SetCardVisible(entry, !mOnlyShowTopDeckCard || isTop);
+            entry.Tween?.Kill();
+            entry.Root.DOKill();
+
+            if (instant)
+            {
+                entry.Root.position = target;
+                entry.Root.rotation = Quaternion.Euler(0f, 0f, 90f);
+                entry.Root.localScale = entry.BaseScale;
+            }
+            else
+            {
+                entry.Tween = entry.Root.DOMove(target, Mathf.Max(0.01f, mDeckRelayoutDuration))
+                    .SetEase(mDeckRelayoutEase);
+                entry.Root.DORotate(new Vector3(0f, 0f, 90f), Mathf.Max(0.01f, mDeckRelayoutDuration))
+                    .SetEase(mDeckRelayoutEase);
+            }
+
+            ApplySortingOrder(entry.Root, mDeckSortingOrder + i);
+        }
+    }
+
+    private Vector3 ResolveDeckCenter()
+    {
+        return (mDeckSlot != null ? mDeckSlot.position : transform.position) + mDeckWorldOffset;
+    }
+
+    private void DealSlotsSequentially(IReadOnlyList<int> slotNos, int index, TweenCallback onComplete)
+    {
+        if (index >= slotNos.Count || mDeckCards.Count == 0)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        DealNextCardToSlot(slotNos[index], () => DealSlotsSequentially(slotNos, index + 1, onComplete));
+    }
+
+    private void DealNextCardToSlot(int slotNo, TweenCallback onComplete)
+    {
+        if (!TryGetSlotTransform(slotNo, out var slotTransform))
+        {
+            Debug.LogWarning($"[NineGridCardMoveDemo] Missing CardSlot{slotNo} under {mBoardRootName}.");
+            onComplete?.Invoke();
+            return;
+        }
+
+        var top = TakeTopDeckCard();
+        if (top == null || top.Root == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        top.SlotNo = slotNo;
+        mCardsBySlot[slotNo] = top;
+        SetCardVisible(top, true);
+        top.Tween?.Kill();
+        top.Root.DOKill();
+        ResetEntryHoverMotion(top);
+        ApplySortingOrder(top.Root, mFlyingSortingOrder + mCardsBySlot.Count);
+        LayoutDeckLine(false);
+        UpdateDeckLeftText();
+
+        var start = top.Root.position;
+        var target = slotTransform.position + mCardWorldOffset;
+        var aimDuration = Mathf.Max(0f, mPreDealAimDuration);
+        var aimAngle = CalculatePointAtAngle(start, target);
+        var control = (start + target) * 0.5f + Vector3.up * Mathf.Max(0f, mDealArcHeight);
+
+        var sequence = DOTween.Sequence();
+        if (aimDuration > 0f)
+        {
+            sequence.Append(top.Root
+                .DORotate(new Vector3(0f, 0f, aimAngle), aimDuration)
+                .SetEase(mPreDealAimEase));
+        }
+
+        sequence.Append(DOTween.To(
+                () => 0f,
+                progress => top.Root.position = QuadraticBezier(start, control, target, progress),
+                1f,
+                Mathf.Max(0.01f, mDealDuration))
+            .SetEase(mDealMoveEase));
+
+        sequence.Join(top.Root
+            .DORotate(Vector3.zero, Mathf.Max(0.01f, mDealDuration))
+            .SetEase(mLandingRotationEase, mLandingRotationOvershoot));
+
+        sequence.Join(top.Root
+            .DOScale(top.BaseScale * Mathf.Max(0.01f, mDealScaleMultiplier), Mathf.Max(0.01f, mDealDuration * 0.42f))
+            .SetLoops(2, LoopType.Yoyo)
+            .SetEase(mDealScaleEase));
+
+        sequence.OnComplete(() =>
+        {
+            if (top.Root != null)
+            {
+                top.Root.position = target;
+                top.Root.rotation = Quaternion.identity;
+                top.Root.localScale = top.BaseScale;
+                ApplySortingOrder(top.Root, mBaseSortingOrder + slotNo);
+            }
+
+            ResetEntryHoverMotion(top);
+            top.Tween = null;
+            onComplete?.Invoke();
+        });
+
+        top.Tween = sequence;
+        sequence.Play();
+    }
+
+    private DemoCardEntry TakeTopDeckCard()
+    {
+        if (mDeckCards.Count == 0)
+        {
+            return null;
+        }
+
+        var top = mDeckCards[mDeckCards.Count - 1];
+        mDeckCards.RemoveAt(mDeckCards.Count - 1);
+        return top;
+    }
+
+    private void MoveClockwiseOneStep(TweenCallback onComplete)
+    {
+        if (!EnsureReady())
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        var movingEntries = new List<DemoCardMove>();
+        var nextMap = new Dictionary<int, DemoCardEntry>();
+        for (var i = 0; i < NineGridOuterRingUtility.Count; i++)
+        {
+            var fromSlot = NineGridOuterRingUtility.GetSlotAt(i);
+            if (!mCardsBySlot.TryGetValue(fromSlot, out var entry))
+            {
+                continue;
+            }
+
+            var toSlot = NineGridOuterRingUtility.GetNextClockwiseSlot(fromSlot);
+            if (!TryGetSlotTransform(toSlot, out var toTransform))
+            {
+                Debug.LogWarning($"[NineGridCardMoveDemo] Missing destination CardSlot{toSlot} under {mBoardRootName}.");
+                onComplete?.Invoke();
+                return;
+            }
+
+            movingEntries.Add(new DemoCardMove(entry, fromSlot, toSlot, toTransform.position + mCardWorldOffset));
+            nextMap[toSlot] = entry;
+        }
+
+        mCardsBySlot.Clear();
+        foreach (var pair in nextMap)
+        {
+            pair.Value.SlotNo = pair.Key;
+            mCardsBySlot[pair.Key] = pair.Value;
+        }
+
+        PlayMoveTweens(movingEntries, onComplete);
+    }
+
+    private void PlayMoveTweens(IReadOnlyList<DemoCardMove> moves, TweenCallback onComplete)
+    {
         var remaining = moves.Count;
         if (remaining == 0)
         {
-            mIsMoving = false;
+            onComplete?.Invoke();
             return;
         }
 
@@ -371,6 +782,8 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
             }
 
             entry.Tween?.Kill();
+            entry.Root.DOKill();
+            ResetEntryHoverMotion(entry);
             var start = entry.Root.position;
             var target = move.TargetWorldPosition;
             var control = (start + target) * 0.5f;
@@ -402,12 +815,15 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
                 {
                     entry.Root.position = target;
                     entry.Root.localScale = entry.BaseScale;
+                    ApplySortingOrder(entry.Root, mBaseSortingOrder + entry.SlotNo);
                 }
 
+                ResetEntryHoverMotion(entry);
+                entry.Tween = null;
                 remaining--;
                 if (remaining <= 0)
                 {
-                    mIsMoving = false;
+                    onComplete?.Invoke();
                 }
             });
 
@@ -417,8 +833,394 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 
         if (remaining <= 0)
         {
-            mIsMoving = false;
+            onComplete?.Invoke();
         }
+    }
+
+    private void RemoveCardAt(int slotNo)
+    {
+        if (!mCardsBySlot.TryGetValue(slotNo, out var entry))
+        {
+            return;
+        }
+
+        mCardsBySlot.Remove(slotNo);
+        entry.Tween?.Kill();
+        if (entry.Root != null)
+        {
+            entry.Root.DOKill();
+            DestroyUnityObject(entry.Root.gameObject);
+        }
+    }
+
+    private bool TryFindHoveredCardSlot(out int slotNo)
+    {
+        slotNo = 0;
+        if (!TryGetMouseWorldPoint(out var world))
+        {
+            return false;
+        }
+
+        return TryFindHoveredCardSlot(world, out slotNo);
+    }
+
+    private bool TryFindHoveredCardSlot(Vector3 world, out int slotNo)
+    {
+        slotNo = 0;
+        var bestDistance = float.MaxValue;
+        var found = false;
+
+        foreach (var pair in mCardsBySlot)
+        {
+            var entry = pair.Value;
+            if (entry?.Root == null || !TryGetWorldBounds(entry.Root, out var bounds))
+            {
+                continue;
+            }
+
+            bounds.Expand(mCardHitBoundsPadding);
+            if (!bounds.Contains(world))
+            {
+                continue;
+            }
+
+            var distance = (entry.Root.position - world).sqrMagnitude;
+            if (distance >= bestDistance)
+            {
+                continue;
+            }
+
+            bestDistance = distance;
+            slotNo = pair.Key;
+            found = true;
+        }
+
+        return found;
+    }
+
+    private void UpdateHoverState()
+    {
+        mHoveringTopDeck = false;
+        mHoveredBoardSlotNo = -1;
+
+        if (!TryGetMouseWorldPoint(out var world))
+        {
+            return;
+        }
+
+        if (TryFindHoveredCardSlot(world, out var slotNo))
+        {
+            mHoveredBoardSlotNo = slotNo;
+            return;
+        }
+
+        mHoveringTopDeck = TryIsHoveringDeck(world);
+    }
+
+    private void SuppressHoverInteraction()
+    {
+        if (!mHoveringTopDeck && mHoveredBoardSlotNo < 0)
+        {
+            return;
+        }
+
+        mHoveringTopDeck = false;
+        mHoveredBoardSlotNo = -1;
+    }
+
+    private bool IsHoverInteractionBlocked()
+    {
+        return mIsSequencing || UIGameplayPanel.IsSidePanelHovered;
+    }
+
+    private bool TryIsHoveringDeck(Vector3 world)
+    {
+        var top = GetTopDeckCard();
+        if (top?.Root == null || !top.Root.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        if (TryGetWorldBounds(top.Root, out var cardBounds))
+        {
+            cardBounds.Expand(mTopCardHoverBoundsPadding);
+            if (cardBounds.Contains(world))
+            {
+                return true;
+            }
+        }
+
+        if (mDeckSlot == null)
+        {
+            return false;
+        }
+
+        var deckRenderer = mDeckSlot.GetComponent<SpriteRenderer>();
+        if (deckRenderer != null)
+        {
+            var deckBounds = deckRenderer.bounds;
+            deckBounds.Expand(mSlotHitBoundsPadding);
+            return deckBounds.Contains(world);
+        }
+
+        return Vector2.Distance(world, ResolveDeckCenter()) <= Mathf.Max(0.01f, mSlotFallbackHitRadius);
+    }
+
+    private static void ResetEntryHoverMotion(DemoCardEntry entry)
+    {
+        if (entry == null)
+        {
+            return;
+        }
+
+        entry.CurrentHoverScale = 1f;
+        entry.HoverScaleVelocity = 0f;
+    }
+
+    private void UpdateBoardHoverVisuals(float deltaTime)
+    {
+        var interactionBlocked = IsHoverInteractionBlocked();
+
+        foreach (var pair in mCardsBySlot)
+        {
+            var entry = pair.Value;
+            if (entry?.Root == null)
+            {
+                continue;
+            }
+
+            var isHovered = !interactionBlocked &&
+                            pair.Key == mHoveredBoardSlotNo &&
+                            entry.Tween == null;
+            var targetScale = isHovered
+                ? Mathf.Max(1f, mBoardHoverScaleMultiplier)
+                : 1f;
+
+            entry.CurrentHoverScale = SpringMath.Step(
+                ref entry.CurrentHoverScale,
+                ref entry.HoverScaleVelocity,
+                targetScale,
+                Mathf.Max(1f, mBoardHoverSpringStiffness),
+                Mathf.Max(0f, mBoardHoverSpringDamping),
+                deltaTime);
+
+            if (entry.Tween == null)
+            {
+                entry.Root.localScale = entry.BaseScale * entry.CurrentHoverScale;
+            }
+
+            var sortingOrder = mBaseSortingOrder + pair.Key;
+            if (isHovered)
+            {
+                sortingOrder += mBoardHoverSortingBoost;
+            }
+
+            ApplySortingOrder(entry.Root, sortingOrder);
+        }
+
+        UpdatePlayerCardHoverVisual(deltaTime, interactionBlocked);
+    }
+
+    private void UpdatePlayerCardHoverVisual(float deltaTime, bool interactionBlocked)
+    {
+        if (mPlayerCard == null)
+        {
+            return;
+        }
+
+        var isBoardCardHovered = !interactionBlocked && mHoveredBoardSlotNo > 0;
+        var targetScale = isBoardCardHovered
+            ? Mathf.Max(1f, mBoardHoverScaleMultiplier)
+            : 1f;
+
+        mPlayerCardCurrentHoverScale = SpringMath.Step(
+            ref mPlayerCardCurrentHoverScale,
+            ref mPlayerCardHoverScaleVelocity,
+            targetScale,
+            Mathf.Max(1f, mBoardHoverSpringStiffness),
+            Mathf.Max(0f, mBoardHoverSpringDamping),
+            deltaTime);
+
+        mPlayerCard.localScale = mPlayerCardBaseScale * mPlayerCardCurrentHoverScale;
+    }
+
+    private void ResetBoardHoverVisuals(bool instant)
+    {
+        foreach (var pair in mCardsBySlot)
+        {
+            var entry = pair.Value;
+            if (entry?.Root == null)
+            {
+                continue;
+            }
+
+            entry.HoverScaleVelocity = 0f;
+            entry.CurrentHoverScale = instant ? 1f : entry.CurrentHoverScale;
+            if (instant)
+            {
+                if (entry.Tween == null)
+                {
+                    entry.Root.localScale = entry.BaseScale;
+                }
+
+                ApplySortingOrder(entry.Root, mBaseSortingOrder + pair.Key);
+            }
+        }
+
+        ResetPlayerCardHoverVisual(instant);
+    }
+
+    private void ResetPlayerCardHoverVisual(bool instant)
+    {
+        if (mPlayerCard == null)
+        {
+            return;
+        }
+
+        mPlayerCardHoverScaleVelocity = 0f;
+        if (!instant)
+        {
+            return;
+        }
+
+        mPlayerCardCurrentHoverScale = 1f;
+        mPlayerCard.localScale = mPlayerCardBaseScale;
+    }
+
+    private void UpdateDescriptionPanel()
+    {
+        if (mDescriptionText == null || UIGameplayPanel.IsSidePanelHovered)
+        {
+            return;
+        }
+
+        if (mHoveredBoardSlotNo > 0 &&
+            mCardsBySlot.TryGetValue(mHoveredBoardSlotNo, out var boardEntry) &&
+            boardEntry?.Definition != null)
+        {
+            ShowDescriptionForDefinition(boardEntry.Definition);
+            return;
+        }
+
+        var top = GetTopDeckCard();
+        if (mHoveringTopDeck && top?.Definition != null)
+        {
+            ShowDescriptionForDefinition(top.Definition);
+            return;
+        }
+
+        RestoreDescriptionIfOwned();
+    }
+
+    private void ShowDescriptionForDefinition(CardDefinition definition)
+    {
+        var text = CardPreviewDescriptionComposer.Compose(this.GetModel<IConfigModel>(), definition);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            text = definition.DisplayName ?? string.Empty;
+        }
+
+        mDescriptionText.text = DescriptionPanelTextRules.Clamp(text);
+        mDescriptionOwned = true;
+    }
+
+    private void RestoreDescriptionIfOwned()
+    {
+        if (!mDescriptionOwned || mDescriptionText == null)
+        {
+            return;
+        }
+
+        mDescriptionText.text = !string.IsNullOrWhiteSpace(mDefaultHint)
+            ? DescriptionPanelTextRules.Clamp(mDefaultHint)
+            : mDefaultDescription;
+        mDescriptionOwned = false;
+    }
+
+    private DemoCardEntry GetTopDeckCard()
+    {
+        return mDeckCards.Count > 0 ? mDeckCards[mDeckCards.Count - 1] : null;
+    }
+
+    private static TMP_Text FindDescriptionText()
+    {
+        var texts = Object.FindObjectsOfType<TMP_Text>(true);
+        for (var i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null && texts[i].name == "DescriptionText")
+            {
+                return texts[i];
+            }
+        }
+
+        return null;
+    }
+
+    private bool TryFindHoveredSlot(out SlotInfo hoveredSlot)
+    {
+        hoveredSlot = null;
+        if (mSlots.Count == 0)
+        {
+            RebuildSlots();
+        }
+
+        if (!TryGetMouseWorldPoint(out var world))
+        {
+            return false;
+        }
+
+        for (var i = 0; i < mSlots.Count; i++)
+        {
+            var slot = mSlots[i];
+            if (slot.Transform == null)
+            {
+                continue;
+            }
+
+            if (slot.Renderer != null)
+            {
+                var bounds = slot.Renderer.bounds;
+                bounds.Expand(mSlotHitBoundsPadding);
+                if (bounds.Contains(world))
+                {
+                    hoveredSlot = slot;
+                    return true;
+                }
+            }
+            else if (Vector2.Distance(world, slot.Transform.position) <= Mathf.Max(0.01f, mSlotFallbackHitRadius))
+            {
+                hoveredSlot = slot;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryGetMouseWorldPoint(out Vector3 world)
+    {
+        world = Vector3.zero;
+        var camera = ResolveCamera();
+        if (camera == null)
+        {
+            return false;
+        }
+
+        var mouse = Input.mousePosition;
+        var distance = -camera.transform.position.z;
+        world = camera.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, distance));
+        world.z = 0f;
+        return true;
+    }
+
+    private Camera ResolveCamera()
+    {
+        if (mMainCamera == null)
+        {
+            mMainCamera = Camera.main;
+        }
+
+        return mMainCamera;
     }
 
     private bool TryGetSlotTransform(int slotNo, out Transform slotTransform)
@@ -453,6 +1255,53 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         return null;
     }
 
+    private static bool TryResolveSlotNo(string slotName, out int slotNo)
+    {
+        slotNo = 0;
+        if (slotName == "CardSlot5ForPlayer")
+        {
+            slotNo = 5;
+            return true;
+        }
+
+        const string prefix = "CardSlot";
+        if (!slotName.StartsWith(prefix))
+        {
+            return false;
+        }
+
+        return int.TryParse(slotName.Substring(prefix.Length), out slotNo) && slotNo >= 1 && slotNo <= 9;
+    }
+
+    private static float CalculatePointAtAngle(Vector3 from, Vector3 to)
+    {
+        var direction = to - from;
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            return 0f;
+        }
+
+        return Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+    }
+
+    private void UpdateDeckLeftText()
+    {
+        if (mDeckLeftText != null)
+        {
+            mDeckLeftText.text = mDeckCards.Count.ToString();
+        }
+    }
+
+    private static void SetCardVisible(DemoCardEntry entry, bool visible)
+    {
+        if (entry?.Root == null || entry.Root.gameObject.activeSelf == visible)
+        {
+            return;
+        }
+
+        entry.Root.gameObject.SetActive(visible);
+    }
+
     private void ApplySortingOrder(Component root, int sortingOrder)
     {
         var renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
@@ -467,10 +1316,59 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         }
     }
 
+    private static bool TryGetWorldBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
+        if (root == null)
+        {
+            return false;
+        }
+
+        var renderers = root.GetComponentsInChildren<SpriteRenderer>(false);
+        var hasBounds = false;
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            var renderer = renderers[i];
+            if (renderer == null || !renderer.enabled || renderer.sprite == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        return hasBounds;
+    }
+
     private static Vector3 QuadraticBezier(Vector3 start, Vector3 control, Vector3 end, float t)
     {
         var u = 1f - t;
         return u * u * start + 2f * u * t * control + t * t * end;
+    }
+
+    private void CleanupEntries(IEnumerable<DemoCardEntry> entries)
+    {
+        foreach (var entry in entries)
+        {
+            entry?.Tween?.Kill();
+            if (entry?.Root != null)
+            {
+                entry.Root.DOKill();
+            }
+
+            if (mDestroySpawnedCardsOnDestroy && entry?.Root != null)
+            {
+                DestroyUnityObject(entry.Root.gameObject);
+            }
+        }
     }
 
     private static void DestroyUnityObject(Object target)
@@ -492,17 +1390,20 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 
     private sealed class DemoCardEntry
     {
-        public DemoCardEntry(Transform root, int slotNo, Vector3 baseScale)
+        public DemoCardEntry(Transform root, CardDefinition definition, Vector3 baseScale)
         {
             Root = root;
-            SlotNo = slotNo;
+            Definition = definition;
             BaseScale = baseScale;
         }
 
         public Transform Root { get; }
+        public CardDefinition Definition { get; }
         public Vector3 BaseScale { get; }
         public int SlotNo { get; set; }
         public Tween Tween { get; set; }
+        public float CurrentHoverScale = 1f;
+        public float HoverScaleVelocity;
     }
 
     private readonly struct DemoCardMove
@@ -519,5 +1420,19 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         public int FromSlot { get; }
         public int ToSlot { get; }
         public Vector3 TargetWorldPosition { get; }
+    }
+
+    private sealed class SlotInfo
+    {
+        public SlotInfo(int slotNo, Transform transform, SpriteRenderer renderer)
+        {
+            SlotNo = slotNo;
+            Transform = transform;
+            Renderer = renderer;
+        }
+
+        public int SlotNo { get; }
+        public Transform Transform { get; }
+        public SpriteRenderer Renderer { get; }
     }
 }

@@ -30,7 +30,7 @@ flowchart LR
 ## 设计文档
 
 - 游戏设计案统一存放在 `Assets/Docs` 目录下。在进行需求理解、功能实现、数据结构设计或 UI 调整前，请优先查阅该目录中的设计资料。
-- 游戏开发过程性笔记：`Assets/Notes`，根据自己需求选择性阅读。如果开发过程中用户要求落地笔记、汇报等需求，统一落地在此目录。
+- 游戏开发进行中过程性笔记：`Assets/Notes`，根据自己需求选择性阅读。如果开发过程中用户要求落地笔记、汇报等需求，统一落地在此目录。
 - QFramework 用户手册：`Assets/Notes/QframeworkNotes/QFramework_Docs_用户手册.md`（体量较大，按目录查找）。
 - QFramework API 文档：`Assets/Notes/QframeworkNotes/QFramework_Docs_API.md`。
 

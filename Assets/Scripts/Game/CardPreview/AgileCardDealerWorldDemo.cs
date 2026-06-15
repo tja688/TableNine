@@ -28,6 +28,11 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
     [SerializeField] private Vector3 mDeckWorldOffset = new Vector3(0f, 0f, -0.08f);
     [SerializeField] private Vector3 mSlotWorldOffset = new Vector3(0f, 0f, -0.08f);
 
+    [Header("Description")]
+    [SerializeField] private TMP_Text mDescriptionText;
+    [SerializeField] private string mDefaultHint;
+    [SerializeField] private Vector3 mTopCardHoverBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
+
     [Header("Card Pipeline")]
     [SerializeField] private GameObject mCardPrefab;
     [SerializeField] private GameObject mCardFaceTemplate;
@@ -41,29 +46,30 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
     [SerializeField] private int mInitialCardCount = 20;
     [SerializeField] private bool mOnlyShowTopDeckCard = true;
     [SerializeField] private float mHorizontalSpacing = 0.035f;
-    [SerializeField] private float mDeckRelayoutDuration = 0.16f;
+    [SerializeField] private float mDeckRelayoutDuration = 0.09f;
     [SerializeField] private Ease mDeckRelayoutEase = Ease.OutQuad;
     [SerializeField] private bool mAlternateMonsterAndHelp = true;
     [SerializeField] private CardType mFirstSpawnType = CardType.Monster;
 
     [Header("Aim")]
     [SerializeField] private float mDefaultAimAngleZ = 90f;
-    [SerializeField] private float mAimSpringStiffness = 92f;
-    [SerializeField] private float mAimSpringDamping = 13.5f;
-    [SerializeField] private float mMaxAimAngularSpeed = 980f;
+    [SerializeField] private float mAimSpringStiffness = 190f;
+    [SerializeField] private float mAimSpringDamping = 21f;
+    [SerializeField] private float mMaxAimAngularSpeed = 1680f;
     [SerializeField] private float mAimSettleEpsilon = 0.02f;
 
     [Header("Deal")]
-    [SerializeField] private float mDealDuration = 0.54f;
-    [SerializeField] private float mDealArcHeight = 0.8f;
+    [SerializeField] private float mDealDuration = 0.32f;
+    [SerializeField] private float mDealArcHeight = 0.55f;
     [SerializeField] private Ease mDealMoveEase = Ease.OutCubic;
     [SerializeField] private Ease mLandingRotationEase = Ease.OutBack;
-    [SerializeField] private float mLandingRotationOvershoot = 1.35f;
-    [SerializeField] private float mDealScaleMultiplier = 1.08f;
+    [SerializeField] private float mLandingRotationOvershoot = 1.55f;
+    [SerializeField] private float mDealScaleMultiplier = 1.11f;
     [SerializeField] private Ease mDealScaleEase = Ease.OutQuad;
 
     [Header("Cleanup")]
     [SerializeField] private bool mSpawnOnStart = true;
+    [SerializeField] private bool mDisableWhenIntegratedNineGridDemoExists = true;
     [SerializeField] private bool mDestroySpawnedCardsOnDestroy = true;
 
     private readonly List<DealerCardEntry> mDeckCards = new List<DealerCardEntry>();
@@ -80,6 +86,9 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
     private int mMonsterCursor;
     private int mHelpCursor;
     private SlotInfo mHoveredSlot;
+    private string mDefaultDescription;
+    private bool mHoveringTopCard;
+    private bool mDescriptionOwned;
     private bool mIsDealing;
 
     public IArchitecture GetArchitecture()
@@ -99,6 +108,12 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
 
     private void Start()
     {
+        if (mDisableWhenIntegratedNineGridDemoExists && HasIntegratedNineGridDemo())
+        {
+            enabled = false;
+            return;
+        }
+
         if (!EnsureReady())
         {
             enabled = false;
@@ -107,6 +122,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
 
         mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
         mAimAngleZ = mDefaultAimAngleZ;
+        InitializeDescriptionPanel();
         BuildPools();
         RebuildSlots();
 
@@ -118,6 +134,21 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         UpdateDeckLeftText();
     }
 
+    private bool HasIntegratedNineGridDemo()
+    {
+        var demos = FindObjectsOfType<NineGridCardMoveDemo>(true);
+        for (var i = 0; i < demos.Length; i++)
+        {
+            var demo = demos[i];
+            if (demo != null && demo.isActiveAndEnabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void Update()
     {
         if (!EnsureReady())
@@ -126,6 +157,8 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         }
 
         UpdateHoveredSlot();
+        UpdateTopCardHover();
+        UpdateDescriptionPanel();
         StepTopCardAim(Time.deltaTime);
 
         if (!mIsDealing && mHoveredSlot != null && Input.GetMouseButtonDown(0))
@@ -136,6 +169,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
 
     private void OnDestroy()
     {
+        RestoreDescriptionIfOwned();
         CleanupEntries(mDeckCards);
         CleanupEntries(mPlacedCards);
         mDeckCards.Clear();
@@ -217,6 +251,23 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         }
 
         return TableNine.IsInitialized;
+    }
+
+    private void InitializeDescriptionPanel()
+    {
+        if (mDescriptionText == null)
+        {
+            mDescriptionText = FindDescriptionText();
+        }
+
+        if (mDescriptionText == null)
+        {
+            return;
+        }
+
+        mDescriptionText.enableWordWrapping = true;
+        mDescriptionText.overflowMode = TextOverflowModes.Overflow;
+        mDefaultDescription = mDescriptionText.text;
     }
 
     private void BuildPools()
@@ -423,16 +474,10 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
             RebuildSlots();
         }
 
-        var camera = ResolveCamera();
-        if (camera == null)
+        if (!TryGetMouseWorldPoint(out var world))
         {
             return;
         }
-
-        var mouse = Input.mousePosition;
-        var distance = -camera.transform.position.z;
-        var world = camera.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, distance));
-        world.z = 0f;
 
         for (var i = 0; i < mSlots.Count; i++)
         {
@@ -458,6 +503,45 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
                 return;
             }
         }
+    }
+
+    private void UpdateTopCardHover()
+    {
+        mHoveringTopCard = false;
+        if (mIsDealing || !TryGetMouseWorldPoint(out var world))
+        {
+            return;
+        }
+
+        var top = GetTopDeckCard();
+        if (top?.Root == null || !top.Root.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (!TryGetWorldBounds(top.Root, out var bounds))
+        {
+            return;
+        }
+
+        bounds.Expand(mTopCardHoverBoundsPadding);
+        mHoveringTopCard = bounds.Contains(world);
+    }
+
+    private bool TryGetMouseWorldPoint(out Vector3 world)
+    {
+        world = Vector3.zero;
+        var camera = ResolveCamera();
+        if (camera == null)
+        {
+            return false;
+        }
+
+        var mouse = Input.mousePosition;
+        var distance = -camera.transform.position.z;
+        world = camera.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, distance));
+        world.z = 0f;
+        return true;
     }
 
     private Camera ResolveCamera()
@@ -514,6 +598,43 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
     private DealerCardEntry GetTopDeckCard()
     {
         return mDeckCards.Count > 0 ? mDeckCards[mDeckCards.Count - 1] : null;
+    }
+
+    private void UpdateDescriptionPanel()
+    {
+        if (mDescriptionText == null || UIGameplayPanel.IsSidePanelHovered)
+        {
+            return;
+        }
+
+        var top = GetTopDeckCard();
+        if (mHoveringTopCard && top?.Definition != null)
+        {
+            var text = CardPreviewDescriptionComposer.Compose(this.GetModel<IConfigModel>(), top.Definition);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = top.Definition.DisplayName ?? string.Empty;
+            }
+
+            mDescriptionText.text = DescriptionPanelTextRules.Clamp(text);
+            mDescriptionOwned = true;
+            return;
+        }
+
+        RestoreDescriptionIfOwned();
+    }
+
+    private void RestoreDescriptionIfOwned()
+    {
+        if (!mDescriptionOwned || mDescriptionText == null)
+        {
+            return;
+        }
+
+        mDescriptionText.text = !string.IsNullOrWhiteSpace(mDefaultHint)
+            ? DescriptionPanelTextRules.Clamp(mDefaultHint)
+            : mDefaultDescription;
+        mDescriptionOwned = false;
     }
 
     private void DealTopCardTo(SlotInfo slot)
@@ -610,6 +731,20 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         return int.TryParse(slotName.Substring(prefix.Length), out slotNo) && slotNo >= 1 && slotNo <= 9;
     }
 
+    private static TMP_Text FindDescriptionText()
+    {
+        var texts = Object.FindObjectsOfType<TMP_Text>(true);
+        for (var i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null && texts[i].name == "DescriptionText")
+            {
+                return texts[i];
+            }
+        }
+
+        return null;
+    }
+
     private void ApplySortingOrder(Component root, int sortingOrder)
     {
         var renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
@@ -622,6 +757,38 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
 
             renderers[i].sortingOrder = sortingOrder;
         }
+    }
+
+    private static bool TryGetWorldBounds(Transform root, out Bounds bounds)
+    {
+        bounds = default;
+        if (root == null)
+        {
+            return false;
+        }
+
+        var renderers = root.GetComponentsInChildren<SpriteRenderer>(false);
+        var hasBounds = false;
+        for (var i = 0; i < renderers.Length; i++)
+        {
+            var renderer = renderers[i];
+            if (renderer == null || !renderer.enabled || renderer.sprite == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        return hasBounds;
     }
 
     private static Vector3 QuadraticBezier(Vector3 start, Vector3 control, Vector3 end, float t)
