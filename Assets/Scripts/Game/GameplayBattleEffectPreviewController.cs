@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using QFramework;
 using UnityEngine;
 
@@ -18,9 +17,6 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
     private Coroutine mFallbackCameraShakeCoroutine;
     private Transform mFallbackShakeCamera;
     private Vector3 mFallbackShakeCameraBaseLocalPosition;
-    private static Sprite sShardSprite;
-    private static Material sLineMaterial;
-
     private static readonly BattleEffectStyle[] BattleEffectStyles =
     {
         new BattleEffectStyle(
@@ -222,12 +218,25 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
             style);
 
         TriggerBattleCameraShake(targetStartPosition, direction, style);
-        SpawnCrackLines(targetView, targetStartPosition, style);
 
-        yield return new WaitForSeconds(style.ImpactHold);
+        if (TryGetFaceRenderer(targetView, out var faceRenderer, out var backRenderer))
+        {
+            var impactPoint = CardFakeShatterEffect.ComputeImpactPoint(faceRenderer, targetStartPosition, direction);
+            yield return CardFakeShatterEffect.Play(
+                faceRenderer,
+                backRenderer,
+                impactPoint,
+                direction,
+                style.ImpactHold,
+                style.ShardDuration,
+                CardFakeShatterSettings.FromShardCount(style.ShardCount));
+        }
+        else
+        {
+            yield return new WaitForSeconds(style.ImpactHold + style.ShardDuration);
+        }
 
         targetTransform.localScale = Vector3.zero;
-        yield return SpawnShardBurst(targetView, targetStartPosition, direction, style);
 
         yield return AnimateRecover(playerTransform, playerStartPosition, playerStartScale, style.RecoverDuration);
 
@@ -293,103 +302,9 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
         }
     }
 
-    private IEnumerator SpawnShardBurst(CardView targetView, Vector3 origin, Vector3 hitDirection, BattleEffectStyle style)
+    private static bool TryGetFaceRenderer(CardView cardView, out SpriteRenderer faceRenderer, out SpriteRenderer backRenderer)
     {
-        var parent = new GameObject("BattleEffectShards");
-        parent.transform.position = origin;
-        var baseRenderer = FindPrimaryRenderer(targetView);
-        var baseColor = baseRenderer != null ? baseRenderer.color : Color.white;
-        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
-        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 8 : 8;
-        var random = new System.Random(targetView.BoundUid.HasValue ? targetView.BoundUid.Value.Value : 17);
-        var shards = new List<ShardPiece>(style.ShardCount);
-
-        for (var i = 0; i < style.ShardCount; i++)
-        {
-            var shardObject = new GameObject($"Shard{i + 1}");
-            shardObject.transform.SetParent(parent.transform, false);
-            shardObject.transform.position = origin + RandomInsideUnitCircle(random) * 0.22f;
-            shardObject.transform.localRotation = Quaternion.Euler(0f, 0f, RandomRange(random, -35f, 35f));
-
-            var renderer = shardObject.AddComponent<SpriteRenderer>();
-            renderer.sprite = GetShardSprite();
-            renderer.sortingLayerID = sortingLayerId;
-            renderer.sortingOrder = sortingOrder + i;
-            renderer.color = Color.Lerp(baseColor, Color.white, RandomRange(random, 0.12f, 0.5f));
-
-            var away = ((Vector3)RandomInsideUnitCircle(random) + hitDirection * style.ForwardShardBias).normalized;
-            if (away.sqrMagnitude < 0.001f)
-            {
-                away = hitDirection;
-            }
-
-            var size = RandomRange(random, 0.11f, 0.28f);
-            shardObject.transform.localScale = new Vector3(size * RandomRange(random, 0.45f, 1.35f), size, 1f);
-            shards.Add(new ShardPiece
-            {
-                Transform = shardObject.transform,
-                StartPosition = shardObject.transform.position,
-                Velocity = away * RandomRange(random, style.ShardSpeed * 0.55f, style.ShardSpeed),
-                Spin = RandomRange(random, -style.ShardSpin, style.ShardSpin),
-                StartScale = shardObject.transform.localScale
-            });
-        }
-
-        var elapsed = 0f;
-        while (elapsed < style.ShardDuration)
-        {
-            elapsed += Time.deltaTime;
-            var t = Mathf.Clamp01(elapsed / style.ShardDuration);
-            var gravity = Vector3.down * (0.8f * t * t);
-            for (var i = 0; i < shards.Count; i++)
-            {
-                var shard = shards[i];
-                if (shard.Transform == null)
-                {
-                    continue;
-                }
-
-                shard.Transform.position = shard.StartPosition + shard.Velocity * (t * style.ShardDuration) + gravity;
-                shard.Transform.Rotate(0f, 0f, shard.Spin * Time.deltaTime);
-                shard.Transform.localScale = Vector3.Lerp(shard.StartScale, Vector3.zero, t * t);
-            }
-
-            yield return null;
-        }
-
-        Destroy(parent);
-    }
-
-    private void SpawnCrackLines(CardView targetView, Vector3 origin, BattleEffectStyle style)
-    {
-        var baseRenderer = FindPrimaryRenderer(targetView);
-        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
-        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 12 : 12;
-        var parent = new GameObject("BattleEffectCracks");
-        parent.transform.position = origin;
-
-        for (var i = 0; i < 5; i++)
-        {
-            var lineObject = new GameObject($"Crack{i + 1}");
-            lineObject.transform.SetParent(parent.transform, false);
-            var line = lineObject.AddComponent<LineRenderer>();
-            line.useWorldSpace = true;
-            line.positionCount = 2;
-            line.startWidth = 0.025f;
-            line.endWidth = 0.006f;
-            line.material = GetLineMaterial();
-            line.sortingLayerID = sortingLayerId;
-            line.sortingOrder = sortingOrder + i;
-            line.startColor = new Color(1f, 1f, 1f, 0.95f);
-            line.endColor = new Color(0.08f, 0.08f, 0.08f, 0.75f);
-
-            var angle = (i / 5f) * Mathf.PI * 2f + style.CrackAngleOffset;
-            var end = origin + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * (0.28f + 0.08f * i);
-            line.SetPosition(0, origin);
-            line.SetPosition(1, end);
-        }
-
-        Destroy(parent, style.ImpactHold + 0.04f);
+        return CardFakeShatterEffect.TryGetFaceRenderer(cardView, out faceRenderer, out backRenderer);
     }
 
     private void TriggerBattleCameraShake(Vector3 origin, Vector3 hitDirection, BattleEffectStyle style)
@@ -694,60 +609,6 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
         return value is float floatValue ? floatValue : fallback;
     }
 
-    private static SpriteRenderer FindPrimaryRenderer(CardView view)
-    {
-        if (view == null || view.DisplayAdapter == null || view.DisplayAdapter.VisualPivot == null)
-        {
-            return null;
-        }
-
-        var renderers = view.DisplayAdapter.VisualPivot.GetComponentsInChildren<SpriteRenderer>(true);
-        if (renderers == null || renderers.Length == 0)
-        {
-            return null;
-        }
-
-        return renderers[0];
-    }
-
-    private static Sprite GetShardSprite()
-    {
-        if (sShardSprite != null)
-        {
-            return sShardSprite;
-        }
-
-        var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        texture.SetPixel(0, 0, Color.white);
-        texture.Apply();
-        sShardSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 16f);
-        sShardSprite.name = "TableNineRuntimeShardPixel";
-        return sShardSprite;
-    }
-
-    private static Material GetLineMaterial()
-    {
-        if (sLineMaterial != null)
-        {
-            return sLineMaterial;
-        }
-
-        sLineMaterial = new Material(Shader.Find("Sprites/Default"));
-        return sLineMaterial;
-    }
-
-    private static Vector3 RandomInsideUnitCircle(System.Random random)
-    {
-        var angle = RandomRange(random, 0f, Mathf.PI * 2f);
-        var radius = Mathf.Sqrt(RandomRange(random, 0f, 1f));
-        return new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);
-    }
-
-    private static float RandomRange(System.Random random, float min, float max)
-    {
-        return Mathf.Lerp(min, max, (float)random.NextDouble());
-    }
-
     private static float EaseOutQuad(float t)
     {
         return 1f - (1f - t) * (1f - t);
@@ -816,12 +677,4 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
         public string ImpulseShapeName;
     }
 
-    private struct ShardPiece
-    {
-        public Transform Transform;
-        public Vector3 StartPosition;
-        public Vector3 Velocity;
-        public Vector3 StartScale;
-        public float Spin;
-    }
 }

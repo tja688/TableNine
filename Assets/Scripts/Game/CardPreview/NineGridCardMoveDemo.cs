@@ -121,8 +121,6 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
     private Coroutine mFallbackCameraShakeCoroutine;
     private Transform mFallbackShakeCamera;
     private Vector3 mFallbackShakeCameraBaseLocalPosition;
-    private static Sprite sBattleShardSprite;
-    private static Material sBattleLineMaterial;
 
     private static readonly BattleFxStyle[] BattleFxStyles =
     {
@@ -370,11 +368,18 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         }
 
         TriggerDemoBattleShake(targetStartPosition, direction, style);
-        SpawnDemoCrackLines(entry.Root, targetStartPosition, style);
-        yield return new WaitForSeconds(style.ImpactHold);
+        yield return CardFakeShatterEffect.PlayOnTransform(
+            entry.Root,
+            CardFakeShatterEffect.ComputeImpactPoint(
+                entry.Root.GetComponentInChildren<SpriteRenderer>(true),
+                targetStartPosition,
+                direction),
+            direction,
+            style.ImpactHold,
+            style.ShardDuration,
+            CardFakeShatterSettings.FromShardCount(style.ShardCount));
 
         entry.Root.localScale = Vector3.zero;
-        yield return SpawnDemoShardBurst(entry.Root, targetStartPosition, direction, style);
 
         elapsed = 0f;
         var playerRecoverStartPosition = mPlayerCard.position;
@@ -1465,104 +1470,6 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         return hasBounds;
     }
 
-    private IEnumerator SpawnDemoShardBurst(Transform targetRoot, Vector3 origin, Vector3 hitDirection, BattleFxStyle style)
-    {
-        var parent = new GameObject("NineGridBattleFxShards");
-        parent.transform.position = origin;
-        var baseRenderer = FindPrimaryRenderer(targetRoot);
-        var baseColor = baseRenderer != null ? baseRenderer.color : Color.white;
-        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
-        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 8 : mFlyingSortingOrder + 20;
-        var shards = new List<BattleShardPiece>(style.ShardCount);
-
-        for (var i = 0; i < style.ShardCount; i++)
-        {
-            var shardObject = new GameObject($"Shard{i + 1}");
-            shardObject.transform.SetParent(parent.transform, false);
-            shardObject.transform.position = origin + RandomInsideUnitCircle() * 0.22f;
-            shardObject.transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(-35f, 35f));
-
-            var renderer = shardObject.AddComponent<SpriteRenderer>();
-            renderer.sprite = GetBattleShardSprite();
-            renderer.sortingLayerID = sortingLayerId;
-            renderer.sortingOrder = sortingOrder + i;
-            renderer.color = Color.Lerp(baseColor, Color.white, Random.Range(0.12f, 0.5f));
-
-            var away = (RandomInsideUnitCircle() + hitDirection * style.ForwardShardBias).normalized;
-            if (away.sqrMagnitude < 0.001f)
-            {
-                away = hitDirection;
-            }
-
-            var size = Random.Range(0.11f, 0.28f);
-            shardObject.transform.localScale = new Vector3(size * Random.Range(0.45f, 1.35f), size, 1f);
-            shards.Add(new BattleShardPiece
-            {
-                Transform = shardObject.transform,
-                StartPosition = shardObject.transform.position,
-                Velocity = away * Random.Range(style.ShardSpeed * 0.55f, style.ShardSpeed),
-                Spin = Random.Range(-style.ShardSpin, style.ShardSpin),
-                StartScale = shardObject.transform.localScale
-            });
-        }
-
-        var elapsed = 0f;
-        while (elapsed < style.ShardDuration)
-        {
-            elapsed += Time.deltaTime;
-            var t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, style.ShardDuration));
-            var gravity = Vector3.down * (0.8f * t * t);
-            for (var i = 0; i < shards.Count; i++)
-            {
-                var shard = shards[i];
-                if (shard.Transform == null)
-                {
-                    continue;
-                }
-
-                shard.Transform.position = shard.StartPosition + shard.Velocity * (t * style.ShardDuration) + gravity;
-                shard.Transform.Rotate(0f, 0f, shard.Spin * Time.deltaTime);
-                shard.Transform.localScale = Vector3.Lerp(shard.StartScale, Vector3.zero, t * t);
-            }
-
-            yield return null;
-        }
-
-        DestroyUnityObject(parent);
-    }
-
-    private void SpawnDemoCrackLines(Transform targetRoot, Vector3 origin, BattleFxStyle style)
-    {
-        var baseRenderer = FindPrimaryRenderer(targetRoot);
-        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
-        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 12 : mFlyingSortingOrder + 30;
-        var parent = new GameObject("NineGridBattleFxCracks");
-        parent.transform.position = origin;
-
-        for (var i = 0; i < 5; i++)
-        {
-            var lineObject = new GameObject($"Crack{i + 1}");
-            lineObject.transform.SetParent(parent.transform, false);
-            var line = lineObject.AddComponent<LineRenderer>();
-            line.useWorldSpace = true;
-            line.positionCount = 2;
-            line.startWidth = 0.025f;
-            line.endWidth = 0.006f;
-            line.material = GetBattleLineMaterial();
-            line.sortingLayerID = sortingLayerId;
-            line.sortingOrder = sortingOrder + i;
-            line.startColor = new Color(1f, 1f, 1f, 0.95f);
-            line.endColor = new Color(0.08f, 0.08f, 0.08f, 0.75f);
-
-            var angle = (i / 5f) * Mathf.PI * 2f + style.CrackAngleOffset;
-            var end = origin + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * (0.28f + 0.08f * i);
-            line.SetPosition(0, origin);
-            line.SetPosition(1, end);
-        }
-
-        Destroy(parent, style.ImpactHold + 0.04f);
-    }
-
     private void TriggerDemoBattleShake(Vector3 origin, Vector3 hitDirection, BattleFxStyle style)
     {
         var amplitude = style.ShakeAmplitude * mBattleFxShakeAmplitudeMultiplier;
@@ -1624,49 +1531,6 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 
         cameraTransform.localPosition = mFallbackShakeCameraBaseLocalPosition;
         mFallbackCameraShakeCoroutine = null;
-    }
-
-    private static SpriteRenderer FindPrimaryRenderer(Transform root)
-    {
-        if (root == null)
-        {
-            return null;
-        }
-
-        var renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
-        return renderers != null && renderers.Length > 0 ? renderers[0] : null;
-    }
-
-    private static Sprite GetBattleShardSprite()
-    {
-        if (sBattleShardSprite != null)
-        {
-            return sBattleShardSprite;
-        }
-
-        var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        texture.SetPixel(0, 0, Color.white);
-        texture.Apply();
-        sBattleShardSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 16f);
-        sBattleShardSprite.name = "NineGridRuntimeBattleShardPixel";
-        return sBattleShardSprite;
-    }
-
-    private static Material GetBattleLineMaterial()
-    {
-        if (sBattleLineMaterial != null)
-        {
-            return sBattleLineMaterial;
-        }
-
-        sBattleLineMaterial = new Material(Shader.Find("Sprites/Default"));
-        return sBattleLineMaterial;
-    }
-
-    private static Vector3 RandomInsideUnitCircle()
-    {
-        var point = Random.insideUnitCircle;
-        return new Vector3(point.x, point.y, 0f);
     }
 
     private static float EaseOutQuadValue(float t)
@@ -1775,15 +1639,6 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         public readonly float ForwardShardBias;
         public readonly float CrackAngleOffset;
         public readonly string ImpulseShapeName;
-    }
-
-    private struct BattleShardPiece
-    {
-        public Transform Transform;
-        public Vector3 StartPosition;
-        public Vector3 Velocity;
-        public Vector3 StartScale;
-        public float Spin;
     }
 
     private sealed class DemoCardEntry
