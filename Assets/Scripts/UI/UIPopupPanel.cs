@@ -6,9 +6,6 @@ public sealed class UIPopupPanel : MonoBehaviour
 {
     [SerializeField] private TMP_Text mInfoText;
     [SerializeField] private Button mCloseButton;
-    [SerializeField] private StaggeredMenuView mStaggeredMenu;
-
-    public StaggeredMenuView StaggeredMenu => mStaggeredMenu;
 
     private void Awake()
     {
@@ -39,9 +36,6 @@ public sealed class UIPopupPanel : MonoBehaviour
     {
         mInfoText = mInfoText != null ? mInfoText : FindDeep(transform, "InfoText")?.GetComponent<TMP_Text>();
         mCloseButton = mCloseButton != null ? mCloseButton : FindDeep(transform, "CloseButton")?.GetComponent<Button>();
-        mStaggeredMenu = mStaggeredMenu != null
-            ? mStaggeredMenu
-            : GetComponentInChildren<StaggeredMenuView>(true);
     }
 
     private static Transform FindDeep(Transform root, string childName)

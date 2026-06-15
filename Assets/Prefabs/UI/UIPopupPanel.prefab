@@ -289,7 +289,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mInfoText: {fileID: 0}
   mCloseButton: {fileID: 0}
-  mStaggeredMenu: {fileID: 204490964925264615}
 --- !u!1 &821183114219524945
 GameObject:
   m_ObjectHideFlags: 0
@@ -4171,7 +4170,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3922312713239796703
 RectTransform:
   m_ObjectHideFlags: 0
