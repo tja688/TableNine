@@ -54,6 +54,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     [SerializeField] private int mDockBackgroundSortingOrder = 1;
 
     private readonly List<DockCardEntry> mCards = new List<DockCardEntry>();
+    private readonly List<CardDefinition> mDemoCardSequence = new List<CardDefinition>();
 
     private Transform mDockRoot;
     private Transform mDockBackgroundRoot;
@@ -83,6 +84,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     private float mDockBackgroundCurrentHeight;
     private float mDockBackgroundHeightVelocity;
     private DockCardEntry mReturningEntry;
+    private int mNextSpawnSequenceIndex;
 
     public IArchitecture GetArchitecture()
     {
@@ -167,6 +169,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         }
 
         RefreshWorldMetrics();
+        HandleDebugInput();
         UpdateDockBackground(Time.deltaTime);
 
         if (mCards.Count == 0)
@@ -252,66 +255,20 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     private void BuildCards()
     {
         mCards.Clear();
-        var definitions = PickDemoCards(mCardCount);
-        if (definitions.Count == 0)
+        mDemoCardSequence.Clear();
+        mDemoCardSequence.AddRange(PickDemoCards(mCardCount));
+        mNextSpawnSequenceIndex = 0;
+
+        if (mDemoCardSequence.Count == 0)
         {
             Debug.LogWarning("[DockCardsWorldDemo] No cards available in config.");
             return;
         }
 
-        var anchor = GetDockAnchorWorld();
-        var totalWidth = ComputeTotalDockWidth(definitions.Count);
-        var startX = anchor.x - totalWidth * 0.5f;
-
-        for (var i = 0; i < definitions.Count; i++)
+        var initialCount = Mathf.Min(mCardCount, mDemoCardSequence.Count);
+        for (var i = 0; i < initialCount; i++)
         {
-            var definition = definitions[i];
-            var renderData = BakedCardRenderDataFactory.CreateFromCardDefinition(this.GetModel<IConfigModel>(), definition);
-            if (renderData == null)
-            {
-                continue;
-            }
-
-            var sprites = mComposer.ComposeSet(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit);
-            if (!sprites.HasFace)
-            {
-                continue;
-            }
-
-            var wrapper = new GameObject($"DockCard_{definition.CardId}");
-            wrapper.transform.SetParent(mDockRoot, false);
-            wrapper.transform.position = new Vector3(startX + GetSlotCenterOffset(i), anchor.y, 0f);
-
-            var cardObject = Instantiate(mCardPrefab, wrapper.transform, false);
-            cardObject.name = "Card";
-
-            var cardView = cardObject.GetComponent<CardView>();
-            if (cardView == null)
-            {
-                cardView = cardObject.AddComponent<CardView>();
-            }
-
-            cardView.Initialize();
-            cardView.SetTargetWorldHeight(mWorldCardHeight);
-            cardView.ShowBaked(sprites);
-
-            var entry = new DockCardEntry
-            {
-                Wrapper = wrapper.transform,
-                CardView = cardView,
-                Collider = cardObject.GetComponent<Collider2D>(),
-                Definition = definition,
-                BaseWorldPosition = wrapper.transform.position,
-                CurrentX = wrapper.transform.position.x,
-                CurrentScale = 1f,
-                TargetScale = 1f,
-                CurrentLift = 0f,
-                TargetLift = 0f,
-                SortingOrder = mBaseSortingOrder + i
-            };
-
-            ApplySortingOrder(entry, entry.SortingOrder);
-            mCards.Add(entry);
+            TryAddNextDemoCard(false);
         }
 
         CacheSlotMetrics();
@@ -439,6 +396,16 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     {
         mPressTracking = false;
         mPressIndex = -1;
+    }
+
+    private void HandleDebugInput()
+    {
+        if (!Input.GetKeyDown(KeyCode.Alpha3) && !Input.GetKeyDown(KeyCode.Keypad3))
+        {
+            return;
+        }
+
+        TryAddNextDemoCard(true);
     }
 
     private void BeginDrag(DockCardEntry entry)
@@ -633,7 +600,8 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         if (mCards.Count == 0)
         {
-            SnapDockBackgroundLayout();
+            mNextSpawnSequenceIndex = 0;
+            mHoveredIndex = -1;
         }
     }
 
@@ -809,19 +777,13 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private void UpdateDockBackground(float deltaTime)
     {
-        if (mDockBackgroundRenderer == null)
-        {
-            return;
-        }
-
-        var hasCards = mCards.Count > 0;
-        mDockBackgroundRenderer.enabled = hasCards && mDockBackgroundRenderer.sprite != null;
-        if (!hasCards || mDockBackgroundRenderer.sprite == null)
+        if (mDockBackgroundRenderer == null || mDockBackgroundRenderer.sprite == null)
         {
             return;
         }
 
         var targetRect = GetDockBackgroundTargetRect(IsDockBackgroundExpanded());
+        mDockBackgroundRenderer.enabled = true;
         mDockBackgroundCurrentCenter.x = SpringMath.Step(
             ref mDockBackgroundCurrentCenter.x,
             ref mDockBackgroundCenterVelocity.x,
@@ -856,6 +818,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             mDockBackgroundCurrentCenter.y - mDockBackgroundCurrentHeight * 0.5f,
             mDockBackgroundCurrentCenter.x + mDockBackgroundCurrentWidth * 0.5f,
             mDockBackgroundCurrentCenter.y + mDockBackgroundCurrentHeight * 0.5f));
+
+        if (mCards.Count == 0 && mDockBackgroundCurrentWidth <= 0.01f && mDockBackgroundCurrentHeight <= 0.01f)
+        {
+            mDockBackgroundRenderer.enabled = false;
+        }
     }
 
     private void SnapDockBackgroundLayout()
@@ -865,9 +832,23 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        if (mCards.Count <= 0 || mDockBackgroundRenderer.sprite == null)
+        if (mDockBackgroundRenderer.sprite == null)
         {
             mDockBackgroundRenderer.enabled = false;
+            return;
+        }
+
+        if (mCards.Count <= 0)
+        {
+            var zeroRect = GetDockBackgroundTargetRect(false);
+            mDockBackgroundRenderer.enabled = false;
+            mDockBackgroundCurrentCenter = zeroRect.center;
+            mDockBackgroundCenterVelocity = Vector2.zero;
+            mDockBackgroundCurrentWidth = 0f;
+            mDockBackgroundCurrentHeight = 0f;
+            mDockBackgroundWidthVelocity = 0f;
+            mDockBackgroundHeightVelocity = 0f;
+            ApplyDockBackgroundRect(zeroRect);
             return;
         }
 
@@ -909,7 +890,10 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private Rect GetDockBackgroundTargetRect(bool expanded)
     {
-        return GetDockBackgroundWorldRect(expanded ? mDockBackgroundExpandedRectLocal : mDockBackgroundCollapsedRectLocal);
+        var localRect = expanded ? mDockBackgroundExpandedRectLocal : mDockBackgroundCollapsedRectLocal;
+        var visibilityScale = mCards.Count > 0 ? 1f : 0f;
+        var widthScale = GetDockBackgroundWidthScale();
+        return GetScaledDockBackgroundWorldRect(localRect, widthScale, visibilityScale);
     }
 
     private void ApplyDockBackgroundRect(Rect rect)
@@ -948,6 +932,133 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             anchor.y + localRect.yMin,
             anchor.x + localRect.xMax,
             anchor.y + localRect.yMax);
+    }
+
+    private Rect GetScaledDockBackgroundWorldRect(Rect localRect, float widthScale, float heightScale)
+    {
+        var anchor = GetDockAnchorWorld();
+        var localCenter = localRect.center;
+        var scaledHalfWidth = localRect.width * 0.5f * Mathf.Max(0f, widthScale);
+        var scaledHalfHeight = localRect.height * 0.5f * Mathf.Max(0f, heightScale);
+        return Rect.MinMaxRect(
+            anchor.x + localCenter.x - scaledHalfWidth,
+            anchor.y + localCenter.y - scaledHalfHeight,
+            anchor.x + localCenter.x + scaledHalfWidth,
+            anchor.y + localCenter.y + scaledHalfHeight);
+    }
+
+    private float GetDockBackgroundWidthScale()
+    {
+        if (mCardCount <= 0 || mCards.Count <= 0)
+        {
+            return 0f;
+        }
+
+        var referenceWidth = ComputeTotalDockWidth(mCardCount);
+        if (referenceWidth <= Mathf.Epsilon)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(ComputeTotalDockWidth(mCards.Count) / referenceWidth);
+    }
+
+    private bool TryAddNextDemoCard(bool animateFromCenter)
+    {
+        if (mCards.Count >= mCardCount)
+        {
+            return false;
+        }
+
+        if (mDemoCardSequence.Count == 0)
+        {
+            mDemoCardSequence.AddRange(PickDemoCards(mCardCount));
+            if (mDemoCardSequence.Count == 0)
+            {
+                return false;
+            }
+        }
+
+        if (mCards.Count == 0)
+        {
+            mNextSpawnSequenceIndex = 0;
+        }
+
+        var definition = mDemoCardSequence[mNextSpawnSequenceIndex % mDemoCardSequence.Count];
+        mNextSpawnSequenceIndex++;
+        var entry = CreateDockCardEntry(definition, animateFromCenter);
+        if (entry == null)
+        {
+            return false;
+        }
+
+        mCards.Add(entry);
+        CacheSlotMetrics();
+        ReindexCards();
+        RepositionAllCards(!animateFromCenter);
+        UpdateHoveredIndex();
+        if (!animateFromCenter)
+        {
+            SnapDockBackgroundLayout();
+        }
+
+        return true;
+    }
+
+    private DockCardEntry CreateDockCardEntry(CardDefinition definition, bool animateFromCenter)
+    {
+        if (definition == null)
+        {
+            return null;
+        }
+
+        var renderData = BakedCardRenderDataFactory.CreateFromCardDefinition(this.GetModel<IConfigModel>(), definition);
+        if (renderData == null)
+        {
+            return null;
+        }
+
+        var sprites = mComposer.ComposeSet(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit);
+        if (!sprites.HasFace)
+        {
+            return null;
+        }
+
+        var spawnPosition = animateFromCenter ? GetDockAnchorWorld() : GetDockAnchorWorld();
+        var wrapper = new GameObject($"DockCard_{definition.CardId}_{mNextSpawnSequenceIndex}");
+        wrapper.transform.SetParent(mDockRoot, false);
+        wrapper.transform.position = new Vector3(spawnPosition.x, spawnPosition.y, 0f);
+
+        var cardObject = Instantiate(mCardPrefab, wrapper.transform, false);
+        cardObject.name = "Card";
+
+        var cardView = cardObject.GetComponent<CardView>();
+        if (cardView == null)
+        {
+            cardView = cardObject.AddComponent<CardView>();
+        }
+
+        cardView.Initialize();
+        cardView.SetTargetWorldHeight(mWorldCardHeight);
+        cardView.ShowBaked(sprites);
+
+        var entry = new DockCardEntry
+        {
+            Wrapper = wrapper.transform,
+            CardView = cardView,
+            Collider = cardObject.GetComponent<Collider2D>(),
+            Definition = definition,
+            BaseWorldPosition = wrapper.transform.position,
+            CurrentX = wrapper.transform.position.x,
+            CurrentScale = 1f,
+            TargetScale = 1f,
+            CurrentLift = 0f,
+            TargetLift = 0f,
+            SortingOrder = mBaseSortingOrder + mCards.Count
+        };
+
+        ApplySortingOrder(entry, entry.SortingOrder);
+        return entry;
     }
 
     private static Rect GetWorldRect(Bounds worldBounds)

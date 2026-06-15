@@ -632,7 +632,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_text
-      value: "\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684"
+      value: "\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684\u5C31\u65F6\u4EE3\u5565\u7684\u65F6\u4EE3\u5565\u7684"
       objectReference: {fileID: 0}
     - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_fontSize
@@ -641,6 +641,14 @@ PrefabInstance:
     - target: {fileID: 790323255876788211, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_fontSizeBase
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1702693298129027548, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -44.125595
+      objectReference: {fileID: 0}
+    - target: {fileID: 1702693298129027548, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 46.222527
       objectReference: {fileID: 0}
     - target: {fileID: 4575963582077196793, guid: e07f31051b7e20c4d896cad0a432bb35, type: 3}
       propertyPath: m_Name
@@ -1395,7 +1403,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1041881334
 Transform:
   m_ObjectHideFlags: 0
@@ -1949,7 +1957,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1532839835985644861, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2141524062833798575, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2219,6 +2227,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4969442687506239850, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 61.64321
+      objectReference: {fileID: 0}
     - target: {fileID: 6083393331663645319, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -2386,6 +2398,10 @@ PrefabInstance:
     - target: {fileID: 7411334828215527988, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7459781348687721112, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 6.7789073
       objectReference: {fileID: 0}
     - target: {fileID: 7638835693721728716, guid: 79d7d72f5c4953544ade31b7fc38317c, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2695,15 +2711,21 @@ MonoBehaviour:
   mViewportY: 0.1
   mCamera: {fileID: 1716330732}
   mDefaultHint: "\u60AC\u505C\u653E\u5927\u67E5\u770B\u63CF\u8FF0\uFF1B\u70B9\u51FB\u9009\u4E2D\uFF0C\u957F\u6309\u9009\u4E2D\u5361\u62D6\u52A8"
-  mRecycleZoneViewportRect:
+  mDockBackgroundSprite: {fileID: 4853929170296591787, guid: eb5163dc31c15a548bcac8d77b207273, type: 3}
+  mDockBackgroundAlpha: 0.189
+  mDockBackgroundCollapsedRectLocal:
     serializedVersion: 2
-    x: 0.2
-    y: 0
-    width: 0.59
-    height: 0.3
-  mRecycleZoneLabel: "\u53EF\u56DE\u6536\u533A"
-  mRecycleZoneHint: "\u62D6\u5165\u56DE\u624B"
-  mRecycleGuideLinePixels: 2
+    x: -6.4
+    y: -1.62
+    width: 12.9
+    height: 3.3
+  mDockBackgroundExpandedRectLocal:
+    serializedVersion: 2
+    x: -6.6
+    y: -1.6797724
+    width: 13.4
+    height: 3.9041953
+  mDockBackgroundSortingOrder: 1
 --- !u!4 &1820207703
 Transform:
   m_ObjectHideFlags: 0
