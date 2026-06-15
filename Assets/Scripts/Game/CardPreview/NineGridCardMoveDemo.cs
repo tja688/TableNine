@@ -377,7 +377,7 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
             direction,
             style.ImpactHold,
             style.ShardDuration,
-            CardFakeShatterSettings.FromShardCount(style.ShardCount));
+            CardFakeShatterEffect.ResolveSettings(style.ShardCount));
 
         entry.Root.localScale = Vector3.zero;
 

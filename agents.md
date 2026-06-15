@@ -83,3 +83,5 @@ flowchart LR
 
 如果你在项目里发现新的高风险坑点、反复发生的错误或容易误导后续 agent 的事实，追加到此段落后续：
 
+- **卡牌粒子碎裂 Lifetime 未达预期（2026-06-15）：** 右键战斗预览已改用 `ParticleSpriteShatter2D` + `CardFakeShatterEffect`；代码默认 `Lifetime=10s` 但实测仍早消失，根因未闭合。维护与排查见 `Assets/Notes/卡牌粒子碎裂效果_维护交棒.md`。勿再改 `TableNine/CardFakeShatter` Shader。藏卡面须 `VisualPivot.SetActive(false)`，不能只关 `Face`（`CardDisplayAdapter.LateUpdate` 会刷回）。
+

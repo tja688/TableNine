@@ -5,40 +5,150 @@ public sealed class CardFakeShatterSettings
 {
     public int Rows = 7;
     public int Columns = 5;
-    public float Force = 3.5f;
-    public float InnerForce = 1.8f;
-    public float RandomForce = 1.2f;
-    public float Lifetime = 1f;
-    public float LifetimeRandom = 0.2f;
-    public float Gravity = 0.15f;
-    public float AngularVelocity = 240f;
-    public float HitDirectionBias = 0.35f;
-    public float FadeStart = 0.65f;
-    public float NoiseStrength = 0.15f;
+    public float Force = 12f;
+    public float InnerForce = 8f;
+    public float RandomForce = 3.5f;
+    public float Lifetime = 30f;
+    public float LifetimeRandom = 0f;
+    public float Gravity = 1.1f;
+    public float AngularVelocity = 520f;
+    public float HitDirectionBias = 0.72f;
+    public float LateralSpread = 0.55f;
+    public float FadeStart = 1f;
+    public float NoiseStrength = 0.22f;
+    public float GridJitter = 0.38f;
+    public float ShardSkipChance = 0.12f;
+    public float PositionJitter = 0.045f;
+    public float DirectionChaos = 0.48f;
+    public float SizeVariation = 0.2f;
+    public float SpeedVariation = 0.42f;
     public bool HideOriginalOnShatter = true;
     public bool EnableFlash = true;
     public float FlashPeakAlpha = 0.75f;
+    public float FlashMaxDuration = 0.04f;
+    public float PostShatterBlockDuration = 0.1f;
+    public bool EnableRuntimeVariance = true;
+    public float RuntimeVarianceStrength = 1f;
 
     public static CardFakeShatterSettings Default => new CardFakeShatterSettings();
+
+    public CardFakeShatterSettings Clone()
+    {
+        return new CardFakeShatterSettings
+        {
+            Rows = Rows,
+            Columns = Columns,
+            Force = Force,
+            InnerForce = InnerForce,
+            RandomForce = RandomForce,
+            Lifetime = Lifetime,
+            LifetimeRandom = LifetimeRandom,
+            Gravity = Gravity,
+            AngularVelocity = AngularVelocity,
+            HitDirectionBias = HitDirectionBias,
+            LateralSpread = LateralSpread,
+            FadeStart = FadeStart,
+            NoiseStrength = NoiseStrength,
+            GridJitter = GridJitter,
+            ShardSkipChance = ShardSkipChance,
+            PositionJitter = PositionJitter,
+            DirectionChaos = DirectionChaos,
+            SizeVariation = SizeVariation,
+            SpeedVariation = SpeedVariation,
+            HideOriginalOnShatter = HideOriginalOnShatter,
+            EnableFlash = EnableFlash,
+            FlashPeakAlpha = FlashPeakAlpha,
+            FlashMaxDuration = FlashMaxDuration,
+            PostShatterBlockDuration = PostShatterBlockDuration,
+            EnableRuntimeVariance = EnableRuntimeVariance,
+            RuntimeVarianceStrength = RuntimeVarianceStrength
+        };
+    }
+
+    public static void ApplyGridFromShardCount(CardFakeShatterSettings settings, int shardCount)
+    {
+        if (settings == null)
+        {
+            return;
+        }
+
+        ResolveGrid(Mathf.Max(4, shardCount), out var rows, out var columns);
+        settings.Rows = rows;
+        settings.Columns = columns;
+    }
 
     public static CardFakeShatterSettings FromShardCount(int shardCount)
     {
         ResolveGrid(Mathf.Max(4, shardCount), out var rows, out var columns);
-        var force = Mathf.Clamp(2.4f + shardCount * 0.05f, 2.8f, 5.5f);
-        var randomForce = Mathf.Clamp(0.8f + shardCount * 0.02f, 0.8f, 1.8f);
-        var angularVelocity = Mathf.Clamp(180f + shardCount * 12f, 220f, 760f);
+        var force = Mathf.Clamp(10f + shardCount * 0.35f, 10f, 17f);
+        var randomForce = Mathf.Clamp(2.4f + shardCount * 0.08f, 2.4f, 5f);
+        var angularVelocity = Mathf.Clamp(360f + shardCount * 22f, 420f, 980f);
         return new CardFakeShatterSettings
         {
             Rows = rows,
             Columns = columns,
             Force = force,
-            InnerForce = force * 0.5f,
+            InnerForce = force * 0.62f,
             RandomForce = randomForce,
-            Lifetime = Mathf.Clamp(0.75f + shardCount * 0.012f, 0.75f, 1.35f),
+            Lifetime = 30f,
+            LifetimeRandom = 0f,
             AngularVelocity = angularVelocity,
-            Gravity = shardCount >= 18 ? 0.08f : 0.15f,
-            NoiseStrength = 0.12f + shardCount * 0.002f
+            Gravity = 1.1f,
+            HitDirectionBias = 0.7f,
+            LateralSpread = 0.5f + shardCount * 0.006f,
+            FadeStart = 1f,
+            NoiseStrength = 0.18f + shardCount * 0.003f,
+            GridJitter = 0.34f + shardCount * 0.004f,
+            ShardSkipChance = 0.1f + shardCount * 0.002f,
+            DirectionChaos = 0.42f + shardCount * 0.004f,
+            SpeedVariation = 0.38f + shardCount * 0.004f
         };
+    }
+
+    public void ApplyRuntimeVariance()
+    {
+        var strength = Mathf.Max(0f, RuntimeVarianceStrength);
+        if (strength <= 0.001f)
+        {
+            return;
+        }
+
+        var rowDelta = Random.Range(-1, 2);
+        var columnDelta = Random.Range(-1, 2);
+        if (Mathf.Approximately(strength, 1f))
+        {
+            Rows = Mathf.Clamp(Rows + rowDelta, 3, 12);
+            Columns = Mathf.Clamp(Columns + columnDelta, 3, 10);
+        }
+        else
+        {
+            Rows = Mathf.Clamp(Mathf.RoundToInt(Rows + rowDelta * strength), 3, 12);
+            Columns = Mathf.Clamp(Mathf.RoundToInt(Columns + columnDelta * strength), 3, 10);
+        }
+
+        Force *= Mathf.Lerp(1f, Random.Range(0.9f, 1.12f), strength);
+        InnerForce *= Mathf.Lerp(1f, Random.Range(0.88f, 1.1f), strength);
+        RandomForce *= Mathf.Lerp(1f, Random.Range(0.85f, 1.2f), strength);
+        HitDirectionBias = Mathf.Clamp(
+            HitDirectionBias + Random.Range(-0.12f, 0.1f) * strength,
+            0.45f,
+            0.92f);
+        LateralSpread = Mathf.Clamp(
+            LateralSpread + Random.Range(-0.12f, 0.16f) * strength,
+            0.2f,
+            0.95f);
+        GridJitter = Mathf.Clamp(
+            GridJitter + Random.Range(-0.08f, 0.1f) * strength,
+            0.1f,
+            0.6f);
+        ShardSkipChance = Mathf.Clamp(
+            ShardSkipChance + Random.Range(-0.04f, 0.06f) * strength,
+            0f,
+            0.3f);
+        DirectionChaos = Mathf.Clamp(
+            DirectionChaos + Random.Range(-0.1f, 0.12f) * strength,
+            0.1f,
+            0.85f);
     }
 
     private static void ResolveGrid(int targetCount, out int rows, out int columns)
@@ -51,7 +161,33 @@ public sealed class CardFakeShatterSettings
 
 public static class CardFakeShatterEffect
 {
-    private static ParticleSpriteShatter2D sSharedShatter;
+    public static CardFakeShatterSettings ResolveSettings(int battleStyleShardCount = 0)
+    {
+        var profile = CardFakeShatterTuningProfile.FindInScene();
+        if (profile != null)
+        {
+            return profile.CreateRuntimeSettings(battleStyleShardCount);
+        }
+
+        if (battleStyleShardCount > 0)
+        {
+            var settings = CardFakeShatterSettings.FromShardCount(battleStyleShardCount);
+            if (settings.EnableRuntimeVariance)
+            {
+                settings.ApplyRuntimeVariance();
+            }
+
+            return settings;
+        }
+
+        var fallback = CardFakeShatterSettings.Default.Clone();
+        if (fallback.EnableRuntimeVariance)
+        {
+            fallback.ApplyRuntimeVariance();
+        }
+
+        return fallback;
+    }
 
     public static IEnumerator PlayOnCardView(
         CardView cardView,
@@ -107,32 +243,27 @@ public static class CardFakeShatterEffect
             yield break;
         }
 
-        settings ??= CardFakeShatterSettings.Default;
+        settings ??= ResolveSettings(0);
         var originalColor = faceRenderer.color;
-        var backWasEnabled = backRenderer != null && backRenderer.enabled;
+        var visualRoot = FindCardVisualRoot(faceRenderer);
 
         if (settings.EnableFlash && impactHold > 0f)
         {
-            yield return PlayImpactFlash(faceRenderer, originalColor, impactHold, settings.FlashPeakAlpha);
-        }
-        else if (impactHold > 0f)
-        {
-            yield return new WaitForSeconds(impactHold);
+            yield return PlayImpactFlash(
+                faceRenderer,
+                originalColor,
+                Mathf.Min(impactHold, settings.FlashMaxDuration),
+                settings.FlashPeakAlpha);
         }
 
-        var shatter = GetOrCreateSharedShatter();
+        var burstObject = new GameObject("TableNine Card Shatter Burst");
+        var shatter = burstObject.AddComponent<ParticleSpriteShatter2D>();
         shatter.Configure(settings);
         var particleLifetime = shatter.Shatter(faceRenderer, worldImpactPoint, worldHitDirection, backRenderer);
-        var waitDuration = Mathf.Max(shatterDuration, particleLifetime);
+        HideCardVisual(visualRoot, faceRenderer, backRenderer);
+        Object.Destroy(burstObject, Mathf.Max(particleLifetime, settings.Lifetime + settings.LifetimeRandom) + 1.5f);
 
-        yield return new WaitForSeconds(waitDuration);
-
-        faceRenderer.color = originalColor;
-        faceRenderer.enabled = false;
-        if (backRenderer != null)
-        {
-            backRenderer.enabled = backWasEnabled;
-        }
+        yield return new WaitForSeconds(settings.PostShatterBlockDuration);
     }
 
     public static Vector3 ComputeImpactPoint(SpriteRenderer faceRenderer, Vector3 targetCenter, Vector3 hitDirection)
@@ -164,18 +295,44 @@ public static class CardFakeShatterEffect
         return faceRenderer != null && faceRenderer.sprite != null;
     }
 
-    private static ParticleSpriteShatter2D GetOrCreateSharedShatter()
+    private static Transform FindCardVisualRoot(SpriteRenderer faceRenderer)
     {
-        if (sSharedShatter != null)
+        if (faceRenderer == null)
         {
-            sSharedShatter.Cleanup();
-            return sSharedShatter;
+            return null;
         }
 
-        var shatterObject = new GameObject("TableNine Shared Particle Shatter");
-        Object.DontDestroyOnLoad(shatterObject);
-        sSharedShatter = shatterObject.AddComponent<ParticleSpriteShatter2D>();
-        return sSharedShatter;
+        var current = faceRenderer.transform;
+        while (current != null)
+        {
+            if (current.name == "VisualPivot")
+            {
+                return current;
+            }
+
+            current = current.parent;
+        }
+
+        return faceRenderer.transform.parent;
+    }
+
+    private static void HideCardVisual(Transform visualRoot, SpriteRenderer faceRenderer, SpriteRenderer backRenderer)
+    {
+        if (visualRoot != null)
+        {
+            visualRoot.gameObject.SetActive(false);
+            return;
+        }
+
+        if (faceRenderer != null)
+        {
+            faceRenderer.enabled = false;
+        }
+
+        if (backRenderer != null)
+        {
+            backRenderer.enabled = false;
+        }
     }
 
     private static IEnumerator PlayImpactFlash(

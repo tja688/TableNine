@@ -1,5 +1,7 @@
 # CardBattleEffectPreview 落地汇报
 
+> **维护提示（2026-06-15）：** 碎裂实现已从 Shader 假裂纹升级为粒子 mesh 方案，且有未解 Lifetime 问题。请以 `Assets/Notes/卡牌粒子碎裂效果_维护交棒.md` 为准。
+
 > 任务来源：用户即时表现需求；约束参考 `Assets/Docs/01-机制规则/战斗机制.md`、`Assets/Docs/01-机制规则/发牌机制.md`  
 > 执行时间：2026-06-15  
 > 分支：`快速轻量开发初版demo`  

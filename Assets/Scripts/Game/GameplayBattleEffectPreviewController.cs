@@ -229,11 +229,11 @@ public sealed class GameplayBattleEffectPreviewController : MonoBehaviour, ICont
                 direction,
                 style.ImpactHold,
                 style.ShardDuration,
-                CardFakeShatterSettings.FromShardCount(style.ShardCount));
+                CardFakeShatterEffect.ResolveSettings(style.ShardCount));
         }
         else
         {
-            yield return new WaitForSeconds(style.ImpactHold + style.ShardDuration);
+            yield return new WaitForSeconds(0.1f);
         }
 
         targetTransform.localScale = Vector3.zero;

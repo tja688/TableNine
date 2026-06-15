@@ -267,6 +267,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         {
             gameObject.AddComponent<GameplayBattleEffectPreviewController>();
         }
+
+        if (GetComponent<CardFakeShatterTuningProfile>() == null)
+        {
+            gameObject.AddComponent<CardFakeShatterTuningProfile>();
+        }
     }
 
     private void RegisterGameplayEvents()
