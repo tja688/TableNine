@@ -3,38 +3,55 @@ using UnityEngine;
 
 public sealed class CardFakeShatterSettings
 {
-    public float ShardScale = 7f;
-    public float ScatterStrength = 0.42f;
-    public float CrackWidth = 0.038f;
-    public float PreBreakAmount = 0.14f;
+    public int Rows = 7;
+    public int Columns = 5;
+    public float Force = 3.5f;
+    public float InnerForce = 1.8f;
+    public float RandomForce = 1.2f;
+    public float Lifetime = 1f;
+    public float LifetimeRandom = 0.2f;
+    public float Gravity = 0.15f;
+    public float AngularVelocity = 240f;
+    public float HitDirectionBias = 0.35f;
+    public float FadeStart = 0.65f;
+    public float NoiseStrength = 0.15f;
+    public bool HideOriginalOnShatter = true;
+    public bool EnableFlash = true;
+    public float FlashPeakAlpha = 0.75f;
 
     public static CardFakeShatterSettings Default => new CardFakeShatterSettings();
 
     public static CardFakeShatterSettings FromShardCount(int shardCount)
     {
-        var scale = Mathf.Clamp(shardCount * 0.42f, 5f, 11f);
-        var scatter = Mathf.Clamp(0.34f + shardCount * 0.012f, 0.34f, 0.58f);
+        ResolveGrid(Mathf.Max(4, shardCount), out var rows, out var columns);
+        var force = Mathf.Clamp(2.4f + shardCount * 0.05f, 2.8f, 5.5f);
+        var randomForce = Mathf.Clamp(0.8f + shardCount * 0.02f, 0.8f, 1.8f);
+        var angularVelocity = Mathf.Clamp(180f + shardCount * 12f, 220f, 760f);
         return new CardFakeShatterSettings
         {
-            ShardScale = scale,
-            ScatterStrength = scatter,
-            CrackWidth = 0.034f + shardCount * 0.0008f,
-            PreBreakAmount = 0.12f
+            Rows = rows,
+            Columns = columns,
+            Force = force,
+            InnerForce = force * 0.5f,
+            RandomForce = randomForce,
+            Lifetime = Mathf.Clamp(0.75f + shardCount * 0.012f, 0.75f, 1.35f),
+            AngularVelocity = angularVelocity,
+            Gravity = shardCount >= 18 ? 0.08f : 0.15f,
+            NoiseStrength = 0.12f + shardCount * 0.002f
         };
+    }
+
+    private static void ResolveGrid(int targetCount, out int rows, out int columns)
+    {
+        const float cardAspect = 1.35f;
+        columns = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(targetCount / cardAspect)), 3, 10);
+        rows = Mathf.Clamp(Mathf.CeilToInt(targetCount / (float)columns), 3, 12);
     }
 }
 
 public static class CardFakeShatterEffect
 {
-    private static readonly int ShatterAmountId = Shader.PropertyToID("_ShatterAmount");
-    private static readonly int HitDirectionId = Shader.PropertyToID("_HitDirection");
-    private static readonly int ShardScaleId = Shader.PropertyToID("_ShardScale");
-    private static readonly int ScatterStrengthId = Shader.PropertyToID("_ScatterStrength");
-    private static readonly int CrackWidthId = Shader.PropertyToID("_CrackWidth");
-    private static readonly int ImpactUvId = Shader.PropertyToID("_ImpactUv");
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
-
-    private static Shader sShader;
+    private static ParticleSpriteShatter2D sSharedShatter;
 
     public static IEnumerator PlayOnCardView(
         CardView cardView,
@@ -90,78 +107,32 @@ public static class CardFakeShatterEffect
             yield break;
         }
 
-        var shader = GetShader();
-        if (shader == null)
-        {
-            yield break;
-        }
-
         settings ??= CardFakeShatterSettings.Default;
-        var originalSharedMaterial = faceRenderer.sharedMaterial;
-        var shatterMaterial = new Material(shader)
-        {
-            mainTexture = faceRenderer.sprite.texture
-        };
-        shatterMaterial.SetColor(ColorId, faceRenderer.color);
-        shatterMaterial.SetFloat(ShardScaleId, settings.ShardScale);
-        shatterMaterial.SetFloat(ScatterStrengthId, settings.ScatterStrength);
-        shatterMaterial.SetFloat(CrackWidthId, settings.CrackWidth);
-        shatterMaterial.SetVector(ImpactUvId, WorldToSpriteUv(faceRenderer, worldImpactPoint));
-
-        var localHitDirection = faceRenderer.transform.InverseTransformDirection(worldHitDirection);
-        if (localHitDirection.sqrMagnitude <= 0.0001f)
-        {
-            localHitDirection = Vector3.right;
-        }
-
-        localHitDirection.Normalize();
-        shatterMaterial.SetVector(HitDirectionId, new Vector4(localHitDirection.x, localHitDirection.y, 0f, 0f));
-        shatterMaterial.SetFloat(ShatterAmountId, 0f);
-
+        var originalColor = faceRenderer.color;
         var backWasEnabled = backRenderer != null && backRenderer.enabled;
-        faceRenderer.material = shatterMaterial;
-        if (backRenderer != null)
+
+        if (settings.EnableFlash && impactHold > 0f)
         {
-            backRenderer.enabled = false;
+            yield return PlayImpactFlash(faceRenderer, originalColor, impactHold, settings.FlashPeakAlpha);
+        }
+        else if (impactHold > 0f)
+        {
+            yield return new WaitForSeconds(impactHold);
         }
 
-        if (impactHold > 0f)
-        {
-            var elapsed = 0f;
-            while (elapsed < impactHold)
-            {
-                elapsed += Time.deltaTime;
-                var t = Mathf.Clamp01(elapsed / impactHold);
-                shatterMaterial.SetFloat(ShatterAmountId, Mathf.Lerp(0f, settings.PreBreakAmount, EaseOutQuad(t)));
-                yield return null;
-            }
-        }
+        var shatter = GetOrCreateSharedShatter();
+        shatter.Configure(settings);
+        var particleLifetime = shatter.Shatter(faceRenderer, worldImpactPoint, worldHitDirection, backRenderer);
+        var waitDuration = Mathf.Max(shatterDuration, particleLifetime);
 
-        var duration = Mathf.Max(0.01f, shatterDuration);
-        var startAmount = settings.PreBreakAmount;
-        var shatterElapsed = 0f;
-        while (shatterElapsed < duration)
-        {
-            shatterElapsed += Time.deltaTime;
-            var t = Mathf.Clamp01(shatterElapsed / duration);
-            shatterMaterial.SetFloat(ShatterAmountId, Mathf.Lerp(startAmount, 1f, EaseOutCubic(t)));
-            yield return null;
-        }
+        yield return new WaitForSeconds(waitDuration);
 
-        shatterMaterial.SetFloat(ShatterAmountId, 1f);
-
-        if (faceRenderer != null)
-        {
-            faceRenderer.sharedMaterial = originalSharedMaterial;
-            faceRenderer.enabled = false;
-        }
-
+        faceRenderer.color = originalColor;
+        faceRenderer.enabled = false;
         if (backRenderer != null)
         {
             backRenderer.enabled = backWasEnabled;
         }
-
-        Object.Destroy(shatterMaterial);
     }
 
     public static Vector3 ComputeImpactPoint(SpriteRenderer faceRenderer, Vector3 targetCenter, Vector3 hitDirection)
@@ -193,39 +164,42 @@ public static class CardFakeShatterEffect
         return faceRenderer != null && faceRenderer.sprite != null;
     }
 
-    private static Shader GetShader()
+    private static ParticleSpriteShatter2D GetOrCreateSharedShatter()
     {
-        if (sShader != null)
+        if (sSharedShatter != null)
         {
-            return sShader;
+            sSharedShatter.Cleanup();
+            return sSharedShatter;
         }
 
-        sShader = Shader.Find("TableNine/CardFakeShatter");
-        if (sShader == null)
-        {
-            Debug.LogWarning("CardFakeShatterEffect: shader TableNine/CardFakeShatter not found.");
-        }
-
-        return sShader;
+        var shatterObject = new GameObject("TableNine Shared Particle Shatter");
+        Object.DontDestroyOnLoad(shatterObject);
+        sSharedShatter = shatterObject.AddComponent<ParticleSpriteShatter2D>();
+        return sSharedShatter;
     }
 
-    private static Vector4 WorldToSpriteUv(SpriteRenderer renderer, Vector3 worldPoint)
+    private static IEnumerator PlayImpactFlash(
+        SpriteRenderer faceRenderer,
+        Color originalColor,
+        float duration,
+        float peakAlpha)
     {
-        var localPoint = renderer.transform.InverseTransformPoint(worldPoint);
-        var sprite = renderer.sprite;
-        var bounds = sprite.bounds;
-        var x = Mathf.InverseLerp(bounds.min.x, bounds.max.x, localPoint.x);
-        var y = Mathf.InverseLerp(bounds.min.y, bounds.max.y, localPoint.y);
-        return new Vector4(Mathf.Clamp01(x), Mathf.Clamp01(y), 0f, 0f);
+        var elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / duration);
+            var flash = 1f - EaseOutQuad(t);
+            var color = Color.Lerp(originalColor, Color.white, flash * peakAlpha);
+            faceRenderer.color = color;
+            yield return null;
+        }
+
+        faceRenderer.color = originalColor;
     }
 
     private static float EaseOutQuad(float t)
     {
         return 1f - (1f - t) * (1f - t);
-    }
-
-    private static float EaseOutCubic(float t)
-    {
-        return 1f - Mathf.Pow(1f - t, 3f);
     }
 }
