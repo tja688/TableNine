@@ -755,6 +755,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerCard
       objectReference: {fileID: 0}
+    - target: {fileID: 778813601876138437, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 778813601876138437, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+      propertyPath: m_WasSpriteAssigned
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2088571503197118524, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1868,6 +1876,8 @@ MonoBehaviour:
   mDeckSlotName: CardDeckSlot
   mBoardRoot: {fileID: 0}
   mBoardRootName: NineGrid Main CardSlots
+  mPlayerCard: {fileID: 0}
+  mPlayerCardName: PlayerCard
   mDeckLeftText: {fileID: 0}
   mDeckLeftTextName: DeckLeftText
   mDeckWorldOffset: {x: 0, y: 0, z: -0.08}
@@ -3434,11 +3444,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mEnableLegacyGreyboxPresentation: 1
+  mAutoStartRunForPresentation: 1
   mBoardRoot: {fileID: 0}
   mItemRoot: {fileID: 0}
   mCardTemplate: {fileID: 3458624722028641721, guid: 3c34410782c4f6a438714349ad42a9fb, type: 3}
   mCardFaceTemplate: {fileID: 736547127082148962, guid: b75d73ce07469fd4ba9fdb52ff199efa, type: 3}
   mPlayerCardTemplate: {fileID: 736547127082148962, guid: bfa17b44d1801a54e80d16e2fc297072, type: 3}
+  mScenePlayerCardPlaceholder: {fileID: 0}
+  mScenePlayerCardName: PlayerCard
   mFallbackWorldCardHeight: 3.64
 --- !u!1 &1931230192
 GameObject:

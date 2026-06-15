@@ -1,13 +1,7 @@
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 public sealed class BakedCardFaceComposer
 {
-    private const string CardExamplePath = "Assets/Prefabs/Cards/CardExample.prefab";
-    private const string PlayerCardPath = "Assets/Prefabs/Cards/PlayerCard.prefab";
     private const float TemplateDistance = 6000f;
     private const float TemplateLocalCardHeight = 2f;
 
@@ -19,17 +13,8 @@ public sealed class BakedCardFaceComposer
 
     public BakedCardFaceComposer(GameObject cardExampleTemplate = null, GameObject playerCardTemplate = null)
     {
-#if UNITY_EDITOR
-        mCardExampleTemplate = cardExampleTemplate != null
-            ? cardExampleTemplate
-            : AssetDatabase.LoadAssetAtPath<GameObject>(CardExamplePath);
-        mPlayerCardTemplate = playerCardTemplate != null
-            ? playerCardTemplate
-            : AssetDatabase.LoadAssetAtPath<GameObject>(PlayerCardPath);
-#else
-        mCardExampleTemplate = cardExampleTemplate;
-        mPlayerCardTemplate = playerCardTemplate;
-#endif
+        mCardExampleTemplate = BakedCardPrefabRefs.ResolveCardExample(cardExampleTemplate);
+        mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(playerCardTemplate);
     }
 
     public BakedCardSpriteSet ComposeSet(BakedCardFaceRenderData data, float pixelsPerUnit)

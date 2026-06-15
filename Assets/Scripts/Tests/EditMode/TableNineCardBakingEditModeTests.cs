@@ -61,6 +61,35 @@ public sealed class TableNineCardBakingEditModeTests
     }
 
     [Test]
+    public void PlayerRuntimeRenderData_Uses_PlayerCard_Template_And_Composes_Face()
+    {
+        TableNine.InitArchitecture();
+        TableNine.Interface.SendCommand(new StartNewRunCommand(seedOverride: 73));
+
+        var controller = new TestController();
+        var playerUid = TableNine.Interface.GetModel<IPlayerModel>().PlayerCardUid;
+        var cardData = CardViewDataFactory.Create(controller, playerUid);
+        var renderData = BakedCardRenderDataFactory.CreateRuntime(controller, cardData);
+
+        Assert.That(renderData, Is.Not.Null);
+        Assert.That(renderData.Template, Is.EqualTo(BakedCardFaceTemplate.PlayerCard));
+        Assert.That(renderData.StatMode, Is.EqualTo(BakedCardFaceStatMode.FullStats));
+        Assert.That(renderData.DisplayName, Is.Not.Empty);
+
+        var composer = new BakedCardFaceComposer();
+        var sprites = composer.ComposeSet(renderData, BakedCardRenderDataFactory.StandardPixelsPerUnit);
+        composer.Dispose();
+
+        Assert.That(sprites.HasFace, Is.True);
+        Assert.That(sprites.BackSprite, Is.Not.Null);
+
+        var faceSprite = sprites.FaceSprite;
+        var backSprite = sprites.BackSprite;
+        BakedCardRuntimeSpriteUtility.Release(ref faceSprite);
+        BakedCardRuntimeSpriteUtility.Release(ref backSprite);
+    }
+
+    [Test]
     public void TutorRenderData_Produces_A_Main_Icon()
     {
         TableNine.InitArchitecture();

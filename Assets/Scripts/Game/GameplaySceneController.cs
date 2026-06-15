@@ -1,24 +1,28 @@
 using System.Collections.Generic;
 using QFramework;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 public class GameplayWorldPresenter : MonoBehaviour, IController
 {
-    private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
+    private const string DefaultScenePlayerCardName = "PlayerCard";
+    private const string DefaultBoardRootName = "NineGrid Main CardSlots";
+    private const string DefaultItemRootName = "Item CardSlots";
 
     private readonly Dictionary<int, CardView> mBoardCardViews = new Dictionary<int, CardView>();
     private readonly Dictionary<int, CardView> mItemCardViews = new Dictionary<int, CardView>();
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
     [SerializeField] private bool mEnableLegacyGreyboxPresentation = true;
+    [SerializeField] private bool mAutoStartRunForPresentation = true;
     [SerializeField] private Transform mBoardRoot;
+    [SerializeField] private string mBoardRootName = DefaultBoardRootName;
     [SerializeField] private Transform mItemRoot;
+    [SerializeField] private string mItemRootName = DefaultItemRootName;
     [SerializeField] private GameObject mCardTemplate;
     [SerializeField] private GameObject mCardFaceTemplate;
     [SerializeField] private GameObject mPlayerCardTemplate;
+    [SerializeField] private Transform mScenePlayerCardPlaceholder;
+    [SerializeField] private string mScenePlayerCardName = DefaultScenePlayerCardName;
     [SerializeField] private float mFallbackWorldCardHeight = 3.64f;
 
     private CardViewPresenter mCardViewPresenter;
@@ -40,7 +44,17 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         mCardViewPresenter = new CardViewPresenter();
         CacheSceneReferences();
+        mCardFaceTemplate = BakedCardPrefabRefs.ResolveCardExample(mCardFaceTemplate);
+        mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(mPlayerCardTemplate);
+        mCardTemplate = BakedCardPrefabRefs.ResolveStandardCard(mCardTemplate);
         mCardComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+
+        if (mAutoStartRunForPresentation &&
+            !this.GetModel<IRunModel>().IsRunActive.Value)
+        {
+            this.SendCommand(new StartNewRunCommand());
+        }
+
         BuildSlotInputs();
         BuildCardVisuals();
         RegisterGameplayEvents();
@@ -66,12 +80,16 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     {
         if (mEnableLegacyGreyboxPresentation && mBoardRoot == null)
         {
-            mBoardRoot = GameObject.Find("NineGrid CardSlots")?.transform;
+            mBoardRoot = FindSceneRoot(string.IsNullOrWhiteSpace(mBoardRootName)
+                ? DefaultBoardRootName
+                : mBoardRootName);
         }
 
         if (mEnableLegacyGreyboxPresentation && mItemRoot == null)
         {
-            mItemRoot = GameObject.Find("Item CardSlots")?.transform;
+            mItemRoot = FindSceneRoot(string.IsNullOrWhiteSpace(mItemRootName)
+                ? DefaultItemRootName
+                : mItemRootName);
         }
 
         if (mEnableLegacyGreyboxPresentation && mReferenceCardTemplate == null)
@@ -86,16 +104,41 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         if (mCardTemplate == null)
         {
-#if UNITY_EDITOR
-            mCardTemplate = AssetDatabase.LoadAssetAtPath<GameObject>(StandardCardPrefabPath);
-#endif
+            mCardTemplate = BakedCardPrefabRefs.ResolveStandardCard(null);
         }
 
-        if (mBoardRoot == null || mItemRoot == null || mCardTemplate == null)
+        if (mCardFaceTemplate == null)
         {
-            Debug.LogError($"GameplayWorldPresenter could not find required scene objects. BoardRoot={mBoardRoot != null} ItemRoot={mItemRoot != null} CardTemplate={mCardTemplate != null}");
+            mCardFaceTemplate = BakedCardPrefabRefs.ResolveCardExample(null);
+        }
+
+        if (mPlayerCardTemplate == null)
+        {
+            mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(null);
+        }
+
+        if (mScenePlayerCardPlaceholder == null && mBoardRoot != null)
+        {
+            var playerSlot = FindChild(mBoardRoot, "CardSlot5ForPlayer");
+            if (playerSlot != null)
+            {
+                var placeholderName = string.IsNullOrWhiteSpace(mScenePlayerCardName)
+                    ? DefaultScenePlayerCardName
+                    : mScenePlayerCardName;
+                mScenePlayerCardPlaceholder = FindChild(playerSlot, placeholderName);
+            }
+        }
+
+        if (mBoardRoot == null || mCardTemplate == null)
+        {
+            Debug.LogError($"GameplayWorldPresenter could not find required scene objects. BoardRoot={mBoardRoot != null} ItemRoot={mItemRoot != null} CardTemplate={mCardTemplate != null} CardFaceTemplate={mCardFaceTemplate != null} PlayerCardTemplate={mPlayerCardTemplate != null}");
             enabled = false;
             return;
+        }
+
+        if (mItemRoot == null)
+        {
+            Debug.LogWarning($"GameplayWorldPresenter item slots are unavailable. ItemRootName='{mItemRootName}'. Board cards will still render.");
         }
 
         mReferenceWorldCardHeight = MeasureReferenceWorldHeight();
@@ -144,6 +187,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         for (var slot = 0; slot < 5; slot++)
         {
+            if (mItemRoot == null)
+            {
+                break;
+            }
+
             var slotObject = FindChild(mItemRoot, $"CardSlot{slot + 1}");
             if (slotObject == null)
             {
@@ -195,6 +243,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         for (var slot = 0; slot < 5; slot++)
         {
+            if (mItemRoot == null)
+            {
+                break;
+            }
+
             var slotObject = FindChild(mItemRoot, $"CardSlot{slot + 1}");
             if (slotObject == null)
             {
@@ -235,6 +288,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         if (!TableNine.IsInitialized || !this.GetModel<IRunModel>().IsRunActive.Value)
         {
             HideBoardCardViews();
+            SyncPlayerCardPlaceholder(false);
             return;
         }
 
@@ -258,6 +312,10 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
             RefreshCardView(view, uid.Value, false, isPending);
+            if (slot == 5)
+            {
+                SyncPlayerCardPlaceholder(view.gameObject.activeSelf && view.Data != null);
+            }
         }
     }
 
@@ -281,11 +339,19 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out _))
         {
             view.Hide();
+            if (slot.Value == 5)
+            {
+                SyncPlayerCardPlaceholder(false);
+            }
             return;
         }
 
         var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
         RefreshCardView(view, uid.Value, false, isPending);
+        if (slot.Value == 5)
+        {
+            SyncPlayerCardPlaceholder(true);
+        }
     }
 
     private void RefreshItemCardViews()
@@ -443,6 +509,47 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         {
             pair.Value.Hide();
         }
+    }
+
+    private void SyncPlayerCardPlaceholder(bool hidePlaceholder)
+    {
+        if (mScenePlayerCardPlaceholder == null)
+        {
+            return;
+        }
+
+        mScenePlayerCardPlaceholder.gameObject.SetActive(!hidePlaceholder);
+    }
+
+    private static Transform FindSceneRoot(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        var active = GameObject.Find(objectName);
+        if (active != null)
+        {
+            return active.transform;
+        }
+
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return null;
+        }
+
+        var roots = scene.GetRootGameObjects();
+        for (var i = 0; i < roots.Length; i++)
+        {
+            if (roots[i] != null && roots[i].name == objectName)
+            {
+                return roots[i].transform;
+            }
+        }
+
+        return null;
     }
 
     private static Transform FindChild(Transform root, string childName)

@@ -3,9 +3,6 @@ using DG.Tweening;
 using QFramework;
 using TMPro;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 /// <summary>
 /// 世界空间九宫格发牌与外圈跳格演示：按 1 按正式外圈顺序发牌，鼠标点击卡牌触发旋转。
@@ -13,7 +10,6 @@ using UnityEditor;
 [DefaultExecutionOrder(260)]
 public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 {
-    private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
     private const string DefaultBoardRootName = "NineGrid Main CardSlots";
     private const string DefaultDeckSlotName = "CardDeckSlot";
     private const string DefaultDeckLeftTextName = "DeckLeftText";
@@ -123,12 +119,9 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
 
     private void Awake()
     {
-#if UNITY_EDITOR
-        if (mCardPrefab == null)
-        {
-            mCardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StandardCardPrefabPath);
-        }
-#endif
+        mCardPrefab = BakedCardPrefabRefs.ResolveStandardCard(mCardPrefab);
+        mCardFaceTemplate = BakedCardPrefabRefs.ResolveCardExample(mCardFaceTemplate);
+        mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(mPlayerCardTemplate);
     }
 
     private void Start()
@@ -392,6 +385,15 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         mPlayerCard = FindChild(playerSlot, string.IsNullOrWhiteSpace(mPlayerCardName)
             ? DefaultPlayerCardName
             : mPlayerCardName);
+        if ((mPlayerCard == null || !mPlayerCard.gameObject.activeInHierarchy) && mBoardRoot != null)
+        {
+            var bakedPlayerView = FindChild(mBoardRoot, "BoardCardView5");
+            if (bakedPlayerView != null)
+            {
+                mPlayerCard = bakedPlayerView;
+            }
+        }
+
         CachePlayerCardBaseScale();
     }
 
