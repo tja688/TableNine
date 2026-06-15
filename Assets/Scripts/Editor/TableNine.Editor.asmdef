@@ -2,7 +2,8 @@
   "name": "TableNine.Editor",
   "references": [
     "TableNine.Runtime",
-    "QFramework"
+    "QFramework",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [
     "Editor"
