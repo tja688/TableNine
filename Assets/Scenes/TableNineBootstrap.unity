@@ -4696,6 +4696,9 @@ MonoBehaviour:
   mCamera: {fileID: 0}
   mDefaultHint: "\u60AC\u505C\u5361\u724C\u67E5\u770B\u63CF\u8FF0\uFF1B\u70B9\u51FB\u9009\u62E9\u540E\u5176\u4F59\u5361\u724C\u6389\u843D\uFF0C\u9009\u4E2D\u5361\u79FB\u81F3
     CardSlot1"
+  mEnableBackgroundBlur: 1
+  mBlurTargetIntensity: 0.92
+  mPopupPanel: {fileID: 0}
 --- !u!4 &2088808410
 Transform:
   m_ObjectHideFlags: 0
