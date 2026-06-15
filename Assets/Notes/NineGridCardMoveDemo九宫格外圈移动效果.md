@@ -10,6 +10,8 @@
 | 输入 | 行为 |
 | --- | --- |
 | `1` | 从牌堆连续发牌到九宫格外圈全部空位，按正式外圈顺序 `1 -> 2 -> 3 -> 6 -> 9 -> 8 -> 7 -> 4`，跳过格 5 玩家格 |
+| 鼠标悬停射牌牌组 | 顶牌描述写入场景 `DescriptionText` |
+| 鼠标悬停外圈已落位卡牌 | 该卡轻微放大 + `DescriptionText` 描述；中央 `PlayerCard` 同步轻微放大 |
 | 鼠标左键点击任意已落位卡牌 | 外圈所有已落位卡牌顺时针跳动一格 |
 | 鼠标右键点击任意已落位卡牌 | 先移除该卡；若牌堆未空，立刻发一张牌补该格；补位动画完成后再顺时针跳动一格 |
 | 牌堆为空后，鼠标左键点击任意外圈空格 | 外圈已有卡牌仍可正常顺时针跳动一格 |
@@ -32,7 +34,7 @@
 
 | 文件 | 作用 |
 | --- | --- |
-| `Assets/Scripts/Game/CardPreview/NineGridCardMoveDemo.cs` | 整合入口：牌堆生成、按 `1` 批量发外圈、鼠标左/右键交互、补位后旋转、DOTween 跳格 |
+| `Assets/Scripts/Game/CardPreview/NineGridCardMoveDemo.cs` | 整合入口：牌堆生成、按 `1` 批量发外圈、悬停描述/放大、鼠标左/右键交互、补位后旋转、DOTween 跳格 |
 | `Assets/Scripts/Game/CardPreview/AgileCardDealerWorldDemo.cs` | 旧发牌切片保留；整合版存在时自动静默 |
 | `Assets/Scripts/Game/NineGridOuterRingUtility.cs` | 外圈顺序工具：外圈判断、取顺时针下一格、找第一个空位 |
 | `Assets/Scripts/Tests/EditMode/NineGridOuterRingUtilityEditModeTests.cs` | 外圈顺序与满格行为测试 |
@@ -52,6 +54,24 @@ CardDefinition
 ```
 
 启动后默认生成 20 张牌堆数据，只显示顶牌。按 `1` 后从顶牌开始连续发入外圈空位，飞行动画使用原灵动发牌器的二阶贝塞尔弧线、落位旋转归正、缩放弹性反馈，并更新 `DeckLeftText`。
+
+## 4.1 悬停描述与放大
+
+整合版已接入与其他卡牌 Demo 一致的 `DescriptionText` 链路（`CardPreviewDescriptionComposer` + `DescriptionPanelTextRules`）。
+
+| 悬停目标 | 表现 |
+| --- | --- |
+| 射牌牌组（`CardDeckSlot` / 顶牌包围盒） | 显示当前顶牌描述 |
+| 外圈已落位卡牌 | 该卡弹簧放大至 `mBoardHoverScaleMultiplier`（默认 `1.06`），并显示该卡描述 |
+| 格 5 中央 `PlayerCard` | 悬停外圈卡时同步轻微放大，与目标卡同一倍率 |
+
+规则与边界：
+
+1. 描述优先级：外圈卡悬停 > 牌组顶牌悬停 > 默认文案（`mDefaultHint` 或面板初始文本）。
+2. 侧栏悬停时让位（`UIGameplayPanel.IsSidePanelHovered`），与 `DockCardsWorldDemo` 等一致。
+3. `mIsSequencing` 期间只阻塞悬停**交互**（命中检测、描述切换），不瞬间重置缩放；玩家卡与外圈卡由 `SpringMath` 平滑收回。
+4. 外圈卡进入发牌/跳格 DOTween 前会 `ResetEntryHoverMotion`，避免 tween 结束后与悬停缩放叠乘。
+5. `PlayerCard` 默认从 `CardSlot5ForPlayer` 下按名称 `PlayerCard` 解析，可在 Inspector 手动指定 `mPlayerCard`。
 
 ## 5. 跳格与补位顺序
 
@@ -84,18 +104,32 @@ CardDefinition
 
 ## 7. 手感参数
 
-2026-06-15 调快版基准：
+### 发牌（当前为 2026-06-15 基准的 3 倍速）
+
+| 参数 | 当前值 | 说明 |
+| --- | --- | --- |
+| `mPreDealAimDuration` | `0.027` | 顶牌发射前朝目标空位快速对位；`0` 为取消预瞄 |
+| `mDeckRelayoutDuration` | `0.03` | 牌堆顶牌切换/整理速度 |
+| `mDealDuration` | `0.107` | 发牌飞行时长（自 `0.32` 提速 3 倍） |
+| `mDealArcHeight` | `0.55` | 发牌弧线高度；越低越像弹射直达，越高越飘 |
+| `mLandingRotationOvershoot` | `1.55` | 落位回正的回弹幅度 |
+| `mDealScaleMultiplier` | `1.11` | 发牌瞬间放大反馈 |
+
+### 外圈跳格
 
 | 参数 | 当前值 | 调整方向 |
 | --- | --- | --- |
-| `mPreDealAimDuration` | `0.08` | 顶牌发射前朝目标空位快速对位；越小越干脆，`0` 为取消预瞄 |
-| `mDeckRelayoutDuration` | `0.09` | 牌堆顶牌切换/整理速度；越小越利落 |
-| `mDealDuration` | `0.32` | 发牌飞行时长；想更快可试 `0.26 ~ 0.30`，想更有重量可回到 `0.38` |
-| `mDealArcHeight` | `0.55` | 发牌弧线高度；越低越像弹射直达，越高越飘 |
-| `mLandingRotationOvershoot` | `1.55` | 落位回正的回弹幅度；越大越弹，但过大会显得晃 |
-| `mDealScaleMultiplier` | `1.11` | 发牌瞬间放大反馈；越大越“啪” |
 | `mMoveDuration` | `0.28` | 外圈跳格时长；越小越爽快，低于 `0.22` 容易像瞬移 |
 | `mHopArcHeight` | `0.16` | 跳格小弧线；越低越贴地，越高越轻飘 |
+
+### 悬停放大
+
+| 参数 | 当前值 | 说明 |
+| --- | --- | --- |
+| `mBoardHoverScaleMultiplier` | `1.06` | 外圈卡与 `PlayerCard` 同步放大倍率 |
+| `mBoardHoverSpringStiffness` | `150` | 悬停缩放弹簧刚度 |
+| `mBoardHoverSpringDamping` | `12` | 悬停缩放弹簧阻尼 |
+| `mBoardHoverSortingBoost` | `80` | 悬停外圈卡时额外 sorting order |
 
 旧 `AgileCardDealerWorldDemo` 的悬停指向也同步调快：`mAimSpringStiffness = 190`、`mAimSpringDamping = 21`、`mMaxAimAngularSpeed = 1680`。如果之后临时单独启用旧切片，想让对位更凌厉就继续加 `mAimSpringStiffness` 和 `mMaxAimAngularSpeed`；如果出现来回抖，再加一点 `mAimSpringDamping`。
 
@@ -113,3 +147,10 @@ CardDefinition
 2. 新增发牌前 `0.08` 秒快速对位旋转。
 3. 外圈跳格从 `0.34` 调到 `0.28`。
 4. 通过 Unity MCP 同步并保存 `TableNineBootstrap` 场景实例参数。
+
+2026-06-15 悬停与发牌提速：
+
+1. 射牌牌组悬停：顶牌描述写入 `DescriptionText`。
+2. 外圈卡悬停：弹簧放大 + 描述；中央 `PlayerCard` 同步放大。
+3. 跳格/发牌期间：交互与视觉分离，玩家卡缩放由弹簧平滑收回，不再瞬间切回。
+4. 发牌相关时长再提速 3 倍：`mPreDealAimDuration` `0.08→0.027`、`mDealDuration` `0.32→0.107`、`mDeckRelayoutDuration` `0.09→0.03`；场景 `NineGridCardMoveDemoRoot` 已同步。
