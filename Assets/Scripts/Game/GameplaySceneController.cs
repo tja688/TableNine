@@ -13,7 +13,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
 
     [SerializeField] private bool mEnableLegacyGreyboxPresentation = true;
-    [SerializeField] private bool mAutoStartRunForPresentation = true;
+    [SerializeField] private bool mBootstrapPlayerCardOnly = true;
     [SerializeField] private Transform mBoardRoot;
     [SerializeField] private string mBoardRootName = DefaultBoardRootName;
     [SerializeField] private Transform mItemRoot;
@@ -49,14 +49,15 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         mCardTemplate = BakedCardPrefabRefs.ResolveStandardCard(mCardTemplate);
         mCardComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
 
-        if (mAutoStartRunForPresentation &&
+        if (mBootstrapPlayerCardOnly &&
             !this.GetModel<IRunModel>().IsRunActive.Value)
         {
-            this.SendCommand(new StartNewRunCommand());
+            this.SendCommand(new StartNewRunCommand(skipOpeningDeal: true));
         }
 
         BuildSlotInputs();
         BuildCardVisuals();
+        EnsureBattleEffectPreviewController();
         RegisterGameplayEvents();
         RefreshAllCardViews();
     }
@@ -257,6 +258,14 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             var cardView = CreateCardVisual($"ItemCardView{slot + 1}", slotObject.position, mItemRoot, 0.85f);
             mItemCardViews[slot] = cardView;
             slotObject.GetComponent<BoardSlotView>()?.SetCardView(cardView);
+        }
+    }
+
+    private void EnsureBattleEffectPreviewController()
+    {
+        if (GetComponent<GameplayBattleEffectPreviewController>() == null)
+        {
+            gameObject.AddComponent<GameplayBattleEffectPreviewController>();
         }
     }
 
@@ -619,6 +628,7 @@ public sealed class GameplayCardVisual : CardView
 public sealed class BoardSlotClickProxy : MonoBehaviour, IController
 {
     private int mSlotNo;
+    private bool mSuppressNextMouseUp;
 
     public IArchitecture GetArchitecture()
     {
@@ -632,12 +642,36 @@ public sealed class BoardSlotClickProxy : MonoBehaviour, IController
 
     private void OnMouseUpAsButton()
     {
+        if (mSuppressNextMouseUp || Input.GetMouseButtonUp(1))
+        {
+            mSuppressNextMouseUp = false;
+            return;
+        }
+
         if (TableNine.IsInitialized)
         {
             this.GetUtility<IAudioUtility>().Play(TableNineAudioIds.Click);
         }
 
         this.SendCommand(new ClickBoardSlotCommand(new BoardSlotNo(mSlotNo)));
+    }
+
+    private void OnMouseOver()
+    {
+        if (!Input.GetMouseButtonDown(1))
+        {
+            return;
+        }
+
+        var effectController = FindObjectOfType<GameplayBattleEffectPreviewController>();
+        if (effectController != null && effectController.TryPlayRightClickBattleEffect(new BoardSlotNo(mSlotNo)))
+        {
+            mSuppressNextMouseUp = true;
+            if (TableNine.IsInitialized)
+            {
+                this.GetUtility<IAudioUtility>().Play(TableNineAudioIds.Hit);
+            }
+        }
     }
 }
 

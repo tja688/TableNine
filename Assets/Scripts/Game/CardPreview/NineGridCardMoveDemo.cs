@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using QFramework;
@@ -82,6 +83,12 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
     [SerializeField] private float mBoardHoverSpringDamping = 12f;
     [SerializeField] private int mBoardHoverSortingBoost = 80;
 
+    [Header("Battle FX Preview")]
+    [SerializeField, Range(0, 4)] private int mBattleFxStyleIndex;
+    [SerializeField, Range(0f, 3f)] private float mBattleFxShakeAmplitudeMultiplier = 1f;
+    [SerializeField, Range(0.2f, 3f)] private float mBattleFxShakeFrequencyMultiplier = 1f;
+    [SerializeField] private bool mUseFallbackCameraShakeWhenNoCinemachineListener = true;
+
     [Header("Mouse")]
     [SerializeField] private Vector3 mCardHitBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
     [SerializeField] private Vector3 mSlotHitBoundsPadding = new Vector3(0.08f, 0.08f, 1f);
@@ -111,6 +118,20 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
     private float mPlayerCardCurrentHoverScale = 1f;
     private float mPlayerCardHoverScaleVelocity;
     private bool mPlayerCardBaseScaleCached;
+    private Coroutine mFallbackCameraShakeCoroutine;
+    private Transform mFallbackShakeCamera;
+    private Vector3 mFallbackShakeCameraBaseLocalPosition;
+    private static Sprite sBattleShardSprite;
+    private static Material sBattleLineMaterial;
+
+    private static readonly BattleFxStyle[] BattleFxStyles =
+    {
+        new BattleFxStyle("2 Snap", 0.18f, 0.045f, 0.20f, 0.58f, 1.12f, 1.08f, 10, 1.8f, 360f, 0.18f, 1.15f, 1.15f, "Bump"),
+        new BattleFxStyle("3 Heavy", 0.24f, 0.06f, 0.28f, 0.68f, 1.22f, 1.16f, 18, 2.8f, 520f, 0.26f, 2.2f, 0.9f, "Explosion"),
+        new BattleFxStyle("4 Slice", 0.16f, 0.035f, 0.22f, 0.52f, 1.08f, 1.03f, 14, 2.4f, 680f, 0.16f, 1.55f, 1.45f, "Recoil"),
+        new BattleFxStyle("5 Bounce", 0.28f, 0.08f, 0.26f, 0.62f, 1.18f, 1.24f, 16, 2.1f, 420f, 0.22f, 1.6f, 1.25f, "Bump"),
+        new BattleFxStyle("6 Burst", 0.20f, 0.04f, 0.34f, 0.72f, 1.28f, 1.12f, 22, 3.2f, 760f, 0.30f, 2.65f, 1.1f, "Explosion")
+    };
 
     public IArchitecture GetArchitecture()
     {
@@ -176,6 +197,8 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
             DealAllOuterRingSlots();
             return;
         }
+
+        UpdateBattleFxStyleHotkeys();
 
         if (Input.GetMouseButtonDown(1))
         {
@@ -302,6 +325,83 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         }
 
         mIsSequencing = true;
+        StartCoroutine(PlayRightClickBattleFxThenRemove(slotNo));
+    }
+
+    private IEnumerator PlayRightClickBattleFxThenRemove(int slotNo)
+    {
+        if (!mCardsBySlot.TryGetValue(slotNo, out var entry) || entry?.Root == null || mPlayerCard == null)
+        {
+            FinishRightClickRemove(slotNo);
+            yield break;
+        }
+
+        var style = BattleFxStyles[Mathf.Clamp(mBattleFxStyleIndex, 0, BattleFxStyles.Length - 1)];
+        entry.Tween?.Kill();
+        entry.Root.DOKill();
+        ResetBoardHoverVisuals(true);
+
+        var playerStartPosition = mPlayerCard.position;
+        var targetStartPosition = entry.Root.position;
+        var playerStartScale = mPlayerCard.localScale;
+        var targetStartScale = entry.Root.localScale;
+        var direction = targetStartPosition - playerStartPosition;
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            direction = Vector3.right;
+        }
+
+        direction.Normalize();
+        var hitPosition = Vector3.Lerp(playerStartPosition, targetStartPosition, style.ContactRatio);
+        var targetHitPosition = targetStartPosition + direction * 0.08f;
+        ApplySortingOrder(entry.Root, mFlyingSortingOrder + 90);
+
+        var elapsed = 0f;
+        while (elapsed < style.ApproachDuration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, style.ApproachDuration));
+            var eased = EaseOutBackValue(t);
+            mPlayerCard.position = Vector3.LerpUnclamped(playerStartPosition, hitPosition, eased);
+            entry.Root.position = Vector3.Lerp(targetStartPosition, targetHitPosition, EaseOutQuadValue(t));
+            mPlayerCard.localScale = playerStartScale * Mathf.Lerp(1f, style.PlayerScale, EaseOutQuadValue(t));
+            entry.Root.localScale = targetStartScale * Mathf.Lerp(1f, style.TargetScale, EaseOutQuadValue(t));
+            yield return null;
+        }
+
+        TriggerDemoBattleShake(targetStartPosition, direction, style);
+        SpawnDemoCrackLines(entry.Root, targetStartPosition, style);
+        yield return new WaitForSeconds(style.ImpactHold);
+
+        entry.Root.localScale = Vector3.zero;
+        yield return SpawnDemoShardBurst(entry.Root, targetStartPosition, direction, style);
+
+        elapsed = 0f;
+        var playerRecoverStartPosition = mPlayerCard.position;
+        var playerRecoverStartScale = mPlayerCard.localScale;
+        while (elapsed < style.RecoverDuration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, style.RecoverDuration));
+            var eased = EaseOutQuadValue(t);
+            mPlayerCard.position = Vector3.Lerp(playerRecoverStartPosition, playerStartPosition, eased);
+            mPlayerCard.localScale = Vector3.Lerp(playerRecoverStartScale, playerStartScale, eased);
+            yield return null;
+        }
+
+        mPlayerCard.position = playerStartPosition;
+        mPlayerCard.localScale = playerStartScale;
+        if (entry.Root != null)
+        {
+            entry.Root.position = targetStartPosition;
+            entry.Root.localScale = targetStartScale;
+        }
+
+        FinishRightClickRemove(slotNo);
+    }
+
+    private void FinishRightClickRemove(int slotNo)
+    {
         RemoveCardAt(slotNo);
 
         if (mDeckCards.Count > 0)
@@ -312,6 +412,21 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         {
             MoveClockwiseOneStep(() => mIsSequencing = false);
         }
+    }
+
+    private void UpdateBattleFxStyleHotkeys()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha2)) SetBattleFxStyle(0);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) SetBattleFxStyle(1);
+        if (Input.GetKeyDown(KeyCode.Alpha4)) SetBattleFxStyle(2);
+        if (Input.GetKeyDown(KeyCode.Alpha5)) SetBattleFxStyle(3);
+        if (Input.GetKeyDown(KeyCode.Alpha6)) SetBattleFxStyle(4);
+    }
+
+    private void SetBattleFxStyle(int styleIndex)
+    {
+        mBattleFxStyleIndex = Mathf.Clamp(styleIndex, 0, BattleFxStyles.Length - 1);
+        Debug.Log($"NineGrid Battle FX {BattleFxStyles[mBattleFxStyleIndex].Name}");
     }
 
     private bool EnsureReady()
@@ -1350,6 +1465,222 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         return hasBounds;
     }
 
+    private IEnumerator SpawnDemoShardBurst(Transform targetRoot, Vector3 origin, Vector3 hitDirection, BattleFxStyle style)
+    {
+        var parent = new GameObject("NineGridBattleFxShards");
+        parent.transform.position = origin;
+        var baseRenderer = FindPrimaryRenderer(targetRoot);
+        var baseColor = baseRenderer != null ? baseRenderer.color : Color.white;
+        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
+        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 8 : mFlyingSortingOrder + 20;
+        var shards = new List<BattleShardPiece>(style.ShardCount);
+
+        for (var i = 0; i < style.ShardCount; i++)
+        {
+            var shardObject = new GameObject($"Shard{i + 1}");
+            shardObject.transform.SetParent(parent.transform, false);
+            shardObject.transform.position = origin + RandomInsideUnitCircle() * 0.22f;
+            shardObject.transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(-35f, 35f));
+
+            var renderer = shardObject.AddComponent<SpriteRenderer>();
+            renderer.sprite = GetBattleShardSprite();
+            renderer.sortingLayerID = sortingLayerId;
+            renderer.sortingOrder = sortingOrder + i;
+            renderer.color = Color.Lerp(baseColor, Color.white, Random.Range(0.12f, 0.5f));
+
+            var away = (RandomInsideUnitCircle() + hitDirection * style.ForwardShardBias).normalized;
+            if (away.sqrMagnitude < 0.001f)
+            {
+                away = hitDirection;
+            }
+
+            var size = Random.Range(0.11f, 0.28f);
+            shardObject.transform.localScale = new Vector3(size * Random.Range(0.45f, 1.35f), size, 1f);
+            shards.Add(new BattleShardPiece
+            {
+                Transform = shardObject.transform,
+                StartPosition = shardObject.transform.position,
+                Velocity = away * Random.Range(style.ShardSpeed * 0.55f, style.ShardSpeed),
+                Spin = Random.Range(-style.ShardSpin, style.ShardSpin),
+                StartScale = shardObject.transform.localScale
+            });
+        }
+
+        var elapsed = 0f;
+        while (elapsed < style.ShardDuration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, style.ShardDuration));
+            var gravity = Vector3.down * (0.8f * t * t);
+            for (var i = 0; i < shards.Count; i++)
+            {
+                var shard = shards[i];
+                if (shard.Transform == null)
+                {
+                    continue;
+                }
+
+                shard.Transform.position = shard.StartPosition + shard.Velocity * (t * style.ShardDuration) + gravity;
+                shard.Transform.Rotate(0f, 0f, shard.Spin * Time.deltaTime);
+                shard.Transform.localScale = Vector3.Lerp(shard.StartScale, Vector3.zero, t * t);
+            }
+
+            yield return null;
+        }
+
+        DestroyUnityObject(parent);
+    }
+
+    private void SpawnDemoCrackLines(Transform targetRoot, Vector3 origin, BattleFxStyle style)
+    {
+        var baseRenderer = FindPrimaryRenderer(targetRoot);
+        var sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
+        var sortingOrder = baseRenderer != null ? baseRenderer.sortingOrder + 12 : mFlyingSortingOrder + 30;
+        var parent = new GameObject("NineGridBattleFxCracks");
+        parent.transform.position = origin;
+
+        for (var i = 0; i < 5; i++)
+        {
+            var lineObject = new GameObject($"Crack{i + 1}");
+            lineObject.transform.SetParent(parent.transform, false);
+            var line = lineObject.AddComponent<LineRenderer>();
+            line.useWorldSpace = true;
+            line.positionCount = 2;
+            line.startWidth = 0.025f;
+            line.endWidth = 0.006f;
+            line.material = GetBattleLineMaterial();
+            line.sortingLayerID = sortingLayerId;
+            line.sortingOrder = sortingOrder + i;
+            line.startColor = new Color(1f, 1f, 1f, 0.95f);
+            line.endColor = new Color(0.08f, 0.08f, 0.08f, 0.75f);
+
+            var angle = (i / 5f) * Mathf.PI * 2f + style.CrackAngleOffset;
+            var end = origin + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * (0.28f + 0.08f * i);
+            line.SetPosition(0, origin);
+            line.SetPosition(1, end);
+        }
+
+        Destroy(parent, style.ImpactHold + 0.04f);
+    }
+
+    private void TriggerDemoBattleShake(Vector3 origin, Vector3 hitDirection, BattleFxStyle style)
+    {
+        var amplitude = style.ShakeAmplitude * mBattleFxShakeAmplitudeMultiplier;
+        var frequency = style.ShakeFrequency * mBattleFxShakeFrequencyMultiplier;
+        var hasCinemachineListener = GameplayBattleEffectPreviewController.TryTriggerCinemachineImpulse(
+            origin,
+            hitDirection,
+            style.ImpulseShapeName,
+            style.ShakeDuration,
+            amplitude,
+            frequency);
+
+        if (!hasCinemachineListener && mUseFallbackCameraShakeWhenNoCinemachineListener)
+        {
+            StartFallbackCameraShake(style.ShakeDuration, amplitude, frequency);
+        }
+    }
+
+    private void StartFallbackCameraShake(float duration, float amplitude, float frequency)
+    {
+        var targetCamera = mMainCamera != null ? mMainCamera : Camera.main;
+        if (targetCamera == null)
+        {
+            return;
+        }
+
+        if (mFallbackCameraShakeCoroutine != null)
+        {
+            StopCoroutine(mFallbackCameraShakeCoroutine);
+            if (mFallbackShakeCamera != null)
+            {
+                mFallbackShakeCamera.localPosition = mFallbackShakeCameraBaseLocalPosition;
+            }
+        }
+
+        mFallbackCameraShakeCoroutine = StartCoroutine(FallbackCameraShake(
+            targetCamera.transform,
+            duration,
+            amplitude * 0.055f,
+            frequency * 24f));
+    }
+
+    private IEnumerator FallbackCameraShake(Transform cameraTransform, float duration, float amplitude, float frequency)
+    {
+        mFallbackShakeCamera = cameraTransform;
+        mFallbackShakeCameraBaseLocalPosition = cameraTransform.localPosition;
+        var elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
+            var fade = 1f - t;
+            var x = (Mathf.PerlinNoise(Time.time * frequency, 0.1f) - 0.5f) * 2f;
+            var y = (Mathf.PerlinNoise(0.2f, Time.time * frequency) - 0.5f) * 2f;
+            cameraTransform.localPosition = mFallbackShakeCameraBaseLocalPosition + new Vector3(x, y, 0f) * amplitude * fade;
+            yield return null;
+        }
+
+        cameraTransform.localPosition = mFallbackShakeCameraBaseLocalPosition;
+        mFallbackCameraShakeCoroutine = null;
+    }
+
+    private static SpriteRenderer FindPrimaryRenderer(Transform root)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        var renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+        return renderers != null && renderers.Length > 0 ? renderers[0] : null;
+    }
+
+    private static Sprite GetBattleShardSprite()
+    {
+        if (sBattleShardSprite != null)
+        {
+            return sBattleShardSprite;
+        }
+
+        var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        sBattleShardSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 16f);
+        sBattleShardSprite.name = "NineGridRuntimeBattleShardPixel";
+        return sBattleShardSprite;
+    }
+
+    private static Material GetBattleLineMaterial()
+    {
+        if (sBattleLineMaterial != null)
+        {
+            return sBattleLineMaterial;
+        }
+
+        sBattleLineMaterial = new Material(Shader.Find("Sprites/Default"));
+        return sBattleLineMaterial;
+    }
+
+    private static Vector3 RandomInsideUnitCircle()
+    {
+        var point = Random.insideUnitCircle;
+        return new Vector3(point.x, point.y, 0f);
+    }
+
+    private static float EaseOutQuadValue(float t)
+    {
+        return 1f - (1f - t) * (1f - t);
+    }
+
+    private static float EaseOutBackValue(float t)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+        return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
+    }
+
     private static Vector3 QuadraticBezier(Vector3 start, Vector3 control, Vector3 end, float t)
     {
         var u = 1f - t;
@@ -1388,6 +1719,71 @@ public sealed class NineGridCardMoveDemo : MonoBehaviour, IController
         {
             DestroyImmediate(target);
         }
+    }
+
+    private readonly struct BattleFxStyle
+    {
+        public BattleFxStyle(
+            string name,
+            float approachDuration,
+            float impactHold,
+            float shardDuration,
+            float contactRatio,
+            float playerScale,
+            float targetScale,
+            int shardCount,
+            float shardSpeed,
+            float shardSpin,
+            float shakeDuration,
+            float shakeAmplitude,
+            float shakeFrequency,
+            string impulseShapeName)
+        {
+            Name = name;
+            ApproachDuration = approachDuration;
+            ImpactHold = impactHold;
+            ShardDuration = shardDuration;
+            ContactRatio = contactRatio;
+            PlayerScale = playerScale;
+            TargetScale = targetScale;
+            ShardCount = shardCount;
+            ShardSpeed = shardSpeed;
+            ShardSpin = shardSpin;
+            ShakeDuration = shakeDuration;
+            ShakeAmplitude = shakeAmplitude;
+            ShakeFrequency = shakeFrequency;
+            ImpulseShapeName = impulseShapeName;
+            RecoverDuration = 0.12f;
+            ForwardShardBias = 0.55f;
+            CrackAngleOffset = approachDuration * 8f;
+        }
+
+        public readonly string Name;
+        public readonly float ApproachDuration;
+        public readonly float ImpactHold;
+        public readonly float ShardDuration;
+        public readonly float ContactRatio;
+        public readonly float PlayerScale;
+        public readonly float TargetScale;
+        public readonly int ShardCount;
+        public readonly float ShardSpeed;
+        public readonly float ShardSpin;
+        public readonly float ShakeDuration;
+        public readonly float ShakeAmplitude;
+        public readonly float ShakeFrequency;
+        public readonly float RecoverDuration;
+        public readonly float ForwardShardBias;
+        public readonly float CrackAngleOffset;
+        public readonly string ImpulseShapeName;
+    }
+
+    private struct BattleShardPiece
+    {
+        public Transform Transform;
+        public Vector3 StartPosition;
+        public Vector3 Velocity;
+        public Vector3 StartScale;
+        public float Spin;
     }
 
     private sealed class DemoCardEntry

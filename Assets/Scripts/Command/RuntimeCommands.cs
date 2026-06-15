@@ -4,14 +4,16 @@ using QFramework;
 
 public sealed class StartNewRunCommand : AbstractCommand
 {
-    public StartNewRunCommand(string characterId = GameConfigIds.CharacterImpId, int? seedOverride = null)
+    public StartNewRunCommand(string characterId = GameConfigIds.CharacterImpId, int? seedOverride = null, bool skipOpeningDeal = false)
     {
         CharacterId = characterId;
         SeedOverride = seedOverride;
+        SkipOpeningDeal = skipOpeningDeal;
     }
 
     public string CharacterId { get; }
     public int? SeedOverride { get; }
+    public bool SkipOpeningDeal { get; }
 
     protected override void OnExecute()
     {
@@ -53,7 +55,7 @@ public sealed class StartNewRunCommand : AbstractCommand
             };
         }
 
-        this.SendCommand(new StartNodeCommand(1, 1));
+        this.SendCommand(new StartNodeCommand(1, 1, SkipOpeningDeal));
         this.GetUtility<ICommandReplayUtility>()?.Clear();
         this.SendCommand(new SaveRunCommand(SaveRunReason.NewRun));
     }
@@ -61,14 +63,16 @@ public sealed class StartNewRunCommand : AbstractCommand
 
 public sealed class StartNodeCommand : AbstractCommand
 {
-    public StartNodeCommand(int layer, int nodeInLayer)
+    public StartNodeCommand(int layer, int nodeInLayer, bool skipOpeningDeal = false)
     {
         Layer = layer;
         NodeInLayer = nodeInLayer;
+        SkipOpeningDeal = skipOpeningDeal;
     }
 
     public int Layer { get; }
     public int NodeInLayer { get; }
+    public bool SkipOpeningDeal { get; }
 
     protected override void OnExecute()
     {
@@ -85,6 +89,15 @@ public sealed class StartNodeCommand : AbstractCommand
         deckSystem.GenerateDemonDeck(Layer, NodeInLayer);
         deckSystem.SnapshotHelpDeck();
         boardSystem.ResetBoardWithPlayer(playerModel.PlayerCardUid);
+        if (SkipOpeningDeal)
+        {
+            deckSystem.UpdateNextBattlePreview();
+            this.GetSystem<IStatSystem>().FillArmorFromArmorStatAtNodeStart();
+            this.GetSystem<ISkillSystem>().Trigger(SkillTrigger.OnNodeStart, new TriggerContext(), this);
+            flowModel.SetPhase(FlowPhase.PlayerControl);
+            return;
+        }
+
         this.SendCommand(new DealOpeningCardsCommand());
     }
 }

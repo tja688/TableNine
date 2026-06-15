@@ -1,7 +1,16 @@
 # NineGridCardMoveDemo 九宫格发牌与外圈跳格整合
 
-> 状态：整合演示已挂在 `Assets/Scenes/TableNineBootstrap.unity` 的 `NineGridCardMoveDemoRoot`。
-> 用途：把原 `NineGridCardMoveDemo` 的外圈跳格手感与 `AgileCardDealerWorldDemo` 的牌堆发牌手感合并到同一个世界空间演示流。
+> 状态：整合演示已挂在 `Assets/Scenes/TableNineBootstrap.unity` 的 `NineGridCardMoveDemoRoot`；与 `GameplayWorldPresenter` 分工见 `卡牌烘焙与显示系统.md` §8.1。
+> 用途：把原 `NineGridCardMoveDemo` 的外圈跳格手感与 `AgileCardDealerWorldDemo` 的牌堆发牌手感合并到同一个世界空间演示流；**外圈铺卡仅由此 Demo / 发射器流程负责**。
+
+## 0. 与 `GameplayWorldPresenter` 的分工
+
+| 模块 | 格 5 玩家 | 外圈 8 格 |
+| --- | --- | --- |
+| `GameplayWorldPresenter`（`GameplayBootstrap`） | ✅ `BoardCardView5` 烘焙显示；`skipOpeningDeal` 引导 | ❌ 不预铺（等领域层或后续正式接线） |
+| `NineGridCardMoveDemo`（本 Demo） | 仅悬停时跟随外圈卡同步放大 | ✅ `CardDeckSlot` 牌堆 + 按 `1` 发射 |
+
+中央玩家卡悬停放大时，若场景占位 `PlayerCard` 已被 Presenter 隐藏，Demo 会回退解析 `BoardCardView5` 作为 `mPlayerCard` 目标。
 
 ## 1. 使用方式
 
@@ -154,3 +163,9 @@ CardDefinition
 2. 外圈卡悬停：弹簧放大 + 描述；中央 `PlayerCard` 同步放大。
 3. 跳格/发牌期间：交互与视觉分离，玩家卡缩放由弹簧平滑收回，不再瞬间切回。
 4. 发牌相关时长再提速 3 倍：`mPreDealAimDuration` `0.08→0.027`、`mDealDuration` `0.32→0.107`、`mDeckRelayoutDuration` `0.09→0.03`；场景 `NineGridCardMoveDemoRoot` 已同步。
+
+2026-06-15 Bootstrap 玩家卡与外圈发牌分工稳定：
+
+1. 取消 `GameplayWorldPresenter` 自动 `DealOpeningCardsCommand` 外圈预铺；改用 `StartNewRunCommand(skipOpeningDeal: true)` 仅引导格 5 玩家卡。
+2. 外圈铺卡完全由本 Demo 发射器（`CardDeckSlot` + 按 `1`）负责；详见 `卡牌烘焙与显示系统.md` §8.1。
+3. `Awake` 通过 `BakedCardPrefabRefs` 自动解析 `Card` / `CardExample` / `PlayerCard` 模板引用。
