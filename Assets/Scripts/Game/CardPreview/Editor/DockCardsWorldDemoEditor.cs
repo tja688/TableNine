@@ -2,16 +2,17 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// DockCardsWorldDemo 的 Scene 视图编辑器：将回收区可视化从 Game view 移至 Scene view。
+/// DockCardsWorldDemo 的 Scene 视图编辑器：像 2D 盒碰撞器一样调整底板收缩 / 膨胀区域。
 /// </summary>
 [CustomEditor(typeof(DockCardsWorldDemo))]
 public sealed class DockCardsWorldDemoEditor : Editor
 {
-    private static readonly Color ZoneFill = new Color(0.82f, 0.9f, 0.78f, 0.12f);
-    private static readonly Color ZoneHoverFill = new Color(0.92f, 0.98f, 0.88f, 0.18f);
-    private static readonly Color ZoneBorder = new Color(0.72f, 0.86f, 0.7f, 0.68f);
-    private static readonly Color ZoneHoverBorder = new Color(0.86f, 0.96f, 0.84f, 0.95f);
-    private static readonly Color LabelColor = new Color(0.78f, 0.9f, 0.76f, 0.92f);
+    private const float MinRectSize = 0.2f;
+    private static readonly Color CollapsedFill = new Color(0.82f, 0.9f, 0.98f, 0.12f);
+    private static readonly Color CollapsedBorder = new Color(0.72f, 0.86f, 0.98f, 0.92f);
+    private static readonly Color ExpandedFill = new Color(0.98f, 0.93f, 0.8f, 0.12f);
+    private static readonly Color ExpandedBorder = new Color(0.98f, 0.94f, 0.82f, 0.92f);
+    private static readonly Color LabelColor = new Color(0.98f, 0.98f, 0.98f, 0.96f);
 
     private void OnEnable()
     {
@@ -28,43 +29,66 @@ public sealed class DockCardsWorldDemoEditor : Editor
         var dock = (DockCardsWorldDemo)target;
         if (dock == null) return;
 
+        serializedObject.Update();
+
         var cameraProp = serializedObject.FindProperty("mCamera");
         var camera = cameraProp.objectReferenceValue as Camera;
         if (camera == null) camera = Camera.main;
         if (camera == null) return;
 
-        var viewportRect = serializedObject.FindProperty("mRecycleZoneViewportRect").rectValue;
-        var label = serializedObject.FindProperty("mRecycleZoneLabel").stringValue;
-        var hint = serializedObject.FindProperty("mRecycleZoneHint").stringValue;
+        var viewportY = serializedObject.FindProperty("mViewportY").floatValue;
+        var anchor = ViewportToWorld(camera, 0.5f, viewportY);
 
-        DrawRecycleZone(camera, viewportRect, label, hint);
+        var collapsedRectProp = serializedObject.FindProperty("mDockBackgroundCollapsedRectLocal");
+        var expandedRectProp = serializedObject.FindProperty("mDockBackgroundExpandedRectLocal");
+
+        var changed = false;
+        changed |= DrawEditableRect(anchor, collapsedRectProp, "Dock BG Collapsed", CollapsedFill, CollapsedBorder);
+        changed |= DrawEditableRect(anchor, expandedRectProp, "Dock BG Expanded / play-out", ExpandedFill, ExpandedBorder);
+
+        if (changed)
+        {
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(target);
+        }
+        else
+        {
+            serializedObject.ApplyModifiedProperties();
+        }
     }
 
-    private void DrawRecycleZone(Camera cam, Rect viewportRect, string label, string hint)
+    private static bool DrawEditableRect(
+        Vector3 anchor,
+        SerializedProperty rectProperty,
+        string label,
+        Color fillColor,
+        Color borderColor)
     {
-        var bl = ViewportToWorld(cam, viewportRect.xMin, viewportRect.yMin);
-        var br = ViewportToWorld(cam, viewportRect.xMax, viewportRect.yMin);
-        var tr = ViewportToWorld(cam, viewportRect.xMax, viewportRect.yMax);
-        var tl = ViewportToWorld(cam, viewportRect.xMin, viewportRect.yMax);
+        var localRect = SanitizeRect(rectProperty.rectValue);
+        var worldRect = ToWorldRect(anchor, localRect);
 
-        var mouseWorld = GetMouseWorldPosition(cam);
-        var hovered = IsPointInQuad(mouseWorld, bl, br, tr, tl);
+        DrawRect(worldRect, label, fillColor, borderColor);
 
-        // 半透明填充
-        Handles.DrawSolidRectangleWithOutline(
-            new[] { bl, br, tr, tl },
-            hovered ? ZoneHoverFill : ZoneFill,
-            Color.clear);
+        EditorGUI.BeginChangeCheck();
+        var editedWorldRect = EditRectHandles(worldRect, borderColor);
+        if (!EditorGUI.EndChangeCheck())
+        {
+            return false;
+        }
 
-        // 边框线
-        var borderColor = hovered ? ZoneHoverBorder : ZoneBorder;
-        Handles.color = borderColor;
-        Handles.DrawLine(bl, br);
-        Handles.DrawLine(br, tr);
-        Handles.DrawLine(tr, tl);
-        Handles.DrawLine(tl, bl);
+        rectProperty.rectValue = SanitizeRect(ToLocalRect(anchor, editedWorldRect));
+        return true;
+    }
 
-        // 标签
+    private static void DrawRect(Rect worldRect, string label, Color fillColor, Color borderColor)
+    {
+        var bl = new Vector3(worldRect.xMin, worldRect.yMin, 0f);
+        var br = new Vector3(worldRect.xMax, worldRect.yMin, 0f);
+        var tr = new Vector3(worldRect.xMax, worldRect.yMax, 0f);
+        var tl = new Vector3(worldRect.xMin, worldRect.yMax, 0f);
+
+        Handles.DrawSolidRectangleWithOutline(new[] { bl, br, tr, tl }, fillColor, borderColor);
+
         var topCenter = (tl + tr) * 0.5f;
         var labelStyle = new GUIStyle(EditorStyles.boldLabel)
         {
@@ -72,20 +96,7 @@ public sealed class DockCardsWorldDemoEditor : Editor
             normal = { textColor = LabelColor }
         };
 
-        Handles.Label(topCenter + Vector3.up * 0.15f, label, labelStyle);
-
-        if (hovered)
-        {
-            var center = (bl + br + tr + tl) * 0.25f;
-            var hintStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                fontSize = 10,
-                normal = { textColor = new Color(0.68f, 0.82f, 0.66f, 0.9f) }
-            };
-            Handles.Label(center, hint, hintStyle);
-        }
-
-        Handles.color = Color.white;
+        Handles.Label(topCenter + Vector3.up * 0.12f, label, labelStyle);
     }
 
     private static Vector3 ViewportToWorld(Camera cam, float vpX, float vpY)
@@ -94,22 +105,87 @@ public sealed class DockCardsWorldDemoEditor : Editor
         return cam.ViewportToWorldPoint(new Vector3(vpX, vpY, depth));
     }
 
-    private static Vector3 GetMouseWorldPosition(Camera cam)
+    private static Rect EditRectHandles(Rect rect, Color color)
     {
-        var mp = Event.current.mousePosition;
-        var guiScreenPos = new Vector2(mp.x, cam.pixelHeight - mp.y);
-        var depth = Mathf.Abs(cam.transform.position.z);
-        var world = cam.ScreenToWorldPoint(new Vector3(guiScreenPos.x, guiScreenPos.y, depth));
-        world.z = 0f;
-        return world;
+        using (new Handles.DrawingScope(color))
+        {
+            var center = rect.center;
+            var handleSize = HandleUtility.GetHandleSize(new Vector3(center.x, center.y, 0f)) * 0.08f;
+
+            var movedCenter = Handles.FreeMoveHandle(
+                new Vector3(center.x, center.y, 0f),
+                handleSize,
+                Vector3.zero,
+                Handles.RectangleHandleCap);
+            var centerDelta = (Vector2)movedCenter - center;
+            rect.position += centerDelta;
+
+            var left = Handles.Slider(
+                new Vector3(rect.xMin, rect.center.y, 0f),
+                Vector3.left,
+                handleSize,
+                Handles.RectangleHandleCap,
+                0f);
+            rect.xMin = Mathf.Min(left.x, rect.xMax - MinRectSize);
+
+            var right = Handles.Slider(
+                new Vector3(rect.xMax, rect.center.y, 0f),
+                Vector3.right,
+                handleSize,
+                Handles.RectangleHandleCap,
+                0f);
+            rect.xMax = Mathf.Max(right.x, rect.xMin + MinRectSize);
+
+            var bottom = Handles.Slider(
+                new Vector3(rect.center.x, rect.yMin, 0f),
+                Vector3.down,
+                handleSize,
+                Handles.RectangleHandleCap,
+                0f);
+            rect.yMin = Mathf.Min(bottom.y, rect.yMax - MinRectSize);
+
+            var top = Handles.Slider(
+                new Vector3(rect.center.x, rect.yMax, 0f),
+                Vector3.up,
+                handleSize,
+                Handles.RectangleHandleCap,
+                0f);
+            rect.yMax = Mathf.Max(top.y, rect.yMin + MinRectSize);
+        }
+
+        return rect;
     }
 
-    private static bool IsPointInQuad(Vector3 point, Vector3 bl, Vector3 br, Vector3 tr, Vector3 tl)
+    private static Rect ToWorldRect(Vector3 anchor, Rect localRect)
     {
-        var minX = Mathf.Min(bl.x, tl.x);
-        var maxX = Mathf.Max(br.x, tr.x);
-        var minY = Mathf.Min(bl.y, br.y);
-        var maxY = Mathf.Max(tl.y, tr.y);
-        return point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY;
+        return Rect.MinMaxRect(
+            anchor.x + localRect.xMin,
+            anchor.y + localRect.yMin,
+            anchor.x + localRect.xMax,
+            anchor.y + localRect.yMax);
+    }
+
+    private static Rect ToLocalRect(Vector3 anchor, Rect worldRect)
+    {
+        return Rect.MinMaxRect(
+            worldRect.xMin - anchor.x,
+            worldRect.yMin - anchor.y,
+            worldRect.xMax - anchor.x,
+            worldRect.yMax - anchor.y);
+    }
+
+    private static Rect SanitizeRect(Rect rect)
+    {
+        if (rect.width < MinRectSize)
+        {
+            rect.width = MinRectSize;
+        }
+
+        if (rect.height < MinRectSize)
+        {
+            rect.height = MinRectSize;
+        }
+
+        return rect;
     }
 }

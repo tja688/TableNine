@@ -15,6 +15,9 @@ using UnityEditor;
 public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 {
     private const string StandardCardPrefabPath = "Assets/Prefabs/Cards/Card.prefab";
+    private const string DockBackgroundSpritePath = "Assets/Arts/External/StoreAssets/经典卡牌/blank_card.png";
+    private const string DockCardsSortingLayerName = "Cards_Drag";
+    private const string DockBackgroundSortingLayerName = "BG_Table";
 
     [Header("Dock (React Bits defaults)")]
     [SerializeField] private int mCardCount = 5;
@@ -43,15 +46,17 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     [SerializeField] private Camera mCamera;
     [SerializeField] private string mDefaultHint = "悬停放大查看描述；点击选中，按住后轻拖或长按可拖动";
 
-    [Header("Recycle Zone")]
-    [SerializeField] private Rect mRecycleZoneViewportRect = new Rect(0.76f, 0.74f, 0.2f, 0.16f);
-    [SerializeField] private string mRecycleZoneLabel = "可回收区";
-    [SerializeField] private string mRecycleZoneHint = "拖入回手";
-    [SerializeField] private float mRecycleGuideLinePixels = 2f;
+    [Header("Dock Background")]
+    [SerializeField] private Sprite mDockBackgroundSprite;
+    [SerializeField] [Range(0f, 1f)] private float mDockBackgroundAlpha = 0.33333334f;
+    [SerializeField] private Rect mDockBackgroundCollapsedRectLocal = new Rect(-5.8f, -1.95f, 11.6f, 2.3f);
+    [SerializeField] private Rect mDockBackgroundExpandedRectLocal = new Rect(-6.25f, -1.95f, 12.5f, 7.4f);
+    [SerializeField] private int mDockBackgroundSortingOrder = 1;
 
     private readonly List<DockCardEntry> mCards = new List<DockCardEntry>();
 
     private Transform mDockRoot;
+    private Transform mDockBackgroundRoot;
     private BakedCardFaceComposer mComposer;
     private TMP_Text mDescriptionText;
     private string mDefaultDescription;
@@ -70,6 +75,13 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     private float mProximityWorld;
     private float mItemGapWorld;
     private float mHoverLiftWorld;
+    private SpriteRenderer mDockBackgroundRenderer;
+    private Vector2 mDockBackgroundCurrentCenter;
+    private Vector2 mDockBackgroundCenterVelocity;
+    private float mDockBackgroundCurrentWidth;
+    private float mDockBackgroundWidthVelocity;
+    private float mDockBackgroundCurrentHeight;
+    private float mDockBackgroundHeightVelocity;
     private DockCardEntry mReturningEntry;
 
     public IArchitecture GetArchitecture()
@@ -83,6 +95,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         if (mCardPrefab == null)
         {
             mCardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StandardCardPrefabPath);
+        }
+
+        if (mDockBackgroundSprite == null)
+        {
+            mDockBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>(DockBackgroundSpritePath);
         }
 #endif
 
@@ -112,6 +129,8 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         mDockRoot = new GameObject("DockCardsRoot").transform;
         mDockRoot.SetParent(transform, false);
+
+        CreateDockBackground();
     }
 
     private void Start()
@@ -142,12 +161,21 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private void Update()
     {
-        if (mCards.Count == 0 || mCamera == null)
+        if (mCamera == null)
         {
             return;
         }
 
         RefreshWorldMetrics();
+        UpdateDockBackground(Time.deltaTime);
+
+        if (mCards.Count == 0)
+        {
+            mHoveredIndex = -1;
+            UpdateDescriptionPanel();
+            return;
+        }
+
         UpdateHoveredIndex();
         ApplyDockLayout(Time.deltaTime);
 
@@ -288,6 +316,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         CacheSlotMetrics();
         RepositionAllCards(true);
+        SnapDockBackgroundLayout();
     }
 
     private void RepositionAllCards(bool snapImmediately = false)
@@ -601,6 +630,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         ReindexCards();
         RepositionAllCards();
         UpdateHoveredIndex();
+
+        if (mCards.Count == 0)
+        {
+            SnapDockBackgroundLayout();
+        }
     }
 
     private static float EaseOutBack(float t)
@@ -744,12 +778,22 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private bool ShouldReturnDraggedCardOnRelease()
     {
-        return IsScreenPositionInsideRecycleZone(Input.mousePosition) || DoesDraggedCardOverlapRecycleZone();
+        return IsPointerInsideDockBackground() || DoesDraggedCardOverlapDockBackground();
     }
 
-    private bool DoesDraggedCardOverlapRecycleZone()
+    private bool IsPointerInsideDockBackground()
     {
-        if (mDraggingEntry?.Collider == null || mCamera == null)
+        if (!TryGetPointerWorld(out var pointerWorld))
+        {
+            return false;
+        }
+
+        return GetDockBackgroundWorldRect().Contains(new Vector2(pointerWorld.x, pointerWorld.y));
+    }
+
+    private bool DoesDraggedCardOverlapDockBackground()
+    {
+        if (mDraggingEntry?.Collider == null || mDockBackgroundRenderer == null)
         {
             return false;
         }
@@ -760,36 +804,155 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             return false;
         }
 
-        return GetRecycleZoneScreenRect().Overlaps(GetScreenRect(cardBounds), true);
+        return GetDockBackgroundWorldRect().Overlaps(GetWorldRect(cardBounds), true);
     }
 
-    private bool IsScreenPositionInsideRecycleZone(Vector2 screenPosition)
+    private void UpdateDockBackground(float deltaTime)
     {
-        var rect = GetRecycleZoneScreenRect();
-        return rect.Contains(screenPosition);
+        if (mDockBackgroundRenderer == null)
+        {
+            return;
+        }
+
+        var hasCards = mCards.Count > 0;
+        mDockBackgroundRenderer.enabled = hasCards && mDockBackgroundRenderer.sprite != null;
+        if (!hasCards || mDockBackgroundRenderer.sprite == null)
+        {
+            return;
+        }
+
+        var targetRect = GetDockBackgroundTargetRect(IsDockBackgroundExpanded());
+        mDockBackgroundCurrentCenter.x = SpringMath.Step(
+            ref mDockBackgroundCurrentCenter.x,
+            ref mDockBackgroundCenterVelocity.x,
+            targetRect.center.x,
+            mSpringStiffness,
+            mSpringDamping,
+            deltaTime);
+        mDockBackgroundCurrentCenter.y = SpringMath.Step(
+            ref mDockBackgroundCurrentCenter.y,
+            ref mDockBackgroundCenterVelocity.y,
+            targetRect.center.y,
+            mSpringStiffness,
+            mSpringDamping,
+            deltaTime);
+        mDockBackgroundCurrentWidth = SpringMath.Step(
+            ref mDockBackgroundCurrentWidth,
+            ref mDockBackgroundWidthVelocity,
+            targetRect.width,
+            mSpringStiffness,
+            mSpringDamping,
+            deltaTime);
+        mDockBackgroundCurrentHeight = SpringMath.Step(
+            ref mDockBackgroundCurrentHeight,
+            ref mDockBackgroundHeightVelocity,
+            targetRect.height,
+            mSpringStiffness,
+            mSpringDamping,
+            deltaTime);
+
+        ApplyDockBackgroundRect(Rect.MinMaxRect(
+            mDockBackgroundCurrentCenter.x - mDockBackgroundCurrentWidth * 0.5f,
+            mDockBackgroundCurrentCenter.y - mDockBackgroundCurrentHeight * 0.5f,
+            mDockBackgroundCurrentCenter.x + mDockBackgroundCurrentWidth * 0.5f,
+            mDockBackgroundCurrentCenter.y + mDockBackgroundCurrentHeight * 0.5f));
     }
 
-    private Rect GetRecycleZoneScreenRect()
+    private void SnapDockBackgroundLayout()
     {
-        var x = mRecycleZoneViewportRect.x * Screen.width;
-        var y = mRecycleZoneViewportRect.y * Screen.height;
-        var width = mRecycleZoneViewportRect.width * Screen.width;
-        var height = mRecycleZoneViewportRect.height * Screen.height;
-        return new Rect(x, y, width, height);
+        if (mDockBackgroundRenderer == null)
+        {
+            return;
+        }
+
+        if (mCards.Count <= 0 || mDockBackgroundRenderer.sprite == null)
+        {
+            mDockBackgroundRenderer.enabled = false;
+            return;
+        }
+
+        mDockBackgroundRenderer.enabled = true;
+        var rect = GetDockBackgroundTargetRect(false);
+        mDockBackgroundCurrentCenter = rect.center;
+        mDockBackgroundCenterVelocity = Vector2.zero;
+        mDockBackgroundCurrentWidth = rect.width;
+        mDockBackgroundCurrentHeight = rect.height;
+        mDockBackgroundWidthVelocity = 0f;
+        mDockBackgroundHeightVelocity = 0f;
+        ApplyDockBackgroundRect(rect);
     }
 
-    private Rect GetScreenRect(Bounds worldBounds)
+    private void CreateDockBackground()
     {
-        var bottomLeft = mCamera.WorldToScreenPoint(new Vector3(worldBounds.min.x, worldBounds.min.y, worldBounds.center.z));
-        var bottomRight = mCamera.WorldToScreenPoint(new Vector3(worldBounds.max.x, worldBounds.min.y, worldBounds.center.z));
-        var topLeft = mCamera.WorldToScreenPoint(new Vector3(worldBounds.min.x, worldBounds.max.y, worldBounds.center.z));
-        var topRight = mCamera.WorldToScreenPoint(new Vector3(worldBounds.max.x, worldBounds.max.y, worldBounds.center.z));
+        mDockBackgroundRoot = new GameObject("DockBackground").transform;
+        mDockBackgroundRoot.SetParent(mDockRoot, false);
+        mDockBackgroundRoot.SetAsFirstSibling();
 
-        var minX = Mathf.Min(bottomLeft.x, bottomRight.x, topLeft.x, topRight.x);
-        var maxX = Mathf.Max(bottomLeft.x, bottomRight.x, topLeft.x, topRight.x);
-        var minY = Mathf.Min(bottomLeft.y, bottomRight.y, topLeft.y, topRight.y);
-        var maxY = Mathf.Max(bottomLeft.y, bottomRight.y, topLeft.y, topRight.y);
-        return Rect.MinMaxRect(minX, minY, maxX, maxY);
+        mDockBackgroundRenderer = mDockBackgroundRoot.gameObject.AddComponent<SpriteRenderer>();
+        mDockBackgroundRenderer.drawMode = SpriteDrawMode.Simple;
+        mDockBackgroundRenderer.sprite = mDockBackgroundSprite;
+        mDockBackgroundRenderer.color = new Color(1f, 1f, 1f, mDockBackgroundAlpha);
+        mDockBackgroundRenderer.sortingLayerName = DockBackgroundSortingLayerName;
+        mDockBackgroundRenderer.sortingOrder = mDockBackgroundSortingOrder;
+        mDockBackgroundRenderer.enabled = mDockBackgroundSprite != null;
+
+        if (mDockBackgroundSprite == null)
+        {
+            Debug.LogWarning("[DockCardsWorldDemo] Dock background sprite is missing.");
+        }
+    }
+
+    private bool IsDockBackgroundExpanded()
+    {
+        return mHoveredIndex >= 0 || mDraggingEntry != null || mReturningEntry != null;
+    }
+
+    private Rect GetDockBackgroundTargetRect(bool expanded)
+    {
+        return GetDockBackgroundWorldRect(expanded ? mDockBackgroundExpandedRectLocal : mDockBackgroundCollapsedRectLocal);
+    }
+
+    private void ApplyDockBackgroundRect(Rect rect)
+    {
+        if (mDockBackgroundRoot == null || mDockBackgroundRenderer?.sprite == null)
+        {
+            return;
+        }
+
+        var spriteSize = mDockBackgroundRenderer.sprite.bounds.size;
+        if (spriteSize.x <= Mathf.Epsilon || spriteSize.y <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        mDockBackgroundRoot.position = new Vector3(rect.center.x, rect.center.y, 0f);
+        mDockBackgroundRoot.localScale = new Vector3(rect.width / spriteSize.x, rect.height / spriteSize.y, 1f);
+    }
+
+    private Rect GetDockBackgroundWorldRect()
+    {
+        if (mDockBackgroundRenderer == null || !mDockBackgroundRenderer.enabled)
+        {
+            return Rect.zero;
+        }
+
+        var bounds = mDockBackgroundRenderer.bounds;
+        return Rect.MinMaxRect(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y);
+    }
+
+    private Rect GetDockBackgroundWorldRect(Rect localRect)
+    {
+        var anchor = GetDockAnchorWorld();
+        return Rect.MinMaxRect(
+            anchor.x + localRect.xMin,
+            anchor.y + localRect.yMin,
+            anchor.x + localRect.xMax,
+            anchor.y + localRect.yMax);
+    }
+
+    private static Rect GetWorldRect(Bounds worldBounds)
+    {
+        return Rect.MinMaxRect(worldBounds.min.x, worldBounds.min.y, worldBounds.max.x, worldBounds.max.y);
     }
 
     private static void ApplySortingOrder(DockCardEntry entry, int order)
@@ -808,6 +971,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         var renderers = pivot.GetComponentsInChildren<SpriteRenderer>(true);
         for (var i = 0; i < renderers.Length; i++)
         {
+            renderers[i].sortingLayerName = DockCardsSortingLayerName;
             renderers[i].sortingOrder = order;
         }
     }
