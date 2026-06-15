@@ -456,7 +456,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        if (IsPointerInsideRecycleZone(Input.mousePosition))
+        if (ShouldReturnDraggedCardOnRelease())
         {
             BeginReturnDrag();
             return;
@@ -742,11 +742,31 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         return null;
     }
 
-    private bool IsPointerInsideRecycleZone(Vector2 screenPosition)
+    private bool ShouldReturnDraggedCardOnRelease()
+    {
+        return IsScreenPositionInsideRecycleZone(Input.mousePosition) || DoesDraggedCardOverlapRecycleZone();
+    }
+
+    private bool DoesDraggedCardOverlapRecycleZone()
+    {
+        if (mDraggingEntry?.Collider == null || mCamera == null)
+        {
+            return false;
+        }
+
+        var cardBounds = mDraggingEntry.Collider.bounds;
+        if (cardBounds.size.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return false;
+        }
+
+        return GetRecycleZoneScreenRect().Overlaps(GetScreenRect(cardBounds), true);
+    }
+
+    private bool IsScreenPositionInsideRecycleZone(Vector2 screenPosition)
     {
         var rect = GetRecycleZoneScreenRect();
-        var guiPoint = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-        return rect.Contains(guiPoint);
+        return rect.Contains(screenPosition);
     }
 
     private Rect GetRecycleZoneScreenRect()
@@ -756,6 +776,20 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         var width = mRecycleZoneViewportRect.width * Screen.width;
         var height = mRecycleZoneViewportRect.height * Screen.height;
         return new Rect(x, y, width, height);
+    }
+
+    private Rect GetScreenRect(Bounds worldBounds)
+    {
+        var bottomLeft = mCamera.WorldToScreenPoint(new Vector3(worldBounds.min.x, worldBounds.min.y, worldBounds.center.z));
+        var bottomRight = mCamera.WorldToScreenPoint(new Vector3(worldBounds.max.x, worldBounds.min.y, worldBounds.center.z));
+        var topLeft = mCamera.WorldToScreenPoint(new Vector3(worldBounds.min.x, worldBounds.max.y, worldBounds.center.z));
+        var topRight = mCamera.WorldToScreenPoint(new Vector3(worldBounds.max.x, worldBounds.max.y, worldBounds.center.z));
+
+        var minX = Mathf.Min(bottomLeft.x, bottomRight.x, topLeft.x, topRight.x);
+        var maxX = Mathf.Max(bottomLeft.x, bottomRight.x, topLeft.x, topRight.x);
+        var minY = Mathf.Min(bottomLeft.y, bottomRight.y, topLeft.y, topRight.y);
+        var maxY = Mathf.Max(bottomLeft.y, bottomRight.y, topLeft.y, topRight.y);
+        return Rect.MinMaxRect(minX, minY, maxX, maxY);
     }
 
     private static void ApplySortingOrder(DockCardEntry entry, int order)
