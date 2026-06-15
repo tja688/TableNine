@@ -1102,12 +1102,13 @@ MonoBehaviour:
   mDeckSortingOrder: 620
   mFlyingSortingOrder: 840
   mInitialCardCount: 20
-  mHorizontalSpacing: 0.115
+  mOnlyShowTopDeckCard: 1
+  mHorizontalSpacing: 0.035
   mDeckRelayoutDuration: 0.16
   mDeckRelayoutEase: 6
   mAlternateMonsterAndHelp: 1
   mFirstSpawnType: 1
-  mDefaultAimAngleZ: 0
+  mDefaultAimAngleZ: 90
   mAimSpringStiffness: 92
   mAimSpringDamping: 13.5
   mMaxAimAngularSpeed: 980

@@ -8,7 +8,7 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// 临时垂直切片：从 CardDeckSlot 生成一列正式烘焙卡，悬停九宫格槽位时顶牌弹簧式指向，点击后弹射入槽。
+/// 临时垂直切片：从 CardDeckSlot 附近生成一组正式烘焙卡，默认只露出横放顶牌；悬停槽位时顶牌弹簧式指向，点击后弹射入槽。
 /// </summary>
 [DefaultExecutionOrder(275)]
 public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
@@ -39,14 +39,15 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
 
     [Header("Deck")]
     [SerializeField] private int mInitialCardCount = 20;
-    [SerializeField] private float mHorizontalSpacing = 0.115f;
+    [SerializeField] private bool mOnlyShowTopDeckCard = true;
+    [SerializeField] private float mHorizontalSpacing = 0.035f;
     [SerializeField] private float mDeckRelayoutDuration = 0.16f;
     [SerializeField] private Ease mDeckRelayoutEase = Ease.OutQuad;
     [SerializeField] private bool mAlternateMonsterAndHelp = true;
     [SerializeField] private CardType mFirstSpawnType = CardType.Monster;
 
     [Header("Aim")]
-    [SerializeField] private float mDefaultAimAngleZ;
+    [SerializeField] private float mDefaultAimAngleZ = 90f;
     [SerializeField] private float mAimSpringStiffness = 92f;
     [SerializeField] private float mAimSpringDamping = 13.5f;
     [SerializeField] private float mMaxAimAngularSpeed = 980f;
@@ -360,6 +361,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         }
 
         cardView.ShowBaked(sprites);
+        cardView.DisplayAdapter?.SetFaceVisible(true);
         ApplySortingOrder(cardView, mDeckSortingOrder + mSpawnCount);
 
         return new DealerCardEntry(rootObject.transform, definition, rootObject.transform.localScale);
@@ -377,7 +379,12 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
                 continue;
             }
 
-            var target = center + new Vector3((i - half) * mHorizontalSpacing, 0f, -0.002f * i);
+            var isTop = i == mDeckCards.Count - 1;
+            var target = mOnlyShowTopDeckCard
+                ? center + new Vector3(0f, 0f, -0.002f * i)
+                : center + new Vector3((i - half) * mHorizontalSpacing, 0f, -0.002f * i);
+
+            SetDeckCardVisible(entry, !mOnlyShowTopDeckCard || isTop);
             entry.HomePosition = target;
             entry.Tween?.Kill();
             entry.Root.DOKill();
@@ -385,14 +392,14 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
             if (instant)
             {
                 entry.Root.position = target;
-                entry.Root.rotation = Quaternion.Euler(0f, 0f, i == mDeckCards.Count - 1 ? mAimAngleZ : mDefaultAimAngleZ);
+                entry.Root.rotation = Quaternion.Euler(0f, 0f, isTop ? mAimAngleZ : mDefaultAimAngleZ);
                 entry.Root.localScale = entry.BaseScale;
             }
             else
             {
                 entry.Tween = entry.Root.DOMove(target, Mathf.Max(0.01f, mDeckRelayoutDuration))
                     .SetEase(mDeckRelayoutEase);
-                if (i != mDeckCards.Count - 1)
+                if (!isTop)
                 {
                     entry.Root.DORotate(new Vector3(0f, 0f, mDefaultAimAngleZ), Mathf.Max(0.01f, mDeckRelayoutDuration))
                         .SetEase(mDeckRelayoutEase);
@@ -573,6 +580,16 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         {
             mDeckLeftText.text = mDeckCards.Count.ToString();
         }
+    }
+
+    private static void SetDeckCardVisible(DealerCardEntry entry, bool visible)
+    {
+        if (entry?.Root == null || entry.Root.gameObject.activeSelf == visible)
+        {
+            return;
+        }
+
+        entry.Root.gameObject.SetActive(visible);
     }
 
     private static bool TryResolveSlotNo(string slotName, out int slotNo)
