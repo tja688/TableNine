@@ -311,6 +311,7 @@ public sealed class RequestRefillBoardCommand : AbstractCommand
 
         if (boardModel.GetEmptySlots().Count == 0)
         {
+            flowModel.SetPhase(FlowPhase.PlayerControl);
             this.SendCommand(new CheckClearConditionCommand());
             return;
         }

@@ -158,6 +158,31 @@ public sealed class TableNineR8PresentationEditModeTests
     }
 
     [Test]
+    public void Combat_With_Full_Board_And_No_Refill_Returns_To_PlayerControl()
+    {
+        StartRun(46);
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var boardModel = TableNine.Interface.GetModel<IBoardModel>();
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var playerModel = TableNine.Interface.GetModel<IPlayerModel>();
+        var monsterUid = FindOrthogonallyAdjacentMonster();
+        var monster = collectionModel.GetCard(monsterUid);
+        var player = collectionModel.GetCard(playerModel.PlayerCardUid);
+        monster.CurrentHp = 999;
+        monster.CurrentArmor = 999;
+        player.CurrentHp = 999;
+
+        Assert.That(boardModel.GetEmptySlots(), Is.Empty);
+
+        TableNine.Interface.SendCommand(new StartCombatCommand(monsterUid));
+
+        Assert.That(boardModel.GetEmptySlots(), Is.Empty);
+        Assert.That(collectionModel.TryGetCard(monsterUid, out _), Is.True);
+        Assert.That(flowModel.IsInputLocked, Is.False);
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
+    }
+
+    [Test]
     public void NarrativeSystem_Queues_Dialogue_And_Releases_DialogueLock_On_Finish()
     {
         TableNine.InitArchitecture();

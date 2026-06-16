@@ -1073,7 +1073,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &711808706
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1624,7 +1624,8 @@ PrefabInstance:
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 204490964925264615, guid: 0fd30bb79a90e0044bea99a4bf9381dc, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1778334342542124869, guid: 0fd30bb79a90e0044bea99a4bf9381dc, type: 3}
@@ -2181,7 +2182,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1041881334
 Transform:
   m_ObjectHideFlags: 0
@@ -2249,7 +2250,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1231144721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3681,7 +3682,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1820207702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3823,6 +3824,7 @@ GameObject:
   - component: {fileID: 1921541180}
   - component: {fileID: 1921541179}
   - component: {fileID: 1921541181}
+  - component: {fileID: 1921541182}
   m_Layer: 0
   m_Name: GameplayBootstrap
   m_TagString: Untagged
@@ -3872,7 +3874,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mEnableLegacyGreyboxPresentation: 1
-  mBootstrapPlayerCardOnly: 1
+  mBootstrapPlayerCardOnly: 0
   mBoardRoot: {fileID: 0}
   mBoardRootName: NineGrid Main CardSlots
   mItemRoot: {fileID: 0}
@@ -3883,6 +3885,21 @@ MonoBehaviour:
   mScenePlayerCardPlaceholder: {fileID: 0}
   mScenePlayerCardName: PlayerCard
   mFallbackWorldCardHeight: 3.64
+--- !u!114 &1921541182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1921541178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1d9d43fb4dc66a4cbb2819a9aa110af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mAutoStartRun: 1
+  mCardChooser: {fileID: 0}
+  mButtonOverlay: {fileID: 0}
 --- !u!1 &1931230192
 GameObject:
   m_ObjectHideFlags: 0
@@ -4699,6 +4716,7 @@ MonoBehaviour:
   mEnableBackgroundBlur: 1
   mBlurTargetIntensity: 0.92
   mPopupPanel: {fileID: 0}
+  mChoiceMode: 1
 --- !u!4 &2088808410
 Transform:
   m_ObjectHideFlags: 0

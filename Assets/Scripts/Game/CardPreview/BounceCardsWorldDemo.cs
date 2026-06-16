@@ -78,6 +78,12 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
     private BackgroundBlurSession mBlurSession;
     private Transform mBlurFocusedWrapper;
 
+    [Header("Choice Mode (外部驱动)")]
+    [Tooltip("勾选后不再自动用随机池建卡，转为等待 GameFlowDirector 调用 BeginCardChoice。")]
+    [SerializeField] private bool mChoiceMode;
+    private System.Action<CardDefinition> mOnChoicePicked;
+    private bool mInitialized;
+
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
@@ -128,16 +134,121 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
             return;
         }
 
+        EnsureInitialized();
+
+        if (mChoiceMode)
+        {
+            // 外部驱动：等待 BeginCardChoice，不自动建随机演示卡。
+            return;
+        }
+
+        BuildCards();
+        BeginBackgroundBlur();
+        PlayEntryAnimation();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (mInitialized)
+        {
+            return;
+        }
+
         if (!TableNine.IsInitialized)
         {
             TableNine.InitArchitecture();
         }
 
-        mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+        mCardFaceTemplate = BakedCardPrefabRefs.ResolveCardExample(mCardFaceTemplate);
+        mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(mPlayerCardTemplate);
+        if (mComposer == null)
+        {
+            mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+        }
+
+        if (mCamera == null)
+        {
+            mCamera = Camera.main;
+        }
+
         ResolveTargetSlot();
-        BuildCards();
+        mInitialized = true;
+    }
+
+    /// <summary>
+    /// 外部驱动的「多选一」入口：用给定卡牌定义构建扇形选择，选中后回调 onPicked。
+    /// 选中/跳过后由 GameFlowDirector 负责 HideChoice 收尾或开启下一轮。
+    /// </summary>
+    public void BeginCardChoice(IReadOnlyList<CardDefinition> definitions, System.Action<CardDefinition> onPicked)
+    {
+        mChoiceMode = true;
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        EnsureInitialized();
+        TeardownCards();
+
+        mOnChoicePicked = onPicked;
+        mSelectionLocked = false;
+        mHoveredIndex = -1;
+        mEntryBlockRemaining = 0f;
+
+        BuildCardsFrom(definitions);
         BeginBackgroundBlur();
         PlayEntryAnimation();
+    }
+
+    /// <summary>收掉当前选择：销毁卡牌、关闭模糊、恢复描述，并隐藏自身。</summary>
+    public void HideChoice()
+    {
+        mOnChoicePicked = null;
+        mSelectionLocked = false;
+        mHoveredIndex = -1;
+        TeardownCards();
+        EndBackgroundBlur();
+        RestoreDefaultDescription();
+
+        if (mChoiceMode && gameObject.activeSelf)
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
+    private void TeardownCards()
+    {
+        KillHoverTweens();
+        for (var i = 0; i < mCards.Count; i++)
+        {
+            var entry = mCards[i];
+            if (entry?.Wrapper != null)
+            {
+                entry.Wrapper.DOKill();
+                Destroy(entry.Wrapper.gameObject);
+            }
+        }
+
+        mCards.Clear();
+    }
+
+    private void EndBackgroundBlur()
+    {
+        mBlurFocusedWrapper = null;
+        mBlurSession?.Dispose();
+        mBlurSession = null;
+    }
+
+    private void RestoreDefaultDescription()
+    {
+        if (mDescriptionText == null || UIGameplayPanel.IsSidePanelHovered)
+        {
+            return;
+        }
+
+        mDescriptionText.text = !string.IsNullOrWhiteSpace(mDefaultHint)
+            ? DescriptionPanelTextRules.Clamp(mDefaultHint)
+            : mDefaultDescription;
     }
 
     private void OnDestroy()
@@ -217,13 +328,19 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
 
     private void BuildCards()
     {
+        BuildCardsFrom(PickDemoCards(mCardCount));
+    }
+
+    private void BuildCardsFrom(IReadOnlyList<CardDefinition> definitions)
+    {
         mCards.Clear();
-        var definitions = PickDemoCards(mCardCount);
-        if (definitions.Count == 0)
+        if (definitions == null || definitions.Count == 0)
         {
-            Debug.LogWarning("[BounceCardsWorldDemo] No cards available in config.");
+            Debug.LogWarning("[BounceCardsWorldDemo] No cards available to build.");
             return;
         }
+
+        mCardCount = definitions.Count;
 
         for (var i = 0; i < definitions.Count; i++)
         {
@@ -411,6 +528,27 @@ public sealed class BounceCardsWorldDemo : MonoBehaviour, IController
             {
                 fallCount--;
             });
+        }
+
+        if (mChoiceMode)
+        {
+            var pickedWrapper = selected.Wrapper;
+            if (pickedWrapper != null)
+            {
+                ApplySortingOrder(selected.CardView, mBaseSortingOrder + mCards.Count + 40);
+                pickedWrapper
+                    .DOLocalMove(pickedWrapper.localPosition + new Vector3(0f, mHoverLiftY, 0f), mMoveToSlotDuration)
+                    .SetEase(Ease.OutBack, mHoverOvershoot);
+                pickedWrapper
+                    .DOLocalRotate(Vector3.zero, mMoveToSlotDuration)
+                    .SetEase(Ease.OutBack, mHoverOvershoot);
+            }
+
+            ShowSelectionPopup(selected);
+            var pickedCallback = mOnChoicePicked;
+            mOnChoicePicked = null;
+            pickedCallback?.Invoke(selected.Definition);
+            return;
         }
 
         if (mTargetSlot == null)

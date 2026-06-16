@@ -4163,7 +4163,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3922312713239796703}
-  - component: {fileID: 204490964925264615}
   m_Layer: 5
   m_Name: StaggeredMenu
   m_TagString: Untagged
@@ -4194,63 +4193,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &204490964925264615
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7253221842709227679}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a70c1fc1d9d3ee446ba76d05ea09b717, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mOpenOnRight: 1
-  mPanelWidth: 162
-  mPreLayerColors:
-  - {r: 0.7058824, g: 0.5921569, b: 0.8117647, a: 1}
-  - {r: 0.32156864, g: 0.15294118, b: 1, a: 1}
-  mMenuButtonColor: {r: 1, g: 1, b: 1, a: 1}
-  mOpenMenuButtonColor: {r: 1, g: 1, b: 1, a: 1}
-  mAccentColor: {r: 1, g: 0.41960785, b: 0.41960785, a: 1}
-  mChangeMenuColorOnOpen: 1
-  mPreLayersRoot: {fileID: 180367755455871238}
-  mPreLayers:
-  - {fileID: 3072081855384559600}
-  - {fileID: 3438596065712297507}
-  mPanel: {fileID: 3376806105315114482}
-  mToggleButton: {fileID: 3222302881255452154}
-  mToggleTextInner: {fileID: 5907636306693717241}
-  mToggleIcon: {fileID: 233967866718928760}
-  mToggleLabelTemplate: {fileID: 2151555514867839063}
-  mMenuItems:
-  - Wrapper: {fileID: 2622411307147602333}
-    LabelRect: {fileID: 6614405327909043865}
-    Label: {fileID: 7816920485581699877}
-    Number: {fileID: 113353710280890421}
-  - Wrapper: {fileID: 1548702055226534074}
-    LabelRect: {fileID: 8987402668528842966}
-    Label: {fileID: 8716520139293168055}
-    Number: {fileID: 4707411685889025241}
-  - Wrapper: {fileID: 5303728558526009856}
-    LabelRect: {fileID: 8878917034726950743}
-    Label: {fileID: 1026313440379801248}
-    Number: {fileID: 615249179290594210}
-  - Wrapper: {fileID: 1872375201330020789}
-    LabelRect: {fileID: 570748100902536040}
-    Label: {fileID: 4292036943257648923}
-    Number: {fileID: 2825716204058146931}
-  mSocialsTitle: {fileID: 8560864405265975297}
-  mSocialLinks:
-  - {fileID: 3078628857014235736}
-  - {fileID: 2861366004453598226}
-  - {fileID: 4187686372559795836}
-  mClickAwayBlocker: {fileID: 2522202526581080523}
-  mLogoText: {fileID: 8101781444038400272}
-  mDisplayItemNumbering: 1
-  mDisplaySocials: 1
-  mCloseOnClickAway: 1
 --- !u!1 &7573038069742431583
 GameObject:
   m_ObjectHideFlags: 0

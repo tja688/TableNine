@@ -83,5 +83,6 @@ flowchart LR
 
 如果你在项目里发现新的高风险坑点、反复发生的错误或容易误导后续 agent 的事实，追加到此段落后续：
 
+- **初版 Demo 流程编排已落地，棋盘改为领域层权威（2026-06-15）：** 新增 `GameFlowDirector`（挂 `GameplayBootstrap`）统一开真实局并把覆盖层事件路由到 BounceCards/兜底按钮。场景已停用 `NineGridCardMoveDemoRoot`/`AgileCardDealerWorldDemo`/`DockCardsWorldDemo` 三个独立视觉 Demo（它们与领域权威棋盘冲突、会双重处理点击），`Item CardSlots` 已激活，`GameplaySceneController.mBootstrapPlayerCardOnly=false`，`BounceCardsWorldDemo.mChoiceMode=true`。**不要再重新启用这些独立棋盘 Demo 去铺外圈**；棋盘表现统一走 `GameplayWorldPresenter` + 领域事件。手感/碎裂/Dock 手牌的接入路线见 `Assets/Notes/初版Demo流程编排落地与交棒.md` §6。
 - **卡牌粒子碎裂 Lifetime 未达预期（2026-06-15）：** 右键战斗预览已改用 `ParticleSpriteShatter2D` + `CardFakeShatterEffect`；代码默认 `Lifetime=10s` 但实测仍早消失，根因未闭合。维护与排查见 `Assets/Notes/卡牌粒子碎裂效果_维护交棒.md`。勿再改 `TableNine/CardFakeShatter` Shader。藏卡面须 `VisualPivot.SetActive(false)`，不能只关 `Face`（`CardDisplayAdapter.LateUpdate` 会刷回）。
 

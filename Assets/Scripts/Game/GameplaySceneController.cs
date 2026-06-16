@@ -482,8 +482,23 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         view.Initialize();
         view.SetTargetWorldHeight(mReferenceWorldCardHeight * scaleMultiplier);
+        DisableVisualCardColliders(instance);
         view.Hide();
         return view;
+    }
+
+    private static void DisableVisualCardColliders(GameObject cardVisual)
+    {
+        if (cardVisual == null)
+        {
+            return;
+        }
+
+        var colliders = cardVisual.GetComponentsInChildren<Collider2D>(true);
+        for (var i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].enabled = false;
+        }
     }
 
     private void RefreshCardView(CardView view, CardUid uid, bool itemSlot, bool pending)
