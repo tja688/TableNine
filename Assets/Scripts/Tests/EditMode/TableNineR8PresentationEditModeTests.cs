@@ -159,6 +159,7 @@ public sealed class TableNineR8PresentationEditModeTests
 
         Assert.That(flowModel.HasLock(InputLockReason.CombatResolving), Is.False);
         Assert.That(flowModel.HasLock(InputLockReason.BoardMoving), Is.True);
+        Assert.That(flowModel.HasLock(InputLockReason.BoardRefillRunning), Is.True);
         Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.True);
         Assert.That(requested.Count, Is.EqualTo(2));
         Assert.That(requested[1].SequenceType, Is.EqualTo(PresentationSequenceType.BoardRotation));
@@ -166,17 +167,11 @@ public sealed class TableNineR8PresentationEditModeTests
         manualSequence.CompleteNext();
 
         Assert.That(flowModel.HasLock(InputLockReason.BoardMoving), Is.False);
-        Assert.That(flowModel.HasLock(InputLockReason.BoardRefillRunning), Is.True);
-        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.True);
-        Assert.That(requested.Count, Is.EqualTo(3));
-        Assert.That(requested[2].SequenceType, Is.EqualTo(PresentationSequenceType.BoardRefill));
-
-        manualSequence.CompleteNext();
-
-        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.False);
         Assert.That(flowModel.HasLock(InputLockReason.BoardRefillRunning), Is.False);
-        Assert.That(completed.Count, Is.EqualTo(3));
-        Assert.That(completed[2].SequenceType, Is.EqualTo(PresentationSequenceType.BoardRefill));
+        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.False);
+        Assert.That(requested.Count, Is.EqualTo(2));
+        Assert.That(completed.Count, Is.EqualTo(2));
+        Assert.That(completed[1].SequenceType, Is.EqualTo(PresentationSequenceType.BoardRotation));
 
         requestRegister.UnRegister();
         completeRegister.UnRegister();

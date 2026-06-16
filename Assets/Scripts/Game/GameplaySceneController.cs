@@ -348,6 +348,16 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
             RefreshCardView(view, uid.Value, false, isPending);
+            if (mSequencePresenter != null && mSequencePresenter.IsDealFlightActive(slotNo))
+            {
+                if (slot == 5)
+                {
+                    SyncPlayerCardPlaceholder(view.gameObject.activeSelf && view.Data != null);
+                }
+
+                continue;
+            }
+
             ApplyDealSpawnPosition(view, slotNo);
             if (slot == 5)
             {
@@ -403,6 +413,16 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
         RefreshCardView(view, uid.Value, false, isPending);
+        if (mSequencePresenter != null && mSequencePresenter.IsDealFlightActive(slot))
+        {
+            if (slot.Value == 5)
+            {
+                SyncPlayerCardPlaceholder(true);
+            }
+
+            return;
+        }
+
         ApplyDealSpawnPosition(view, slot);
         if (slot.Value == 5)
         {
@@ -647,7 +667,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             return;
         }
 
-        if (!mSequencePresenter.ShouldHoldCardAtDeck(slot))
+        if (!mSequencePresenter.ShouldDeferBoardSlotPositionRefresh(slot))
         {
             return;
         }

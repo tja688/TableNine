@@ -3,7 +3,9 @@
   "references": [
     "TableNine.Runtime",
     "TableNine.Editor",
-    "QFramework"
+    "QFramework",
+    "QfPlayAgent.Runtime",
+    "QfPlayAgent.Samples.TableNine"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

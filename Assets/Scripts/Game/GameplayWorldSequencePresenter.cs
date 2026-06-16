@@ -9,13 +9,17 @@ using UnityEngine;
 public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController, ISequenceUtility
 {
     private const string CardsSortingLayerName = "Cards_Front";
+    private const int FlyingDealSortingOrder = 860;
+    private const int BaseBoardCardSortingOrder = 560;
 
     [Header("Deal")]
-    [SerializeField] private float mDealDuration = 0.22f;
+    [SerializeField] private float mDealDuration = 0.32f;
     [SerializeField] private float mDealArcHeight = 0.55f;
     [SerializeField] private float mDealScaleMultiplier = 1.11f;
     [SerializeField] private Ease mDealMoveEase = Ease.OutCubic;
     [SerializeField] private Ease mDealScaleEase = Ease.OutQuad;
+    [SerializeField] private float mSequentialDealGap = 0.04f;
+    [SerializeField] private bool mRefillDealMatchesHopTiming = true;
 
     [Header("Move")]
     [SerializeField] private float mMoveDuration = 0.28f;
@@ -44,6 +48,7 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
     private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
     private readonly List<CardPlacedEvent> mRecentPlacements = new List<CardPlacedEvent>();
     private readonly HashSet<int> mPendingDealSlotNos = new HashSet<int>();
+    private readonly HashSet<int> mActiveDealSlotNos = new HashSet<int>();
     private readonly HashSet<int> mDeferredCombatRefreshUids = new HashSet<int>();
     private readonly HashSet<int> mDeferredCombatBoardSlots = new HashSet<int>();
     private readonly Dictionary<int, RemovedCardSnapshot> mRemovedMonsterSnapshots = new Dictionary<int, RemovedCardSnapshot>();
@@ -97,7 +102,17 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
 
     public bool ShouldHoldCardAtDeck(BoardSlotNo slot)
     {
+        return ShouldDeferBoardSlotPositionRefresh(slot);
+    }
+
+    public bool ShouldDeferBoardSlotPositionRefresh(BoardSlotNo slot)
+    {
         return mPendingDealSlotNos.Contains(slot.Value);
+    }
+
+    public bool IsDealFlightActive(BoardSlotNo slot)
+    {
+        return mActiveDealSlotNos.Contains(slot.Value);
     }
 
     public bool ShouldDeferOuterRingRefresh(BoardSlotNo slot)
@@ -474,10 +489,18 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
 
     private IEnumerator PlayBoardRotationSequence()
     {
+        var refillPlacements = CollectPlacementsInOuterRingOrder(source => source == CardPlacementSource.Refill);
+        var dealFinalized = new List<DealFinalizeState>();
         try
         {
             if (!mLastBoardRotation.HasValue || mLastBoardRotation.Value.MovedCards == null)
             {
+                if (refillPlacements.Count > 0)
+                {
+                    yield return PlaySequentialDealSequence(refillPlacements, useHopTiming: true);
+                    RemoveProcessedPlacements(source => source == CardPlacementSource.Refill);
+                }
+
                 yield break;
             }
 
@@ -525,6 +548,15 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
                 finalized.Add(new RotationMoveFinalize(transform, to, baseScale));
             }
 
+            PreparePendingDealsAtDeck(refillPlacements);
+            for (var i = 0; i < refillPlacements.Count; i++)
+            {
+                if (TryAppendDealTween(sequence, refillPlacements[i], useHopTiming: true, dealFinalized))
+                {
+                    hasMove = true;
+                }
+            }
+
             mLastBoardRotation = null;
             if (hasMove)
             {
@@ -541,6 +573,17 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
 
                 entry.Transform.position = entry.TargetPosition;
                 entry.Transform.localScale = entry.BaseScale;
+            }
+
+            FinalizeDealStates(dealFinalized);
+            for (var i = 0; i < refillPlacements.Count; i++)
+            {
+                mPendingDealSlotNos.Remove(refillPlacements[i].Slot.Value);
+            }
+
+            if (refillPlacements.Count > 0)
+            {
+                RemoveProcessedPlacements(source => source == CardPlacementSource.Refill);
             }
         }
         finally
@@ -565,26 +608,82 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
     private IEnumerator PlayBoardRefillSequence()
     {
         var placements = CollectPlacementsInOuterRingOrder(source => source == CardPlacementSource.Refill);
-        yield return PlaySequentialDealSequence(placements);
+        yield return PlaySequentialDealSequence(placements, useHopTiming: true);
         RemoveProcessedPlacements(source => source == CardPlacementSource.Refill);
     }
 
-    private IEnumerator PlaySequentialDealSequence(IReadOnlyList<CardPlacedEvent> placements)
+    private IEnumerator PlaySequentialDealSequence(IReadOnlyList<CardPlacedEvent> placements, bool useHopTiming = false)
     {
+        PreparePendingDealsAtDeck(placements);
         for (var i = 0; i < placements.Count; i++)
         {
-            yield return AnimateSingleDeal(placements[i]);
+            yield return AnimateSingleDeal(placements[i], useHopTiming);
             mPendingDealSlotNos.Remove(placements[i].Slot.Value);
+            if (i < placements.Count - 1 && mSequentialDealGap > 0f)
+            {
+                yield return new WaitForSeconds(mSequentialDealGap);
+            }
         }
     }
 
-    private IEnumerator AnimateSingleDeal(CardPlacedEvent placed)
+    private IEnumerator AnimateSingleDeal(CardPlacedEvent placed, bool useHopTiming = false)
     {
-        if (!mPresenter.TryGetBoardCardView(placed.Slot, out var view) ||
+        var sequence = DOTween.Sequence();
+        var dealFinalized = new List<DealFinalizeState>();
+        if (!TryAppendDealTween(sequence, placed, useHopTiming, dealFinalized, joinParallel: false))
+        {
+            yield break;
+        }
+
+        TrackTween(sequence);
+        var view = dealFinalized[0].CardView;
+        sequence.SetLink(view != null ? view.gameObject : gameObject, LinkBehaviour.KillOnDestroy);
+        yield return sequence.WaitForCompletion();
+        UntrackTween(sequence);
+        FinalizeDealStates(dealFinalized);
+    }
+
+    private void PreparePendingDealsAtDeck(IReadOnlyList<CardPlacedEvent> placements)
+    {
+        if (mPresenter == null || placements == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < placements.Count; i++)
+        {
+            var placed = placements[i];
+            if (!mPresenter.TryGetBoardCardView(placed.Slot, out var view) ||
+                view == null ||
+                !mPresenter.TryGetBoardSlotWorldPosition(placed.Slot, out var target))
+            {
+                continue;
+            }
+
+            var transform = view.transform;
+            transform.DOKill();
+            var deckPosition = mPresenter.ResolveDeckWorldPosition();
+            transform.position = new Vector3(deckPosition.x, deckPosition.y, target.z);
+            transform.rotation = Quaternion.identity;
+            ApplySortingOrder(view, FlyingDealSortingOrder);
+        }
+    }
+
+    private bool TryAppendDealTween(
+        Sequence sequence,
+        CardPlacedEvent placed,
+        bool useHopTiming,
+        List<DealFinalizeState> finalized,
+        bool joinParallel = true)
+    {
+        if (sequence == null ||
+            finalized == null ||
+            mPresenter == null ||
+            !mPresenter.TryGetBoardCardView(placed.Slot, out var view) ||
             view == null ||
             !mPresenter.TryGetBoardSlotWorldPosition(placed.Slot, out var target))
         {
-            yield break;
+            return false;
         }
 
         var transform = view.transform;
@@ -594,13 +693,13 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
         transform.position = start;
         transform.rotation = Quaternion.identity;
         transform.localScale = baseScale * Mathf.Max(1f, mDealScaleMultiplier);
+        ApplySortingOrder(view, FlyingDealSortingOrder);
 
         var control = (start + target) * 0.5f + Vector3.up * Mathf.Max(0f, mDealArcHeight);
-        var duration = Mathf.Max(0.01f, mDealDuration);
-        var sequence = DOTween.Sequence();
-        TrackTween(sequence);
-        sequence.SetLink(view.gameObject, LinkBehaviour.KillOnDestroy);
-        sequence.Append(DOTween.To(
+        var duration = ResolveDealDuration(useHopTiming);
+        mActiveDealSlotNos.Add(placed.Slot.Value);
+
+        var moveTween = DOTween.To(
                 () => 0f,
                 progress =>
                 {
@@ -611,20 +710,71 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
                 },
                 1f,
                 duration)
-            .SetEase(mDealMoveEase));
-        sequence.Join(transform.DOScale(baseScale, duration)
-            .SetEase(mDealScaleEase));
-
-        yield return sequence.WaitForCompletion();
-        UntrackTween(sequence);
-        if (transform == null)
+            .SetEase(ResolveDealMoveEase(useHopTiming));
+        var scaleTween = transform.DOScale(baseScale, duration)
+            .SetEase(mDealScaleEase);
+        if (joinParallel)
         {
-            yield break;
+            sequence.Join(moveTween);
+            sequence.Join(scaleTween);
+        }
+        else
+        {
+            sequence.Append(moveTween);
+            sequence.Join(scaleTween);
+        }
+        sequence.OnComplete(() => mActiveDealSlotNos.Remove(placed.Slot.Value));
+
+        finalized.Add(new DealFinalizeState
+        {
+            CardView = view,
+            Transform = transform,
+            TargetPosition = target,
+            BaseScale = baseScale,
+            SlotValue = placed.Slot.Value,
+            RestoredSortingOrder = BaseBoardCardSortingOrder + placed.Slot.Value
+        });
+        return true;
+    }
+
+    private float ResolveDealDuration(bool useHopTiming)
+    {
+        if (useHopTiming && mRefillDealMatchesHopTiming)
+        {
+            return Mathf.Max(0.01f, mMoveDuration);
         }
 
-        transform.position = target;
-        transform.rotation = Quaternion.identity;
-        transform.localScale = baseScale;
+        return Mathf.Max(0.01f, mDealDuration);
+    }
+
+    private Ease ResolveDealMoveEase(bool useHopTiming)
+    {
+        return useHopTiming && mRefillDealMatchesHopTiming ? mMoveEase : mDealMoveEase;
+    }
+
+    private static void FinalizeDealStates(IReadOnlyList<DealFinalizeState> finalized)
+    {
+        if (finalized == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < finalized.Count; i++)
+        {
+            var entry = finalized[i];
+            if (entry.Transform == null)
+            {
+                continue;
+            }
+
+            entry.Transform.position = entry.TargetPosition;
+            entry.Transform.rotation = Quaternion.identity;
+            entry.Transform.localScale = entry.BaseScale;
+            if (entry.CardView != null)
+            {
+                ApplySortingOrder(entry.CardView, entry.RestoredSortingOrder);
+            }
+        }
     }
 
     private List<CardPlacedEvent> CollectPlacementsInOuterRingOrder(System.Func<CardPlacementSource, bool> sourceFilter)
@@ -851,5 +1001,15 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
         public Transform Transform { get; }
         public Vector3 TargetPosition { get; }
         public Vector3 BaseScale { get; }
+    }
+
+    private sealed class DealFinalizeState
+    {
+        public CardView CardView;
+        public Transform Transform;
+        public Vector3 TargetPosition;
+        public Vector3 BaseScale;
+        public int SlotValue;
+        public int RestoredSortingOrder;
     }
 }

@@ -310,6 +310,13 @@ public sealed class PickHelpCardToItemSlotCommand : AbstractCommand
 
 public sealed class RequestRefillBoardCommand : AbstractCommand
 {
+    public RequestRefillBoardCommand(bool deferPresentation = false)
+    {
+        DeferPresentation = deferPresentation;
+    }
+
+    public bool DeferPresentation { get; }
+
     protected override void OnExecute()
     {
         var deckModel = this.GetModel<IDeckModel>();
@@ -334,12 +341,19 @@ public sealed class RequestRefillBoardCommand : AbstractCommand
         deckModel.RefillPending = false;
         inputLockSystem.Lock(InputLockReason.BoardRefillRunning);
         flowModel.SetPhase(FlowPhase.BoardRefilling);
-        this.SendCommand(new RefillBoardCommand());
+        this.SendCommand(new RefillBoardCommand(DeferPresentation));
     }
 }
 
 public sealed class RefillBoardCommand : AbstractCommand
 {
+    public RefillBoardCommand(bool deferPresentation = false)
+    {
+        DeferPresentation = deferPresentation;
+    }
+
+    public bool DeferPresentation { get; }
+
     protected override void OnExecute()
     {
         var boardModel = this.GetModel<IBoardModel>();
@@ -366,6 +380,11 @@ public sealed class RefillBoardCommand : AbstractCommand
         deckSystem.UpdateNextBattlePreview();
         if (placedCards)
         {
+            if (DeferPresentation)
+            {
+                return;
+            }
+
             this.SendCommand(new PlayPresentationSequenceCommand(
                 PresentationSequenceType.BoardRefill,
                 SequenceCompletionAction.ResumeAfterBoardRefill));
@@ -921,7 +940,15 @@ public sealed class CompleteBoardRotationCommand : AbstractCommand
 {
     protected override void OnExecute()
     {
-        this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.BoardMoving);
+        var flowModel = this.GetModel<IFlowModel>();
+        var inputLockSystem = this.GetSystem<IInputLockSystem>();
+        inputLockSystem.Unlock(InputLockReason.BoardMoving);
+        if (flowModel.HasLock(InputLockReason.BoardRefillRunning))
+        {
+            this.SendCommand(new CompleteBoardRefillCommand());
+            return;
+        }
+
         this.SendCommand(new RequestRefillBoardCommand());
     }
 }
@@ -977,6 +1004,7 @@ public sealed class CommitPlayerActionCommand : AbstractCommand
             this.GetSystem<IInputLockSystem>().Lock(InputLockReason.BoardMoving);
             flowModel.SetPhase(FlowPhase.BoardMoving);
             this.GetSystem<IBoardSystem>().RotateClockwise(BoardMoveReason.PlayerAction);
+            this.SendCommand(new RequestRefillBoardCommand(deferPresentation: true));
             this.SendCommand(new PlayPresentationSequenceCommand(
                 PresentationSequenceType.BoardRotation,
                 SequenceCompletionAction.ResumeAfterBoardRotation));

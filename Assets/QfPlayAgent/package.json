@@ -1,0 +1,10 @@
+{
+  "name": "com.qfplayagent.core",
+  "displayName": "Qf Play Agent",
+  "version": "0.1.0",
+  "unity": "2021.3",
+  "description": "Portable QFramework Command agent bridge for Unity MCP.",
+  "author": {
+    "name": "TableNine"
+  }
+}

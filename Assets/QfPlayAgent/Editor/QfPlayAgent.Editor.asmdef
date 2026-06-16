@@ -1,0 +1,19 @@
+{
+  "name": "QfPlayAgent.Editor",
+  "references": [
+    "QfPlayAgent.Runtime",
+    "MCPForUnity.Editor",
+    "QFramework"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
