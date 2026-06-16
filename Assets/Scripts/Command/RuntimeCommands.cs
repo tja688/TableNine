@@ -176,7 +176,9 @@ public sealed class DealOpeningCardsCommand : AbstractCommand
         deckSystem.UpdateNextBattlePreview();
         this.GetSystem<IStatSystem>().FillArmorFromArmorStatAtNodeStart();
         this.GetSystem<ISkillSystem>().Trigger(SkillTrigger.OnNodeStart, new TriggerContext(), this);
-        flowModel.SetPhase(FlowPhase.PlayerControl);
+        this.SendCommand(new PlayPresentationSequenceCommand(
+            PresentationSequenceType.OpeningDeal,
+            SequenceCompletionAction.ResumeAfterOpeningDeal));
     }
 }
 
@@ -871,6 +873,9 @@ public sealed class FinishSequenceCommand : AbstractCommand
 
         switch (CompletionAction)
         {
+            case SequenceCompletionAction.ResumeAfterOpeningDeal:
+                this.SendCommand(new CompleteOpeningDealCommand());
+                break;
             case SequenceCompletionAction.ResumeAfterCombat:
                 this.SendCommand(new CompleteCombatPresentationCommand(PlayerDiedDuringCombat));
                 break;
@@ -912,6 +917,14 @@ public sealed class CompleteBoardRotationCommand : AbstractCommand
     {
         this.GetSystem<IInputLockSystem>().Unlock(InputLockReason.BoardMoving);
         this.SendCommand(new RequestRefillBoardCommand());
+    }
+}
+
+public sealed class CompleteOpeningDealCommand : AbstractCommand
+{
+    protected override void OnExecute()
+    {
+        this.GetModel<IFlowModel>().SetPhase(FlowPhase.PlayerControl);
     }
 }
 

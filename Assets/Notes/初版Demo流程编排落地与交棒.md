@@ -72,7 +72,7 @@ PlayMode 实测链路（execute_code 驱动验证）：
 
 按优先级：
 
-1. **棋盘手感回折叠（高）**：当前棋盘为 presenter 瞬切，丢了 `NineGridCardMoveDemo` 的发牌弧线/跳格/落位弹性。建议把这些手感改成**事件驱动**挂到 `GameplayWorldPresenter`：`CardPlacedEvent`→发牌弧线，`BoardRotatedEvent`/`CardMovedEvent`→跳格 tween。`NineGridCardMoveDemo` 里的 `DealNextCardToSlot`/`PlayMoveTweens`/二阶贝塞尔参数可直接迁移复用。
+1. **棋盘手感回折叠（高，部分已落地）**：~~当前棋盘为 presenter 瞬切，丢了 `NineGridCardMoveDemo` 的发牌弧线/跳格/落位弹性。~~ **开局发牌 + 补牌** 已接入 `GameplayWorldSequencePresenter`（外圈顺时针逐张、牌堆贝塞尔弧线）；**旋转跳格 / 战斗演出** 同组件已有实现。仍可继续迁移 Demo 的 pre-deal 瞄准旋转、落位弹性等细节。详见 §10。
 2. **战斗 / 玩家死亡碎裂（高）**：把 `CardFakeShatterEffect` 接到**真实**死亡事件而非右键预览。难点是时序——`KillMonsterCommand` 会先把卡移出棋盘再发 `MonsterKilledEvent`，需在移除前捕获该怪 `BoardCardView{slot}` 的世界位置/精灵快照（建议监听 `CombatStartedEvent` 记录 monsterUid 当前 slot，`MonsterKilledEvent` 时在该位置播碎裂）。玩家死亡：`GameOverEvent` → 碎裂 `BoardCardView5`。**碰撞只对怪物**已天然成立（领域层 `ClickBoardSlotCommand` 只有点怪才进 `StartCombatCommand`；碎裂只挂怪死/玩家死）。
 3. **Dock 改事件驱动道具栏（中）**：`DockCardsWorldDemo` 重构为监听 `ItemSlotChangedEvent` 渲染 `DeckModel.ItemSlots`；点击/拖出→`ClickItemSlotCommand`（=用卡，等同 `UseHelpCardCommand`）。飞刀类（`PendingHelpCardAction` 进入 `ThrowingKnifeTarget`）只做"选中目标放大反馈"，真正选目标仍走 `ResolveTargetingCommand`（点棋盘格）。重构方式同 BounceCards 的 choice 模式：加外部驱动 API + 幂等初始化。重构期间灰盒 `Item CardSlots` 可继续兜底。
 4. **CircularGallery 接删牌（中）**：商店"删牌"场景用 `CircularGalleryWorldDemo` 承载 `DeckModel.OwnedHelpCards` 列表，选中→`DeleteHelpCardForGoldCommand(uid)`。当前商店仅"购买+离开"按钮，删牌未接。
@@ -137,5 +137,59 @@ PlayMode 实测链路（execute_code 驱动验证）：
 
 ### 9.4 后续提醒
 
-- 棋盘精致移动/碎裂/Dock 手牌仍按 §6 路线推进；本轮只修 demo 可玩性地基，不强接高风险动效。
+- ~~棋盘精致移动/碎裂/Dock 手牌仍按 §6 路线推进；本轮只修 demo 可玩性地基，不强接高风险动效。~~ 发牌/补牌动效已于 §10 接回；碎裂/Dock 精致化仍按 §6 推进。
 - 如果后续把视觉卡改成可拖拽/可悬停对象，必须重新设计“视觉卡输入”和“槽位输入”的权责，避免再次出现两个 collider 抢同一点击的问题。
+
+---
+
+## 10. 开局发牌 / 补牌动效接回（2026-06-16）
+
+> 触发原因：用户反馈接入表现层后，原本 `NineGridCardMoveDemo` 里完整的发牌、补牌流程完全消失，棋盘卡牌瞬切落位。
+
+### 10.1 根因
+
+1. **开局发牌无演出序列**  
+   `DealOpeningCardsCommand` 在领域层一次性 `PlaceCard` 8 张后直接 `SetPhase(PlayerControl)`，从未调用 `PlayPresentationSequenceCommand`。`GameplayWorldSequencePresenter` 虽监听了 `OpeningHelp/OpeningDemon/OpeningBattle` 的 `CardPlacedEvent`，但没有对应的 `PresentationSequenceType` 去播放。
+
+2. **补牌演出不可见**  
+   `BoardRefill` 序列虽已存在，但：① 多张牌**并行** Join 播放（~0.1s 内全部结束，体感像瞬切）；② `GameplayWorldPresenter.RefreshBoardSlot` 在 `CardPlacedEvent` 后立刻把卡显示在槽位，玩家先看到“已在格子上”，动画再从牌堆拉回去也来不及感知。
+
+3. **与 §6 路线一致**  
+   上一轮刻意把 `NineGridCardMoveDemo` 停用、棋盘手感列为后续波次；表现层骨架（`GameplayWorldSequencePresenter` + `ISequenceUtility`）已就绪，缺的是领域层触发 + 视觉层“先藏牌堆、再逐张飞出”的时序。
+
+### 10.2 本轮改动
+
+| 文件 | 改动 |
+|------|------|
+| `Assets/Scripts/Data/GameRuntimeData.cs` | 新增 `PresentationSequenceType.OpeningDeal`、`SequenceCompletionAction.ResumeAfterOpeningDeal`。 |
+| `Assets/Scripts/Command/RuntimeCommands.cs` | `DealOpeningCardsCommand` 末尾改为 `PlayPresentationSequenceCommand(OpeningDeal)`，动画完成后由 `CompleteOpeningDealCommand` 进入 `PlayerControl`；`FinishSequenceCommand` 增加对应分支。 |
+| `Assets/Scripts/Game/GameplayWorldSequencePresenter.cs` | 新增 `PlayOpeningDealSequence`；补牌改为 `PlaySequentialDealSequence`（外圈顺时针逐张）；`mPendingDealSlotNos` + `ShouldHoldCardAtDeck` 跟踪待发牌槽位。 |
+| `Assets/Scripts/Game/GameplaySceneController.cs`（`GameplayWorldPresenter`） | `ApplyDealSpawnPosition`：待发牌槽位刷新时先置于 `CardDeckSlot` 世界坐标，等 sequence 飞入。 |
+| `Assets/Scripts/Tests/EditMode/TableNineR8PresentationEditModeTests.cs` | 新增 `OpeningDeal_Waits_For_Presentation_Sequence_Before_PlayerControl`。 |
+| `Assets/Scripts/Tests/PlayMode/TableNineBootstrapPlayModeTests.cs` | 场景自动开局测试增加 `WaitForOpeningDealToComplete`（最长 3s），避免动画未播完就断言 `PlayerControl`。 |
+
+### 10.3 运行时链路（发牌 / 补牌）
+
+```
+领域 PlaceCard(Opening* / Refill)
+  → CardPlacedEvent
+  → SequencePresenter 记入 mRecentPlacements + mPendingDealSlotNos
+  → WorldPresenter RefreshBoardSlot：卡面显示但位置在牌堆
+  → PlayPresentationSequenceCommand
+  → 外圈顺序逐张 AnimateSingleDeal（贝塞尔 + 缩放）
+  → FinishSequence → CompleteOpeningDeal / CompleteBoardRefill → PlayerControl
+```
+
+旋转跳格、战斗演出仍走原有 `BoardRotation` / `CombatResolution` 分支，未改动。
+
+### 10.4 验证记录
+
+- Unity 刷新/编译：**0 error**。
+- EditMode `OpeningDeal_Waits_For_Presentation_Sequence_Before_PlayerControl`：**passed**。
+- PlayMode `TableNineBootstrapPlayModeTests`：**4/4 passed**。
+
+### 10.5 后续可 polish（非阻塞）
+
+- 从 `NineGridCardMoveDemo.DealNextCardToSlot` 迁移 **pre-deal 瞄准旋转**（`mPreDealAimDuration`）与 **落位弹性**（`LandingRotationEase`），进一步贴近 Demo 手感。
+- 牌堆剩余张数 UI（Demo 的 `DeckLeftText`）尚未接领域层 `BattleDrawPile.Count`，如需可单独做 presenter 监听 `BattleDeckChangedEvent`。
+- `NineGridCardMoveDemo` 仍保持**停用**；勿重新启用以免与领域权威棋盘双重处理点击。

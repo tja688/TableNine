@@ -105,6 +105,7 @@ public enum InputLockReason
 public enum PresentationSequenceType
 {
     None,
+    OpeningDeal,
     CombatResolution,
     BoardRotation,
     BoardRefill
@@ -113,6 +114,7 @@ public enum PresentationSequenceType
 public enum SequenceCompletionAction
 {
     None,
+    ResumeAfterOpeningDeal,
     ResumeAfterCombat,
     ResumeAfterBoardRotation,
     ResumeAfterBoardRefill

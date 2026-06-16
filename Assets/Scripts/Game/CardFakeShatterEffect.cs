@@ -280,8 +280,16 @@ public static class CardFakeShatterEffect
         burstObject.transform.SetParent(null);
         var shatter = burstObject.AddComponent<ParticleSpriteShatter2D>();
         shatter.Configure(settings);
+        if (settings.HideOriginalOnShatter)
+        {
+            HideCardVisual(visualRoot, faceRenderer, backRenderer);
+        }
+
         var particleLifetime = shatter.Shatter(faceRenderer, worldImpactPoint, worldHitDirection, backRenderer);
-        HideCardVisual(visualRoot, faceRenderer, backRenderer);
+        if (!settings.HideOriginalOnShatter)
+        {
+            HideCardVisual(visualRoot, faceRenderer, backRenderer);
+        }
         if (particleLifetime > 0.001f)
         {
             Object.Destroy(burstObject, particleLifetime + 1.5f);

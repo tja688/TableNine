@@ -95,6 +95,75 @@ public sealed class TableNineR4EffectSystemEditModeTests
     }
 
     [Test]
+    public void HelpCardInteractionIntent_Distinguishes_Targeting_And_Immediate_Cards()
+    {
+        StartRun(12345);
+        var configModel = TableNine.Interface.GetModel<IConfigModel>();
+
+        var knifeIntent = HelpCardInteractionUtility.ResolveIntent(configModel.GetCardDefinition(GameConfigIds.HelpThrowingKnifeId));
+        var potionIntent = HelpCardInteractionUtility.ResolveIntent(configModel.GetCardDefinition(GameConfigIds.HelpPotionId));
+        var swapIntent = HelpCardInteractionUtility.ResolveIntent(configModel.GetCardDefinition(GameConfigIds.HelpSwapId));
+
+        Assert.That(knifeIntent.Kind, Is.EqualTo(HelpCardPlayIntentKind.Targeting));
+        Assert.That(knifeIntent.TargetingMode, Is.EqualTo("damage"));
+        Assert.That(potionIntent.Kind, Is.EqualTo(HelpCardPlayIntentKind.Immediate));
+        Assert.That(swapIntent.Kind, Is.EqualTo(HelpCardPlayIntentKind.SwapTarget));
+    }
+
+    [Test]
+    public void ThrowingKnife_NonLethal_Does_Not_Fire_MonsterKilled()
+    {
+        StartRun(12345);
+        var killed = new List<MonsterKilledEvent>();
+        var unRegister = TableNine.Interface.RegisterEvent<MonsterKilledEvent>(killed.Add);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var knifeUid = MoveHelpCardToItemSlot(GameConfigIds.HelpThrowingKnifeId);
+        var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(1));
+        var targetRuntime = collectionModel.GetCard(targetUid);
+        targetRuntime.CurrentHp = 7;
+        targetRuntime.CurrentArmor = 0;
+        targetRuntime.BaseArmor = 0;
+
+        UseItemSlotHelpCard(knifeUid);
+        TableNine.Interface.SendCommand(new ResolveTargetingCommand(new BoardSlotNo(1)));
+
+        Assert.That(killed, Is.Empty);
+        Assert.That(collectionModel.TryGetCard(targetUid, out var runtime), Is.True);
+        Assert.That(runtime.CurrentHp, Is.EqualTo(1));
+
+        unRegister.UnRegister();
+    }
+
+    [Test]
+    public void ThrowingKnife_Lethal_Fires_MonsterKilled_And_Clears_ItemSlot()
+    {
+        StartRun(12345);
+        var killed = new List<MonsterKilledEvent>();
+        var itemChanges = new List<ItemSlotChangedEvent>();
+        var killedRegister = TableNine.Interface.RegisterEvent<MonsterKilledEvent>(killed.Add);
+        var itemRegister = TableNine.Interface.RegisterEvent<ItemSlotChangedEvent>(itemChanges.Add);
+        var collectionModel = TableNine.Interface.GetModel<ICollectionModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var knifeUid = MoveHelpCardToItemSlot(GameConfigIds.HelpThrowingKnifeId);
+        var itemSlotIndex = collectionModel.GetCard(knifeUid).ItemSlotIndex.Value;
+        var targetUid = MoveAnyMonsterToSlot(new BoardSlotNo(1));
+        var targetRuntime = collectionModel.GetCard(targetUid);
+        targetRuntime.CurrentHp = 1;
+        targetRuntime.CurrentArmor = 0;
+        targetRuntime.BaseArmor = 0;
+
+        UseItemSlotHelpCard(knifeUid);
+        TableNine.Interface.SendCommand(new ResolveTargetingCommand(new BoardSlotNo(1)));
+
+        Assert.That(killed.Count(e => e.MonsterUid.Equals(targetUid)), Is.EqualTo(1));
+        Assert.That(deckModel.ItemSlots[itemSlotIndex].HasValue, Is.False);
+        Assert.That(itemChanges.Any(e => e.ItemSlotIndex == itemSlotIndex && !e.Uid.HasValue), Is.True);
+
+        killedRegister.UnRegister();
+        itemRegister.UnRegister();
+    }
+
+    [Test]
     public void Attribute_Defense_Choice_Syncs_Armor()
     {
         StartRun(12345);

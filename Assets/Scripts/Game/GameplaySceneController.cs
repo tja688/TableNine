@@ -29,6 +29,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     private BakedCardFaceComposer mCardComposer;
     private GameObject mReferenceCardTemplate;
     private float mReferenceWorldCardHeight;
+    private GameplayWorldSequencePresenter mSequencePresenter;
 
     public IArchitecture GetArchitecture()
     {
@@ -263,6 +264,15 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
     private void EnsureBattleEffectPreviewController()
     {
+        var sequencePresenter = GetComponent<GameplayWorldSequencePresenter>();
+        if (sequencePresenter == null)
+        {
+            sequencePresenter = gameObject.AddComponent<GameplayWorldSequencePresenter>();
+        }
+
+        mSequencePresenter = sequencePresenter;
+        sequencePresenter.EnsureInitialized();
+
         if (GetComponent<GameplayBattleEffectPreviewController>() == null)
         {
             gameObject.AddComponent<GameplayBattleEffectPreviewController>();
@@ -297,7 +307,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
         RefreshItemCardViews();
     }
 
-    private void RefreshBoardCardViews()
+    public void RefreshBoardCardViews()
     {
         if (!TableNine.IsInitialized || !this.GetModel<IRunModel>().IsRunActive.Value)
         {
@@ -317,7 +327,14 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
                 continue;
             }
 
-            var uid = boardModel.GetCardAt(new BoardSlotNo(slot));
+            var slotNo = new BoardSlotNo(slot);
+            if (mSequencePresenter != null &&
+                mSequencePresenter.ShouldDeferOuterRingRefresh(slotNo))
+            {
+                continue;
+            }
+
+            var uid = boardModel.GetCardAt(slotNo);
             if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out _))
             {
                 view.Hide();
@@ -326,6 +343,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
             var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
             RefreshCardView(view, uid.Value, false, isPending);
+            ApplyDealSpawnPosition(view, slotNo);
             if (slot == 5)
             {
                 SyncPlayerCardPlaceholder(view.gameObject.activeSelf && view.Data != null);
@@ -334,6 +352,24 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
     }
 
     private void RefreshBoardSlot(BoardSlotNo slot)
+    {
+        if (mSequencePresenter != null &&
+            mSequencePresenter.ShouldDeferOuterRingRefresh(slot))
+        {
+            return;
+        }
+
+        if (mSequencePresenter != null &&
+            mSequencePresenter.ShouldDeferCombatBoardSlot(slot))
+        {
+            mSequencePresenter.EnqueueDeferredCombatBoardSlot(slot);
+            return;
+        }
+
+        RefreshBoardSlotForced(slot);
+    }
+
+    public void RefreshBoardSlotForced(BoardSlotNo slot)
     {
         if (!mBoardCardViews.TryGetValue(slot.Value, out var view))
         {
@@ -362,6 +398,7 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
         var isPending = deckModel.PendingHelpCardAction.IsActive && deckModel.PendingHelpCardAction.HelpCardUid.Equals(uid.Value);
         RefreshCardView(view, uid.Value, false, isPending);
+        ApplyDealSpawnPosition(view, slot);
         if (slot.Value == 5)
         {
             SyncPlayerCardPlaceholder(true);
@@ -431,6 +468,23 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             return;
         }
 
+        if (mSequencePresenter != null &&
+            mSequencePresenter.ShouldDeferCombatCardRefresh(uid))
+        {
+            mSequencePresenter.EnqueueDeferredCombatCardRefresh(uid);
+            return;
+        }
+
+        RefreshCardByUidForced(uid);
+    }
+
+    public void RefreshCardByUidForced(CardUid uid)
+    {
+        if (!TableNine.IsInitialized)
+        {
+            return;
+        }
+
         var collectionModel = this.GetModel<ICollectionModel>();
         if (!collectionModel.TryGetCard(uid, out var runtime))
         {
@@ -450,6 +504,26 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
     private void RefreshForCardMove(CardMovedEvent evt)
     {
+        if (evt.IsBoardMovement &&
+            mSequencePresenter != null &&
+            mSequencePresenter.IsBoardRotationVisualPending)
+        {
+            if (evt.PreviousSlot.HasValue)
+            {
+                RefreshBoardSlotForced(evt.PreviousSlot.Value);
+            }
+
+            RefreshBoardSlotForced(evt.NewSlot);
+            if (evt.PreviousSlot.HasValue &&
+                TryGetBoardCardView(evt.NewSlot, out var movingView) &&
+                movingView != null)
+            {
+                mSequencePresenter.HoldCardAtPreviousSlot(movingView, evt.PreviousSlot.Value);
+            }
+
+            return;
+        }
+
         if (evt.PreviousSlot.HasValue)
         {
             RefreshBoardSlot(evt.PreviousSlot.Value);
@@ -460,10 +534,122 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
 
     private void RefreshForBoardRotation(BoardRotatedEvent evt)
     {
+        if (mSequencePresenter != null && mSequencePresenter.IsBoardRotationVisualPending)
+        {
+            return;
+        }
+
         for (var i = 0; i < evt.MovedCards.Count; i++)
         {
             RefreshForCardMove(evt.MovedCards[i]);
         }
+    }
+
+    public bool TryGetBoardCardView(BoardSlotNo slot, out CardView cardView)
+    {
+        return mBoardCardViews.TryGetValue(slot.Value, out cardView) && cardView != null;
+    }
+
+    public bool TryGetItemCardView(int itemSlotIndex, out CardView cardView)
+    {
+        return mItemCardViews.TryGetValue(itemSlotIndex, out cardView) && cardView != null;
+    }
+
+    public bool TryGetBoardSlotWorldPosition(BoardSlotNo slot, out Vector3 worldPosition)
+    {
+        worldPosition = Vector3.zero;
+        if (mBoardRoot == null)
+        {
+            return false;
+        }
+
+        var slotObject = FindChild(mBoardRoot, slot.Value == 5 ? "CardSlot5ForPlayer" : $"CardSlot{slot.Value}");
+        if (slotObject == null)
+        {
+            return false;
+        }
+
+        worldPosition = slotObject.position;
+        return true;
+    }
+
+    public bool TryGetItemSlotWorldPosition(int itemSlotIndex, out Vector3 worldPosition)
+    {
+        worldPosition = Vector3.zero;
+        if (mItemRoot == null)
+        {
+            return false;
+        }
+
+        var slotObject = FindChild(mItemRoot, $"CardSlot{itemSlotIndex + 1}");
+        if (slotObject == null)
+        {
+            return false;
+        }
+
+        worldPosition = slotObject.position;
+        return true;
+    }
+
+    public bool TryGetCardViewForUid(CardUid uid, out CardView cardView)
+    {
+        foreach (var pair in mBoardCardViews)
+        {
+            if (pair.Value != null &&
+                pair.Value.BoundUid.HasValue &&
+                pair.Value.BoundUid.Value.Equals(uid))
+            {
+                cardView = pair.Value;
+                return true;
+            }
+        }
+
+        foreach (var pair in mItemCardViews)
+        {
+            if (pair.Value != null &&
+                pair.Value.BoundUid.HasValue &&
+                pair.Value.BoundUid.Value.Equals(uid))
+            {
+                cardView = pair.Value;
+                return true;
+            }
+        }
+
+        cardView = null;
+        return false;
+    }
+
+    public Vector3 ResolveDeckWorldPosition()
+    {
+        var deckSlot = GameObject.Find("CardDeckSlot");
+        if (deckSlot != null)
+        {
+            return deckSlot.transform.position;
+        }
+
+        if (mBoardRoot != null)
+        {
+            return mBoardRoot.position + new Vector3(-4.5f, 0f, -0.08f);
+        }
+
+        return transform.position;
+    }
+
+    private void ApplyDealSpawnPosition(CardView view, BoardSlotNo slot)
+    {
+        if (view == null || slot.Value == 5 || mSequencePresenter == null)
+        {
+            return;
+        }
+
+        if (!mSequencePresenter.ShouldHoldCardAtDeck(slot))
+        {
+            return;
+        }
+
+        var deckPosition = ResolveDeckWorldPosition();
+        var slotPosition = view.transform.position;
+        view.transform.position = new Vector3(deckPosition.x, deckPosition.y, slotPosition.z);
     }
 
     private CardView CreateCardVisual(string objectName, Vector3 worldPosition, Transform parent, float scaleMultiplier)

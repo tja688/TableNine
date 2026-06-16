@@ -107,6 +107,31 @@ public sealed class TableNineR8PresentationEditModeTests
     }
 
     [Test]
+    public void OpeningDeal_Waits_For_Presentation_Sequence_Before_PlayerControl()
+    {
+        StartRun(45);
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var manualSequence = new ManualSequenceUtility();
+        var requested = new List<PresentationSequenceRequestedEvent>();
+        TableNine.Interface.RegisterUtility<ISequenceUtility>(manualSequence);
+        var requestRegister = TableNine.Interface.RegisterEvent<PresentationSequenceRequestedEvent>(requested.Add);
+
+        TableNine.Interface.SendCommand(new StartNodeCommand(1, 2));
+
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.OpeningDeal));
+        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.True);
+        Assert.That(requested.Count, Is.EqualTo(1));
+        Assert.That(requested[0].SequenceType, Is.EqualTo(PresentationSequenceType.OpeningDeal));
+
+        manualSequence.CompleteNext();
+
+        Assert.That(flowModel.Phase.Value, Is.EqualTo(FlowPhase.PlayerControl));
+        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.False);
+
+        requestRegister.UnRegister();
+    }
+
+    [Test]
     public void Combat_Sequence_Waits_For_Finish_Commands_Before_Rotating_And_Refilling()
     {
         StartRun(45);

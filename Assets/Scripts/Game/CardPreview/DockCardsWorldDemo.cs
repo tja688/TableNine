@@ -20,6 +20,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     private const string DockBackgroundSortingLayerName = "BG_Table";
 
     [Header("Dock (React Bits defaults)")]
+    [SerializeField] private bool mUseRuntimeItemSlots = true;
     [SerializeField] private int mCardCount = 5;
     [SerializeField] private float mBaseItemSizePixels = 50f;
     [SerializeField] private float mMagnificationPixels = 70f;
@@ -55,6 +56,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private readonly List<DockCardEntry> mCards = new List<DockCardEntry>();
     private readonly List<CardDefinition> mDemoCardSequence = new List<CardDefinition>();
+    private readonly List<IUnRegister> mEventRegisters = new List<IUnRegister>();
+    private readonly Dictionary<int, Vector3> mPickupOrigins = new Dictionary<int, Vector3>();
+    private readonly Dictionary<int, float> mTargetFeedbackWeights = new Dictionary<int, float>();
+    private readonly Dictionary<int, float> mTargetFeedbackVelocities = new Dictionary<int, float>();
+    private readonly Dictionary<int, Vector3> mTargetFeedbackBaseScales = new Dictionary<int, Vector3>();
 
     private Transform mDockRoot;
     private Transform mDockBackgroundRoot;
@@ -86,6 +92,9 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     private DockCardEntry mReturningEntry;
     private int mNextSpawnSequenceIndex;
 
+    public bool UsesRuntimeItemSlots => mUseRuntimeItemSlots;
+    public int VisibleCardCount => mCards.Count;
+
     public IArchitecture GetArchitecture()
     {
         return TableNine.Interface;
@@ -116,6 +125,9 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         {
             mCamera = Camera.main;
         }
+
+        mCardFaceTemplate = BakedCardPrefabRefs.ResolveCardExample(mCardFaceTemplate);
+        mPlayerCardTemplate = BakedCardPrefabRefs.ResolvePlayerCard(mPlayerCardTemplate);
 
         if (mDescriptionText == null)
         {
@@ -149,11 +161,18 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         RefreshWorldMetrics();
         mComposer = new BakedCardFaceComposer(mCardFaceTemplate, mPlayerCardTemplate);
+        RegisterRuntimeEvents();
         BuildCards();
     }
 
     private void OnDestroy()
     {
+        for (var i = 0; i < mEventRegisters.Count; i++)
+        {
+            mEventRegisters[i].UnRegister();
+        }
+
+        mEventRegisters.Clear();
         if (mComposer != null)
         {
             mComposer.Dispose();
@@ -171,6 +190,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         RefreshWorldMetrics();
         HandleDebugInput();
         UpdateDockBackground(Time.deltaTime);
+        UpdateTargetFeedback(Time.deltaTime);
 
         if (mCards.Count == 0)
         {
@@ -256,6 +276,12 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
     {
         mCards.Clear();
         mDemoCardSequence.Clear();
+        if (mUseRuntimeItemSlots)
+        {
+            BuildCardsFromRuntimeItemSlots();
+            return;
+        }
+
         mDemoCardSequence.AddRange(PickDemoCards(mCardCount));
         mNextSpawnSequenceIndex = 0;
 
@@ -274,6 +300,186 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         CacheSlotMetrics();
         RepositionAllCards(true);
         SnapDockBackgroundLayout();
+    }
+
+    private void RegisterRuntimeEvents()
+    {
+        if (!mUseRuntimeItemSlots)
+        {
+            return;
+        }
+
+        mEventRegisters.Add(this.RegisterEvent<CardRemovedEvent>(OnCardRemoved));
+        mEventRegisters.Add(this.RegisterEvent<ItemSlotChangedEvent>(OnItemSlotChanged));
+    }
+
+    private void BuildCardsFromRuntimeItemSlots()
+    {
+        ClearExistingCardObjects();
+        var deckModel = this.GetModel<IDeckModel>();
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var configModel = this.GetModel<IConfigModel>();
+        for (var i = 0; i < deckModel.ItemSlots.Length; i++)
+        {
+            var uid = deckModel.ItemSlots[i];
+            if (!uid.HasValue || !collectionModel.TryGetCard(uid.Value, out var runtime))
+            {
+                continue;
+            }
+
+            var definition = configModel.GetCardDefinition(runtime.DefinitionId);
+            var entry = CreateDockCardEntry(definition, uid.Value, i, GetDockAnchorWorld());
+            if (entry != null)
+            {
+                mCards.Add(entry);
+            }
+        }
+
+        CacheSlotMetrics();
+        ReindexCards();
+        RepositionAllCards(true);
+        SnapDockBackgroundLayout();
+    }
+
+    private void ClearExistingCardObjects()
+    {
+        for (var i = 0; i < mCards.Count; i++)
+        {
+            if (mCards[i]?.Wrapper != null)
+            {
+                Destroy(mCards[i].Wrapper.gameObject);
+            }
+        }
+
+        mCards.Clear();
+        mHoveredIndex = -1;
+        mSelectedIndex = -1;
+        mDraggingEntry = null;
+        mReturningEntry = null;
+        ResetAllTargetFeedback();
+    }
+
+    private void OnCardRemoved(CardRemovedEvent evt)
+    {
+        if (evt.Reason != RemoveReason.HelpCard)
+        {
+            return;
+        }
+
+        if (TryGetBoardSlotWorldPosition(evt.Slot, out var position))
+        {
+            mPickupOrigins[evt.Uid.Value] = position;
+        }
+    }
+
+    private void OnItemSlotChanged(ItemSlotChangedEvent evt)
+    {
+        if (!mUseRuntimeItemSlots)
+        {
+            return;
+        }
+
+        if (evt.Uid.HasValue)
+        {
+            AddOrUpdateRuntimeCard(evt.ItemSlotIndex, evt.Uid.Value);
+            return;
+        }
+
+        RemoveRuntimeCardAt(evt.ItemSlotIndex);
+    }
+
+    private void AddOrUpdateRuntimeCard(int itemSlotIndex, CardUid uid)
+    {
+        var existing = FindRuntimeEntry(itemSlotIndex, uid);
+        if (existing != null)
+        {
+            existing.ItemSlotIndex = itemSlotIndex;
+            return;
+        }
+
+        var collectionModel = this.GetModel<ICollectionModel>();
+        var configModel = this.GetModel<IConfigModel>();
+        if (!collectionModel.TryGetCard(uid, out var runtime))
+        {
+            return;
+        }
+
+        var definition = configModel.GetCardDefinition(runtime.DefinitionId);
+        var spawnPosition = mPickupOrigins.TryGetValue(uid.Value, out var pickupOrigin)
+            ? pickupOrigin
+            : GetDockAnchorWorld();
+        mPickupOrigins.Remove(uid.Value);
+
+        var entry = CreateDockCardEntry(definition, uid, itemSlotIndex, spawnPosition);
+        if (entry == null)
+        {
+            return;
+        }
+
+        mCards.Add(entry);
+        CacheSlotMetrics();
+        ReindexCards();
+        RepositionAllCards();
+        UpdateHoveredIndex();
+    }
+
+    private void RemoveRuntimeCardAt(int itemSlotIndex)
+    {
+        for (var i = mCards.Count - 1; i >= 0; i--)
+        {
+            var entry = mCards[i];
+            if (entry == null || entry.ItemSlotIndex != itemSlotIndex)
+            {
+                continue;
+            }
+
+            if (entry == mDraggingEntry)
+            {
+                mDraggingEntry = null;
+            }
+
+            if (entry == mReturningEntry)
+            {
+                mReturningEntry = null;
+            }
+
+            ResetDraggedCardJitter(entry);
+            if (entry.Wrapper != null)
+            {
+                Destroy(entry.Wrapper.gameObject);
+            }
+
+            mCards.RemoveAt(i);
+            if (mSelectedIndex == i)
+            {
+                mSelectedIndex = -1;
+            }
+            else if (mSelectedIndex > i)
+            {
+                mSelectedIndex--;
+            }
+
+            ReindexCards();
+            RepositionAllCards();
+            UpdateHoveredIndex();
+            return;
+        }
+    }
+
+    private DockCardEntry FindRuntimeEntry(int itemSlotIndex, CardUid uid)
+    {
+        for (var i = 0; i < mCards.Count; i++)
+        {
+            var entry = mCards[i];
+            if (entry != null &&
+                (entry.ItemSlotIndex == itemSlotIndex ||
+                 (entry.Uid.HasValue && entry.Uid.Value.Equals(uid))))
+            {
+                return entry;
+            }
+        }
+
+        return null;
     }
 
     private void RepositionAllCards(bool snapImmediately = false)
@@ -300,7 +506,9 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             if (snapImmediately)
             {
                 entry.CurrentX = slotCenterX;
+                entry.CurrentY = anchor.y;
                 entry.XVelocity = 0f;
+                entry.YVelocity = 0f;
                 entry.Wrapper.position = entry.BaseWorldPosition;
             }
         }
@@ -362,6 +570,13 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
                 mSpringStiffness,
                 mSpringDamping,
                 deltaTime);
+            entry.CurrentY = SpringMath.Step(
+                ref entry.CurrentY,
+                ref entry.YVelocity,
+                entry.BaseWorldPosition.y,
+                mSpringStiffness,
+                mSpringDamping,
+                deltaTime);
 
             entry.CurrentScale = SpringMath.Step(
                 ref entry.CurrentScale,
@@ -387,7 +602,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             }
 
             var scaleMultiplier = entry.CurrentScale;
-            entry.Wrapper.position = new Vector3(entry.CurrentX, entry.BaseWorldPosition.y + entry.CurrentLift, 0f);
+            entry.Wrapper.position = new Vector3(entry.CurrentX, entry.CurrentY + entry.CurrentLift, 0f);
             entry.Wrapper.localScale = Vector3.one * scaleMultiplier;
         }
     }
@@ -400,6 +615,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private void HandleDebugInput()
     {
+        if (mUseRuntimeItemSlots)
+        {
+            return;
+        }
+
         if (!Input.GetKeyDown(KeyCode.Alpha3) && !Input.GetKeyDown(KeyCode.Keypad3))
         {
             return;
@@ -429,6 +649,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         }
 
         mDraggingEntry.Wrapper.position = pointerWorld + mDragPointerOffset;
+        ApplyDraggedCardJitter(mDraggingEntry);
     }
 
     private void BeginReturnDrag()
@@ -440,6 +661,7 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         mReturningEntry = mDraggingEntry;
         mDraggingEntry = null;
+        ResetDraggedCardJitter(mReturningEntry);
         mReturningEntry.ReturnElapsed = 0f;
         mReturningEntry.ReturnStartPosition = mReturningEntry.Wrapper.position;
         mReturningEntry.ReturnStartScale = mReturningEntry.Wrapper.localScale;
@@ -455,6 +677,16 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         if (ShouldReturnDraggedCardOnRelease())
         {
             BeginReturnDrag();
+            return;
+        }
+
+        if (mUseRuntimeItemSlots)
+        {
+            if (!TryPlayRuntimeDraggedCard())
+            {
+                BeginReturnDrag();
+            }
+
             return;
         }
 
@@ -484,7 +716,9 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             entry.Wrapper.position = targetPos;
             entry.Wrapper.localScale = targetScale;
             entry.CurrentX = targetPos.x;
+            entry.CurrentY = entry.BaseWorldPosition.y;
             entry.XVelocity = 0f;
+            entry.YVelocity = 0f;
             mReturningEntry = null;
         }
     }
@@ -603,6 +837,240 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             mNextSpawnSequenceIndex = 0;
             mHoveredIndex = -1;
         }
+    }
+
+    private bool TryPlayRuntimeDraggedCard()
+    {
+        var entry = mDraggingEntry;
+        if (entry == null || !entry.Uid.HasValue)
+        {
+            return false;
+        }
+
+        if (entry.Intent.RequiresBoardTarget)
+        {
+            if (!TryFindValidBoardTargetUnderPointer(entry.Intent, out var targetSlot))
+            {
+                return false;
+            }
+
+            this.SendCommand(new UseHelpCardCommand(entry.Uid.Value));
+            var deckModel = this.GetModel<IDeckModel>();
+            if (deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.SwapTarget)
+            {
+                this.SendCommand(new ResolveSwapTargetCommand(targetSlot));
+            }
+            else if (deckModel.PendingHelpCardAction.Kind == PendingHelpCardActionKind.ThrowingKnifeTarget)
+            {
+                this.SendCommand(new ResolveTargetingCommand(targetSlot));
+            }
+
+            return FinishRuntimeDragAfterCommands(entry);
+        }
+
+        this.SendCommand(new UseHelpCardCommand(entry.Uid.Value));
+        return FinishRuntimeDragAfterCommands(entry);
+    }
+
+    private bool FinishRuntimeDragAfterCommands(DockCardEntry entry)
+    {
+        ResetDraggedCardJitter(entry);
+        if (IsRuntimeEntryStillInItemSlot(entry))
+        {
+            BeginReturnDragFor(entry);
+        }
+        else
+        {
+            mDraggingEntry = null;
+        }
+
+        return true;
+    }
+
+    private bool IsRuntimeEntryStillInItemSlot(DockCardEntry entry)
+    {
+        if (entry == null || !entry.Uid.HasValue)
+        {
+            return false;
+        }
+
+        var deckModel = this.GetModel<IDeckModel>();
+        for (var i = 0; i < deckModel.ItemSlots.Length; i++)
+        {
+            if (deckModel.ItemSlots[i].HasValue && deckModel.ItemSlots[i].Value.Equals(entry.Uid.Value))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void BeginReturnDragFor(DockCardEntry entry)
+    {
+        if (entry == null)
+        {
+            return;
+        }
+
+        mReturningEntry = entry;
+        mDraggingEntry = null;
+        mReturningEntry.ReturnElapsed = 0f;
+        mReturningEntry.ReturnStartPosition = mReturningEntry.Wrapper.position;
+        mReturningEntry.ReturnStartScale = mReturningEntry.Wrapper.localScale;
+    }
+
+    private bool TryFindValidBoardTargetUnderPointer(HelpCardPlayIntent intent, out BoardSlotNo slot)
+    {
+        slot = default;
+        if (!TryGetPointerWorld(out var pointerWorld))
+        {
+            return false;
+        }
+
+        var slotViews = FindObjectsOfType<BoardSlotView>();
+        var bestDistance = float.MaxValue;
+        BoardSlotNo bestSlot = default;
+        for (var i = 0; i < slotViews.Length; i++)
+        {
+            var slotView = slotViews[i];
+            if (slotView == null || slotView.IsItemSlot || slotView.BoardSlotNo <= 0)
+            {
+                continue;
+            }
+
+            var candidate = new BoardSlotNo(slotView.BoardSlotNo);
+            if (!HelpCardInteractionUtility.IsValidBoardTarget(this, intent, candidate))
+            {
+                continue;
+            }
+
+            var collider = slotView.GetComponent<Collider2D>();
+            if (collider != null && collider.enabled && collider.OverlapPoint(pointerWorld))
+            {
+                slot = candidate;
+                return true;
+            }
+
+            var distance = Vector2.Distance(pointerWorld, slotView.transform.position);
+            if (distance < 0.8f && distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestSlot = candidate;
+            }
+        }
+
+        if (bestDistance < float.MaxValue)
+        {
+            slot = bestSlot;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateTargetFeedback(float deltaTime)
+    {
+        BoardSlotNo? activeSlot = null;
+        if (mDraggingEntry != null && mDraggingEntry.Intent.RequiresBoardTarget &&
+            TryFindValidBoardTargetUnderPointer(mDraggingEntry.Intent, out var slot))
+        {
+            activeSlot = slot;
+        }
+
+        if (activeSlot.HasValue)
+        {
+            if (!mTargetFeedbackWeights.ContainsKey(activeSlot.Value.Value))
+            {
+                mTargetFeedbackWeights[activeSlot.Value.Value] = 0f;
+                mTargetFeedbackVelocities[activeSlot.Value.Value] = 0f;
+            }
+        }
+
+        var keys = new List<int>(mTargetFeedbackWeights.Keys);
+        for (var i = 0; i < keys.Count; i++)
+        {
+            var key = keys[i];
+            var target = activeSlot.HasValue && activeSlot.Value.Value == key ? 1f : 0f;
+            var velocity = mTargetFeedbackVelocities.TryGetValue(key, out var existingVelocity) ? existingVelocity : 0f;
+            var weight = Mathf.SmoothDamp(
+                mTargetFeedbackWeights[key],
+                target,
+                ref velocity,
+                0.08f,
+                Mathf.Infinity,
+                deltaTime);
+            mTargetFeedbackWeights[key] = weight;
+            mTargetFeedbackVelocities[key] = velocity;
+
+            if (TryGetBoardCardView(new BoardSlotNo(key), out var view) && view != null)
+            {
+                if (!mTargetFeedbackBaseScales.ContainsKey(key))
+                {
+                    mTargetFeedbackBaseScales[key] = view.transform.localScale;
+                }
+
+                view.transform.localScale = mTargetFeedbackBaseScales[key] * (1f + weight * 0.08f);
+            }
+
+            if (weight <= 0.001f && target <= 0f)
+            {
+                ResetTargetFeedbackSlot(key);
+            }
+        }
+    }
+
+    private void ApplyDraggedCardJitter(DockCardEntry entry)
+    {
+        if (entry?.CardView?.DisplayAdapter?.VisualPivot == null)
+        {
+            return;
+        }
+
+        if (!entry.Intent.RequiresBoardTarget)
+        {
+            entry.CardView.DisplayAdapter.VisualPivot.localPosition = Vector3.zero;
+            return;
+        }
+
+        var strength = TryFindValidBoardTargetUnderPointer(entry.Intent, out _) ? 0.035f : 0.012f;
+        var jitter = UnityEngine.Random.insideUnitCircle * strength;
+        entry.CardView.DisplayAdapter.VisualPivot.localPosition = new Vector3(jitter.x, jitter.y, 0f);
+    }
+
+    private static void ResetDraggedCardJitter(DockCardEntry entry)
+    {
+        if (entry?.CardView?.DisplayAdapter?.VisualPivot != null)
+        {
+            entry.CardView.DisplayAdapter.VisualPivot.localPosition = Vector3.zero;
+        }
+    }
+
+    private void ResetAllTargetFeedback()
+    {
+        var keys = new List<int>(mTargetFeedbackWeights.Keys);
+        for (var i = 0; i < keys.Count; i++)
+        {
+            ResetTargetFeedbackSlot(keys[i]);
+        }
+
+        mTargetFeedbackWeights.Clear();
+        mTargetFeedbackVelocities.Clear();
+        mTargetFeedbackBaseScales.Clear();
+    }
+
+    private void ResetTargetFeedbackSlot(int slotNo)
+    {
+        if (mTargetFeedbackBaseScales.TryGetValue(slotNo, out var scale) &&
+            TryGetBoardCardView(new BoardSlotNo(slotNo), out var view) &&
+            view != null)
+        {
+            view.transform.localScale = scale;
+        }
+
+        mTargetFeedbackWeights.Remove(slotNo);
+        mTargetFeedbackVelocities.Remove(slotNo);
+        mTargetFeedbackBaseScales.Remove(slotNo);
     }
 
     private static float EaseOutBack(float t)
@@ -1007,6 +1475,11 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
     private DockCardEntry CreateDockCardEntry(CardDefinition definition, bool animateFromCenter)
     {
+        return CreateDockCardEntry(definition, null, -1, animateFromCenter ? GetDockAnchorWorld() : GetDockAnchorWorld());
+    }
+
+    private DockCardEntry CreateDockCardEntry(CardDefinition definition, CardUid? uid, int itemSlotIndex, Vector3 spawnPosition)
+    {
         if (definition == null)
         {
             return null;
@@ -1024,7 +1497,6 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             return null;
         }
 
-        var spawnPosition = animateFromCenter ? GetDockAnchorWorld() : GetDockAnchorWorld();
         var wrapper = new GameObject($"DockCard_{definition.CardId}_{mNextSpawnSequenceIndex}");
         wrapper.transform.SetParent(mDockRoot, false);
         wrapper.transform.position = new Vector3(spawnPosition.x, spawnPosition.y, 0f);
@@ -1048,8 +1520,12 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
             CardView = cardView,
             Collider = cardObject.GetComponent<Collider2D>(),
             Definition = definition,
+            Uid = uid,
+            ItemSlotIndex = itemSlotIndex,
+            Intent = HelpCardInteractionUtility.ResolveIntent(definition),
             BaseWorldPosition = wrapper.transform.position,
             CurrentX = wrapper.transform.position.x,
+            CurrentY = wrapper.transform.position.y,
             CurrentScale = 1f,
             TargetScale = 1f,
             CurrentLift = 0f,
@@ -1059,6 +1535,43 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
 
         ApplySortingOrder(entry, entry.SortingOrder);
         return entry;
+    }
+
+    private static bool TryGetBoardCardView(BoardSlotNo slot, out CardView cardView)
+    {
+        var slotViews = FindObjectsOfType<BoardSlotView>();
+        for (var i = 0; i < slotViews.Length; i++)
+        {
+            if (slotViews[i] != null &&
+                !slotViews[i].IsItemSlot &&
+                slotViews[i].BoardSlotNo == slot.Value &&
+                slotViews[i].CardView != null)
+            {
+                cardView = slotViews[i].CardView;
+                return true;
+            }
+        }
+
+        cardView = null;
+        return false;
+    }
+
+    private static bool TryGetBoardSlotWorldPosition(BoardSlotNo slot, out Vector3 worldPosition)
+    {
+        var slotViews = FindObjectsOfType<BoardSlotView>();
+        for (var i = 0; i < slotViews.Length; i++)
+        {
+            if (slotViews[i] != null &&
+                !slotViews[i].IsItemSlot &&
+                slotViews[i].BoardSlotNo == slot.Value)
+            {
+                worldPosition = slotViews[i].transform.position;
+                return true;
+            }
+        }
+
+        worldPosition = Vector3.zero;
+        return false;
     }
 
     private static Rect GetWorldRect(Bounds worldBounds)
@@ -1093,9 +1606,14 @@ public sealed class DockCardsWorldDemo : MonoBehaviour, IController
         public CardView CardView;
         public Collider2D Collider;
         public CardDefinition Definition;
+        public CardUid? Uid;
+        public int ItemSlotIndex = -1;
+        public HelpCardPlayIntent Intent;
         public Vector3 BaseWorldPosition;
         public float CurrentX;
         public float XVelocity;
+        public float CurrentY;
+        public float YVelocity;
         public float CurrentScale = 1f;
         public float TargetScale = 1f;
         public float ScaleVelocity;
