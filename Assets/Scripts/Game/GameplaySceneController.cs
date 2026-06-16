@@ -278,6 +278,11 @@ public class GameplayWorldPresenter : MonoBehaviour, IController
             gameObject.AddComponent<GameplayBattleEffectPreviewController>();
         }
 
+        if (GetComponent<GameplayBattleDeckPresenter>() == null)
+        {
+            gameObject.AddComponent<GameplayBattleDeckPresenter>();
+        }
+
         if (GetComponent<CardFakeShatterTuningProfile>() == null)
         {
             gameObject.AddComponent<CardFakeShatterTuningProfile>();

@@ -208,6 +208,26 @@ public sealed class TableNineR8PresentationEditModeTests
     }
 
     [Test]
+    public void Board_Clicks_Are_Ignored_While_Presentation_Sequence_Is_Locked()
+    {
+        StartRun(47);
+        var flowModel = TableNine.Interface.GetModel<IFlowModel>();
+        var deckModel = TableNine.Interface.GetModel<IDeckModel>();
+        var monsterUid = FindOrthogonallyAdjacentMonster();
+        var monsterSlot = TableNine.Interface.GetModel<ICollectionModel>().GetCard(monsterUid).BoardSlot.Value;
+
+        deckModel.PendingHelpCardAction.Kind = PendingHelpCardActionKind.ThrowingKnifeTarget;
+        deckModel.PendingHelpCardAction.HelpCardUid = new CardUid(999);
+        deckModel.PendingHelpCardAction.TargetingDamage = 6;
+        flowModel.AddLock(InputLockReason.SequenceRunning);
+
+        TableNine.Interface.SendCommand(new ClickBoardSlotCommand(monsterSlot));
+
+        Assert.That(deckModel.PendingHelpCardAction.Kind, Is.EqualTo(PendingHelpCardActionKind.ThrowingKnifeTarget));
+        Assert.That(flowModel.HasLock(InputLockReason.SequenceRunning), Is.True);
+    }
+
+    [Test]
     public void NarrativeSystem_Queues_Dialogue_And_Releases_DialogueLock_On_Finish()
     {
         TableNine.InitArchitecture();

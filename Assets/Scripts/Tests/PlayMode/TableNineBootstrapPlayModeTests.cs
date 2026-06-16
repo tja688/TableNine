@@ -68,6 +68,7 @@ public sealed class TableNineBootstrapPlayModeTests
         var boardRoot = GameObject.Find("NineGrid Main CardSlots");
         var itemRoot = FindSceneObject("Item CardSlots");
         var dock = Object.FindObjectOfType<DockCardsWorldDemo>(true);
+        var deckView = GameObject.Find("RuntimeBattleDeckView");
         var slot3 = GameObject.Find("NineGrid Main CardSlots/CardSlot3");
         var slot3Hits = Physics2D.OverlapPointAll(slot3.transform.position);
 
@@ -80,6 +81,11 @@ public sealed class TableNineBootstrapPlayModeTests
         Assert.That(slot3.GetComponent<Collider2D>().enabled, Is.True);
         Assert.That(slot3Hits.Any(hit => hit.GetComponent<BoardSlotClickProxy>() != null), Is.True);
         Assert.That(slot3Hits.Any(hit => hit.name.StartsWith("BoardCardView")), Is.False);
+        Assert.That(deckView, Is.Not.Null);
+        Assert.That(deckView.activeInHierarchy, Is.True);
+        Assert.That(deckView.transform.eulerAngles.z, Is.EqualTo(0f).Within(0.5f));
+        Assert.That(deckView.GetComponent<Collider2D>(), Is.Not.Null);
+        Assert.That(deckView.GetComponent<Collider2D>().enabled, Is.True);
         Assert.That(dock, Is.Not.Null);
         Assert.That(dock.gameObject.activeInHierarchy, Is.True);
         Assert.That(dock.UsesRuntimeItemSlots, Is.True);

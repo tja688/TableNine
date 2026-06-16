@@ -52,7 +52,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
     [SerializeField] private CardType mFirstSpawnType = CardType.Monster;
 
     [Header("Aim")]
-    [SerializeField] private float mDefaultAimAngleZ = 90f;
+    [SerializeField] private float mDefaultAimAngleZ = 0f;
     [SerializeField] private float mAimSpringStiffness = 190f;
     [SerializeField] private float mAimSpringDamping = 21f;
     [SerializeField] private float mMaxAimAngularSpeed = 1680f;
@@ -376,7 +376,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
         var rootObject = new GameObject($"DealerCard_{mSpawnCount:00}_{definition.CardType}_{definition.CardId}");
         rootObject.transform.SetParent(transform, true);
         rootObject.transform.position = ResolveDeckCenter();
-        rootObject.transform.rotation = Quaternion.Euler(0f, 0f, mDefaultAimAngleZ);
+        rootObject.transform.rotation = Quaternion.identity;
         rootObject.transform.localScale = Vector3.one;
 
         var cardObject = mCardPrefab != null
@@ -443,7 +443,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
             if (instant)
             {
                 entry.Root.position = target;
-                entry.Root.rotation = Quaternion.Euler(0f, 0f, isTop ? mAimAngleZ : mDefaultAimAngleZ);
+                entry.Root.rotation = Quaternion.identity;
                 entry.Root.localScale = entry.BaseScale;
             }
             else
@@ -452,8 +452,7 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
                     .SetEase(mDeckRelayoutEase);
                 if (!isTop)
                 {
-                    entry.Root.DORotate(new Vector3(0f, 0f, mDefaultAimAngleZ), Mathf.Max(0.01f, mDeckRelayoutDuration))
-                        .SetEase(mDeckRelayoutEase);
+                    entry.Root.rotation = Quaternion.identity;
                 }
             }
 
@@ -562,37 +561,9 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
             return;
         }
 
-        var targetAngle = mHoveredSlot != null
-            ? CalculatePointAtAngle(top.Root.position, mHoveredSlot.Transform.position)
-            : mDefaultAimAngleZ;
-
-        var dt = Mathf.Max(0.0001f, deltaTime);
-        var delta = Mathf.DeltaAngle(mAimAngleZ, targetAngle);
-        var acceleration = delta * Mathf.Max(0f, mAimSpringStiffness) - mAimVelocityZ * Mathf.Max(0f, mAimSpringDamping);
-        mAimVelocityZ = Mathf.Clamp(
-            mAimVelocityZ + acceleration * dt,
-            -Mathf.Max(1f, mMaxAimAngularSpeed),
-            Mathf.Max(1f, mMaxAimAngularSpeed));
-        mAimAngleZ += mAimVelocityZ * dt;
-
-        if (Mathf.Abs(delta) <= mAimSettleEpsilon && Mathf.Abs(mAimVelocityZ) <= mAimSettleEpsilon)
-        {
-            mAimAngleZ = targetAngle;
-            mAimVelocityZ = 0f;
-        }
-
-        top.Root.rotation = Quaternion.Euler(0f, 0f, mAimAngleZ);
-    }
-
-    private static float CalculatePointAtAngle(Vector3 from, Vector3 to)
-    {
-        var direction = to - from;
-        if (direction.sqrMagnitude <= 0.0001f)
-        {
-            return 0f;
-        }
-
-        return Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+        mAimVelocityZ = 0f;
+        mAimAngleZ = 0f;
+        top.Root.rotation = Quaternion.identity;
     }
 
     private DealerCardEntry GetTopDeckCard()
@@ -664,10 +635,6 @@ public sealed class AgileCardDealerWorldDemo : MonoBehaviour, IController
                 1f,
                 Mathf.Max(0.01f, mDealDuration))
             .SetEase(mDealMoveEase));
-
-        sequence.Join(top.Root
-            .DORotate(Vector3.zero, Mathf.Max(0.01f, mDealDuration))
-            .SetEase(mLandingRotationEase, mLandingRotationOvershoot));
 
         sequence.Join(top.Root
             .DOScale(top.BaseScale * Mathf.Max(0.01f, mDealScaleMultiplier), Mathf.Max(0.01f, mDealDuration * 0.42f))

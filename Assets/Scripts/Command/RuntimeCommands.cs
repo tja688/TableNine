@@ -193,6 +193,12 @@ public sealed class ClickBoardSlotCommand : AbstractCommand
 
     protected override void OnExecute()
     {
+        var flowModel = this.GetModel<IFlowModel>();
+        if (flowModel.IsInputLocked)
+        {
+            return;
+        }
+
         var deckModel = this.GetModel<IDeckModel>();
         if (deckModel.PendingHelpCardAction.IsActive)
         {

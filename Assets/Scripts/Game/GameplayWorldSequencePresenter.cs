@@ -11,7 +11,7 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
     private const string CardsSortingLayerName = "Cards_Front";
 
     [Header("Deal")]
-    [SerializeField] private float mDealDuration = 0.107f;
+    [SerializeField] private float mDealDuration = 0.22f;
     [SerializeField] private float mDealArcHeight = 0.55f;
     [SerializeField] private float mDealScaleMultiplier = 1.11f;
     [SerializeField] private Ease mDealMoveEase = Ease.OutCubic;
@@ -47,6 +47,7 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
     private readonly HashSet<int> mDeferredCombatRefreshUids = new HashSet<int>();
     private readonly HashSet<int> mDeferredCombatBoardSlots = new HashSet<int>();
     private readonly Dictionary<int, RemovedCardSnapshot> mRemovedMonsterSnapshots = new Dictionary<int, RemovedCardSnapshot>();
+    private readonly List<Tween> mActiveTweens = new List<Tween>();
     private BoardRotatedEvent? mLastBoardRotation;
     private CombatStartedEvent? mLastCombat;
     private BoardSlotNo? mCombatMonsterSlot;
@@ -190,6 +191,14 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
 
     private void OnDestroy()
     {
+        StopAllCoroutines();
+        for (var i = 0; i < mActiveTweens.Count; i++)
+        {
+            mActiveTweens[i]?.Kill(false);
+        }
+
+        mActiveTweens.Clear();
+
         for (var i = 0; i < mEventRegisters.Count; i++)
         {
             mEventRegisters[i].UnRegister();
@@ -474,6 +483,8 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
 
             var moves = mLastBoardRotation.Value.MovedCards;
             var sequence = DOTween.Sequence();
+            TrackTween(sequence);
+            sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
             var finalized = new List<RotationMoveFinalize>();
             var hasMove = false;
             for (var i = 0; i < moves.Count; i++)
@@ -498,7 +509,13 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
                 var duration = Mathf.Max(0.01f, mMoveDuration);
                 sequence.Join(DOTween.To(
                         () => 0f,
-                        progress => transform.position = QuadraticBezier(from, control, to, progress),
+                        progress =>
+                        {
+                            if (transform != null)
+                            {
+                                transform.position = QuadraticBezier(from, control, to, progress);
+                            }
+                        },
                         1f,
                         duration)
                     .SetEase(mMoveEase));
@@ -528,6 +545,11 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
         }
         finally
         {
+            if (mLastBoardRotation.HasValue)
+            {
+                mLastBoardRotation = null;
+            }
+
             NotifyBoardRotationEnded();
             mPresenter?.RefreshBoardCardViews();
         }
@@ -570,14 +592,23 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
         var deckPosition = mPresenter.ResolveDeckWorldPosition();
         var start = new Vector3(deckPosition.x, deckPosition.y, target.z);
         transform.position = start;
+        transform.rotation = Quaternion.identity;
         transform.localScale = baseScale * Mathf.Max(1f, mDealScaleMultiplier);
 
         var control = (start + target) * 0.5f + Vector3.up * Mathf.Max(0f, mDealArcHeight);
         var duration = Mathf.Max(0.01f, mDealDuration);
         var sequence = DOTween.Sequence();
+        TrackTween(sequence);
+        sequence.SetLink(view.gameObject, LinkBehaviour.KillOnDestroy);
         sequence.Append(DOTween.To(
                 () => 0f,
-                progress => transform.position = QuadraticBezier(start, control, target, progress),
+                progress =>
+                {
+                    if (transform != null)
+                    {
+                        transform.position = QuadraticBezier(start, control, target, progress);
+                    }
+                },
                 1f,
                 duration)
             .SetEase(mDealMoveEase));
@@ -585,7 +616,14 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
             .SetEase(mDealScaleEase));
 
         yield return sequence.WaitForCompletion();
+        UntrackTween(sequence);
+        if (transform == null)
+        {
+            yield break;
+        }
+
         transform.position = target;
+        transform.rotation = Quaternion.identity;
         transform.localScale = baseScale;
     }
 
@@ -774,6 +812,22 @@ public sealed class GameplayWorldSequencePresenter : MonoBehaviour, IController,
         const float c3 = c1 + 1f;
         var inv = t - 1f;
         return 1f + c3 * inv * inv * inv + c1 * inv * inv;
+    }
+
+    private void TrackTween(Tween tween)
+    {
+        if (tween != null && !mActiveTweens.Contains(tween))
+        {
+            mActiveTweens.Add(tween);
+        }
+    }
+
+    private void UntrackTween(Tween tween)
+    {
+        if (tween != null)
+        {
+            mActiveTweens.Remove(tween);
+        }
     }
 
     private sealed class RemovedCardSnapshot
